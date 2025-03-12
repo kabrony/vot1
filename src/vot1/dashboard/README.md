@@ -112,4 +112,8 @@ The dashboard is compatible with modern browsers that support ES6, WebGL, and CS
 
 ## Contributing
 
-Contributions to improve the dashboard are welcome! Please feel free to submit pull requests or open issues to suggest features or report bugs. 
+Contributions to improve the dashboard are welcome! Please feel free to submit pull requests or open issues to suggest features or report bugs.
+
+---
+
+**Powered by [VillageOfThousands.io](https://villageofthousands.io)** 
