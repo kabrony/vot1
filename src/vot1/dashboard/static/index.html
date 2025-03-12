@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOT1 Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Import Three.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <svg width="50" height="50" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="#3c1f3c" />
+                <text x="50" y="60" text-anchor="middle" fill="#ffffff" font-size="30" font-weight="bold">V1</text>
+            </svg>
+            <h1>VOT1 Dashboard</h1>
+        </div>
+        <div class="status">
+            <span id="status-indicator"></span>
+            <span id="status-text">Loading...</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <nav>
+                    <ul>
+                        <li><a href="#" class="active" data-tab="overview">Overview</a></li>
+                        <li><a href="#" data-tab="memory">Memory</a></li>
+                        <li><a href="#" data-tab="chat">Chat</a></li>
+                        <li><a href="#" data-tab="settings">Settings</a></li>
+                    </ul>
+                </nav>
+                
+                <div class="system-info">
+                    <h3>System Info</h3>
+                    <div id="model-info">Model: Loading...</div>
+                    <div id="memory-stats">Memory: Loading...</div>
+                    <div id="github-status">GitHub: Loading...</div>
+                    <div id="perplexity-status">Perplexity: Loading...</div>
+                </div>
+            </aside>
+
+            <div class="content">
+                <!-- Overview Tab -->
+                <section id="overview" class="tab-content active">
+                    <h2>System Overview</h2>
+                    
+                    <div class="visualization-container">
+                        <!-- Three.js container for 3D visualization -->
+                        <div id="memory-visualization"></div>
+                    </div>
+                    
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <h3>Memory Usage</h3>
+                            <canvas id="memory-chart"></canvas>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Recent Activity</h3>
+                            <div id="recent-activity" class="activity-list"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Memory Tab -->
+                <section id="memory" class="tab-content">
+                    <h2>Memory Explorer</h2>
+                    
+                    <div class="search-container">
+                        <input type="text" id="memory-search" placeholder="Search memory...">
+                        <button id="memory-search-btn">Search</button>
+                    </div>
+                    
+                    <div class="memory-results">
+                        <div class="memory-type">
+                            <h3>Conversation Memory</h3>
+                            <ul id="conversation-memory" class="memory-list"></ul>
+                        </div>
+                        <div class="memory-type">
+                            <h3>Semantic Memory</h3>
+                            <ul id="semantic-memory" class="memory-list"></ul>
+                        </div>
+                    </div>
+                    
+                    <div class="memory-actions">
+                        <h3>Add Knowledge</h3>
+                        <textarea id="knowledge-content" placeholder="Enter knowledge to store..."></textarea>
+                        <button id="add-knowledge-btn">Add to Memory</button>
+                    </div>
+                </section>
+
+                <!-- Chat Tab -->
+                <section id="chat" class="tab-content">
+                    <h2>Chat with Claude</h2>
+                    
+                    <div class="chat-container">
+                        <div id="chat-messages" class="chat-messages"></div>
+                        
+                        <div class="chat-input">
+                            <textarea id="chat-prompt" placeholder="Type your message..."></textarea>
+                            <div class="chat-options">
+                                <label>
+                                    <input type="checkbox" id="use-memory" checked>
+                                    Use Memory
+                                </label>
+                                <label>
+                                    <input type="checkbox" id="use-perplexity">
+                                    Web Search
+                                </label>
+                            </div>
+                            <button id="send-message-btn">Send</button>
+                        </div>
+                        
+                        <div class="system-prompt">
+                            <h3>System Prompt (Optional)</h3>
+                            <textarea id="system-prompt" placeholder="Enter system prompt..."></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Tab -->
+                <section id="settings" class="tab-content">
+                    <h2>Settings</h2>
+                    
+                    <div class="settings-container">
+                        <div class="setting-group">
+                            <h3>API Configuration</h3>
+                            <div class="setting">
+                                <label for="api-key">Claude API Key</label>
+                                <input type="password" id="api-key" placeholder="sk-ant-api03-...">
+                            </div>
+                            <div class="setting">
+                                <label for="model-select">Claude Model</label>
+                                <select id="model-select">
+                                    <option value="claude-3.7-sonnet-20240620">Claude 3.7 Sonnet</option>
+                                    <option value="claude-3.7-haiku-20240307">Claude 3.7 Haiku</option>
+                                    <option value="claude-3.7-opus-20240229">Claude 3.7 Opus</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <h3>GitHub Integration</h3>
+                            <div class="setting">
+                                <label for="github-token">GitHub Token</label>
+                                <input type="password" id="github-token" placeholder="github_pat_...">
+                            </div>
+                            <div class="setting">
+                                <label for="github-repo">Repository</label>
+                                <input type="text" id="github-repo" placeholder="username/repo">
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <h3>Memory Settings</h3>
+                            <div class="setting">
+                                <label for="memory-path">Memory Storage Path</label>
+                                <input type="text" id="memory-path" placeholder=".vot1/memory">
+                            </div>
+                            <button id="clear-memory-btn" class="danger-btn">Clear Memory</button>
+                        </div>
+                        
+                        <div class="setting-actions">
+                            <button id="save-settings-btn">Save Settings</button>
+                            <button id="reset-settings-btn">Reset</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 VOT1 - Enhanced Claude Integration System</p>
+    </footer>
+
+    <!-- App Scripts -->
+    <script src="js/three-visualization.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html> 
