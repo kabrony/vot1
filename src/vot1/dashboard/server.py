@@ -1,236 +1,140 @@
+#!/usr/bin/env python3
 """
 VOT1 Dashboard Server
 
-This module provides a Flask-based web server for the VOT1 dashboard.
+This module implements a web-based dashboard for monitoring and interacting with the VOT1 system.
+It provides visualizations for memory, tools to interact with the AI, and system monitoring.
 """
 
 import os
-import json
 import logging
-from datetime import datetime
-from typing import Dict, List, Any, Optional
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-import threading
-import time
+import argparse
+from typing import Dict, Any
 
-from ..memory import MemoryManager
-from ..client import EnhancedClaudeClient
+from flask import Flask, render_template, request, jsonify
+from flask_socketio import SocketIO
+from dotenv import load_dotenv
 
-# Setup logging
-logger = logging.getLogger("vot1.dashboard")
+from vot1.client import EnhancedClaudeClient
+from vot1.memory import MemoryManager
+from vot1.dashboard.api import api_bp, init_api
 
-class DashboardServer:
-    """Flask server for VOT1 dashboard."""
-    
-    def __init__(
-        self,
-        client: Optional[EnhancedClaudeClient] = None,
-        memory_manager: Optional[MemoryManager] = None,
-        host: str = "127.0.0.1", 
-        port: int = 5000,
-        static_folder: str = None
-    ) -> None:
-        """Initialize dashboard server.
-        
-        Args:
-            client: EnhancedClaudeClient instance
-            memory_manager: MemoryManager instance
-            host: Host to bind the server to
-            port: Port to bind the server to
-            static_folder: Folder containing static web assets
-        """
-        self.host = host
-        self.port = port
-        self.client = client
-        self.memory_manager = memory_manager
-        
-        # If no client or memory_manager provided, create new ones
-        if not self.client:
-            self.client = EnhancedClaudeClient()
-        
-        if not self.memory_manager:
-            # Use the client's memory_manager if available
-            if hasattr(self.client, 'memory'):
-                self.memory_manager = self.client.memory
-            else:
-                self.memory_manager = MemoryManager()
-        
-        # Find the static folder
-        if static_folder is None:
-            # Use the default location relative to this file
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            static_folder = os.path.join(current_dir, "static")
-        
-        # Initialize Flask app
-        self.app = Flask(__name__, static_folder=static_folder)
-        CORS(self.app)
-        
-        # Setup routes
-        self._setup_routes()
-        
-        logger.info(f"Initialized DashboardServer on {host}:{port}")
-    
-    def _setup_routes(self) -> None:
-        """Set up Flask routes."""
-        
-        @self.app.route('/')
-        def index():
-            """Serve the main dashboard page."""
-            return send_from_directory(self.app.static_folder, 'index.html')
-        
-        @self.app.route('/<path:path>')
-        def static_files(path):
-            """Serve static files."""
-            return send_from_directory(self.app.static_folder, path)
-        
-        @self.app.route('/api/status', methods=['GET'])
-        def status():
-            """Get system status."""
-            return jsonify({
-                "status": "ok",
-                "timestamp": datetime.now().isoformat(),
-                "model": self.client.model,
-                "github_enabled": self.client.github_enabled,
-                "perplexity_enabled": self.client.perplexity_enabled,
-            })
-        
-        @self.app.route('/api/memory', methods=['GET'])
-        def get_memory():
-            """Get memory contents."""
-            query = request.args.get('query', '')
-            limit = int(request.args.get('limit', 10))
-            
-            if query:
-                # Search memory
-                results = self.memory_manager.search_all(query, limit)
-                return jsonify(results)
-            else:
-                # Get recent items
-                conversation = self.memory_manager.conversation.get_all(limit)
-                return jsonify({"conversation": conversation})
-        
-        @self.app.route('/api/memory/stats', methods=['GET'])
-        def memory_stats():
-            """Get memory statistics."""
-            return jsonify(self.memory_manager.get_stats())
-        
-        @self.app.route('/api/message', methods=['POST'])
-        def send_message():
-            """Send a message to Claude."""
-            data = request.json
-            
-            if not data or 'prompt' not in data:
-                return jsonify({"error": "Missing prompt"}), 400
-            
-            prompt = data.get('prompt', '')
-            system_prompt = data.get('system_prompt')
-            use_memory = data.get('use_memory', True)
-            use_perplexity = data.get('use_perplexity', False)
-            
-            try:
-                response = self.client.send_message(
-                    prompt=prompt,
-                    system_prompt=system_prompt,
-                    use_perplexity=use_perplexity,
-                    use_memory=use_memory
-                )
-                
-                return jsonify({
-                    "success": True,
-                    "response": response,
-                    "timestamp": datetime.now().isoformat()
-                })
-            except Exception as e:
-                logger.error(f"Error sending message: {e}")
-                return jsonify({
-                    "success": False,
-                    "error": str(e)
-                }), 500
-        
-        @self.app.route('/api/knowledge', methods=['POST'])
-        def add_knowledge():
-            """Add knowledge to semantic memory."""
-            data = request.json
-            
-            if not data or 'content' not in data:
-                return jsonify({"error": "Missing content"}), 400
-            
-            content = data.get('content', '')
-            metadata = data.get('metadata', {})
-            
-            try:
-                memory_id = self.client.add_knowledge(content, metadata)
-                
-                return jsonify({
-                    "success": True,
-                    "memory_id": memory_id,
-                    "timestamp": datetime.now().isoformat()
-                })
-            except Exception as e:
-                logger.error(f"Error adding knowledge: {e}")
-                return jsonify({
-                    "success": False,
-                    "error": str(e)
-                }), 500
-    
-    def start(self, debug: bool = False, use_thread: bool = False) -> None:
-        """Start the Flask server.
-        
-        Args:
-            debug: Whether to run in debug mode
-            use_thread: Whether to run in a separate thread (non-blocking)
-        """
-        if use_thread:
-            thread = threading.Thread(
-                target=self.app.run,
-                kwargs={"host": self.host, "port": self.port, "debug": debug, "use_reloader": False}
-            )
-            thread.daemon = True
-            thread.start()
-            logger.info(f"Dashboard server started in thread on http://{self.host}:{self.port}")
-        else:
-            logger.info(f"Starting dashboard server on http://{self.host}:{self.port}")
-            self.app.run(host=self.host, port=self.port, debug=debug)
-    
-def create_dashboard(
-    client: Optional[EnhancedClaudeClient] = None,
-    memory_manager: Optional[MemoryManager] = None,
-    host: str = "127.0.0.1",
-    port: int = 5000,
-    static_folder: str = None,
-    start: bool = True,
-    debug: bool = False,
-    use_thread: bool = False
-) -> DashboardServer:
-    """Create and optionally start a dashboard server.
+# Load environment variables
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Create Flask app
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24).hex())
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Initialize VOT1 components
+def init_vot1_components(args):
+    """
+    Initialize VOT1 components based on command-line arguments.
     
     Args:
-        client: EnhancedClaudeClient instance
-        memory_manager: MemoryManager instance
-        host: Host to bind the server to
-        port: Port to bind the server to
-        static_folder: Folder containing static web assets
-        start: Whether to start the server immediately
-        debug: Whether to run in debug mode
-        use_thread: Whether to run in a separate thread (non-blocking)
+        args: Parsed command-line arguments
         
     Returns:
-        Initialized DashboardServer instance
+        Tuple of (client, memory_manager)
     """
-    server = DashboardServer(
-        client=client,
-        memory_manager=memory_manager,
-        host=host,
-        port=port,
-        static_folder=static_folder
+    # Get API keys from environment
+    anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
+    perplexity_api_key = os.environ.get('PERPLEXITY_API_KEY')
+    
+    if not anthropic_api_key:
+        logger.warning("ANTHROPIC_API_KEY not found in environment variables")
+    
+    # Set up memory manager
+    memory_path = args.memory_path or os.environ.get('VOT1_MEMORY_PATH', os.path.join(os.getcwd(), 'memory'))
+    logger.info(f"Initializing memory manager with path: {memory_path}")
+    memory_manager = MemoryManager(storage_dir=memory_path)
+    
+    # Create enhanced client
+    client = EnhancedClaudeClient(
+        api_key=anthropic_api_key,
+        model=args.model,
+        hybrid_mode=not args.no_hybrid,
+        memory_manager=memory_manager
     )
     
-    if start:
-        server.start(debug=debug, use_thread=use_thread)
+    # Add web search capability if Perplexity API key is available
+    if perplexity_api_key:
+        try:
+            client.add_web_search_capability()
+            logger.info("Added web search capability to VOT1 client")
+        except Exception as e:
+            logger.error(f"Failed to add web search capability: {e}")
     
-    return server
+    # Add OWL reasoning capability
+    try:
+        client.add_reasoning_capability()
+        logger.info("Added OWL reasoning capability to VOT1 client")
+    except Exception as e:
+        logger.error(f"Failed to add OWL reasoning capability: {e}")
+    
+    return client, memory_manager
 
-if __name__ == "__main__":
-    # Create and start dashboard server when run directly
-    server = create_dashboard(debug=True) 
+# Register API blueprint
+app.register_blueprint(api_bp, url_prefix='/api')
+
+@app.route('/')
+def index():
+    """Render the dashboard home page."""
+    return render_template('index.html')
+
+@app.route('/status')
+def status():
+    """Return basic status information."""
+    return jsonify({
+        "status": "online",
+        "version": "0.2.0"
+    })
+
+@app.errorhandler(404)
+def page_not_found(e):
+    """Handle 404 errors."""
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    """Handle 500 errors."""
+    return render_template('500.html'), 500
+
+def parse_args():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description='Start the VOT1 dashboard server')
+    parser.add_argument('--host', type=str, default=os.environ.get('VOT1_DASHBOARD_HOST', '127.0.0.1'),
+                        help='Host to run the server on')
+    parser.add_argument('--port', type=int, default=int(os.environ.get('VOT1_DASHBOARD_PORT', 8000)),
+                        help='Port to run the server on')
+    parser.add_argument('--debug', action='store_true',
+                        help='Run in debug mode')
+    parser.add_argument('--memory-path', type=str, default=None,
+                        help='Path to store memory data')
+    parser.add_argument('--model', type=str, default="claude-3-7-sonnet-20240620",
+                        help='Primary Claude model to use')
+    parser.add_argument('--no-hybrid', action='store_true',
+                        help='Disable hybrid model mode')
+    return parser.parse_args()
+
+def main():
+    """Main entry point for the dashboard server."""
+    args = parse_args()
+    
+    # Initialize VOT1 components
+    client, memory_manager = init_vot1_components(args)
+    
+    # Initialize API with dependencies
+    init_api(socketio, client, memory_manager)
+    
+    # Start the server
+    logger.info(f"Starting VOT1 dashboard on {args.host}:{args.port}")
+    socketio.run(app, host=args.host, port=args.port, debug=args.debug)
+
+if __name__ == '__main__':
+    main() 

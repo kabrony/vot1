@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOT1 Memory Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1>VOT1 Memory System</h1>
+            <div class="header-controls">
+                <button id="refresh-btn" class="control-btn">Refresh</button>
+                <div class="search-container">
+                    <input type="text" id="memory-search" placeholder="Search memories...">
+                </div>
+            </div>
+        </header>
+        
+        <main class="dashboard-content">
+            <aside class="dashboard-sidebar">
+                <div class="control-section">
+                    <h3>Filters</h3>
+                    
+                    <div class="filter-group">
+                        <label for="memory-type-filter">Memory Type:</label>
+                        <select id="memory-type-filter">
+                            <option value="all">All Types</option>
+                            <option value="conversation">Conversation</option>
+                            <option value="semantic">Semantic</option>
+                            <option value="swarm">Swarm</option>
+                            <option value="feedback">Feedback</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Time Range:</label>
+                        <div class="time-range-inputs">
+                            <input type="datetime-local" id="time-range-start" placeholder="Start">
+                            <input type="datetime-local" id="time-range-end" placeholder="End">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="memory-stats" class="stats-section">
+                    <!-- Stats will be populated by JavaScript -->
+                </div>
+                
+                <div id="node-details" class="details-section">
+                    <!-- Node details will be populated when a node is selected -->
+                </div>
+            </aside>
+            
+            <section class="visualization-section">
+                <div id="loading-indicator" class="loading-overlay">
+                    <div class="spinner"></div>
+                    <div>Loading memory data...</div>
+                </div>
+                
+                <div id="error-container" class="error-message">
+                    <!-- Error messages will be shown here -->
+                </div>
+                
+                <div id="visualization-container"></div>
+            </section>
+        </main>
+        
+        <footer class="dashboard-footer">
+            <div class="footer-info">
+                VOT1 Memory System Dashboard | Version 0.1.0
+            </div>
+        </footer>
+    </div>
+    
+    <script type="module">
+        import { initDashboard } from '/static/js/dashboard.js';
+        
+        // Initialize the dashboard when the DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initDashboard();
+        });
+    </script>
+</body>
+</html> 

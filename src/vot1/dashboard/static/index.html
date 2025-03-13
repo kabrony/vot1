@@ -3,194 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOT1 Dashboard</title>
+    <title>VOT1 Dashboard - Powered by VillageOfThousands.io</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- Import Three.js from CDN -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
-    <!-- Chart.js for data visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <header>
         <div class="logo">
-            <svg width="50" height="50" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" fill="#3c1f3c" />
-                <text x="50" y="60" text-anchor="middle" fill="#ffffff" font-size="30" font-weight="bold">V1</text>
-            </svg>
             <h1>VOT1 Dashboard</h1>
+            <div class="powered-by">Powered by <span class="highlight">VillageOfThousands.io</span></div>
         </div>
-        <div class="status">
-            <span id="status-indicator"></span>
-            <span id="status-text">Loading...</span>
+        <div class="system-status">
+            <span id="status-indicator" class="status-indicator"></span>
+            <span id="status-text">Connecting...</span>
         </div>
     </header>
-
-    <main>
-        <div class="dashboard-container">
-            <aside class="sidebar">
-                <nav>
-                    <ul>
-                        <li><a href="#" class="active" data-tab="overview">Overview</a></li>
-                        <li><a href="#" data-tab="memory">Memory</a></li>
-                        <li><a href="#" data-tab="chat">Chat</a></li>
-                        <li><a href="#" data-tab="settings">Settings</a></li>
-                    </ul>
-                </nav>
-                
-                <div class="system-info">
-                    <h3>System Info</h3>
-                    <div id="model-info">Model: Loading...</div>
-                    <div id="memory-stats">Memory: Loading...</div>
-                    <div id="github-status">GitHub: Loading...</div>
-                    <div id="perplexity-status">Perplexity: Loading...</div>
+    
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li><a href="#overview" class="active" data-tab="overview">Overview</a></li>
+                    <li><a href="#memory" data-tab="memory">Memory</a></li>
+                    <li><a href="#chat" data-tab="chat">Chat</a></li>
+                    <li><a href="#search" data-tab="search">Web Search</a></li>
+                    <li><a href="#settings" data-tab="settings">Settings</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="memory-stats">
+                    <div>Total Memories: <span id="total-memories">--</span></div>
+                    <div>Conversation: <span id="conversation-memories">--</span></div>
+                    <div>Semantic: <span id="semantic-memories">--</span></div>
                 </div>
-            </aside>
-
-            <div class="content">
-                <!-- Overview Tab -->
-                <section id="overview" class="tab-content active">
-                    <h2>System Overview</h2>
+            </div>
+        </aside>
+        
+        <main class="content">
+            <!-- Overview Tab -->
+            <section id="overview" class="tab-content active">
+                <h2>System Overview</h2>
+                <div class="overview-grid">
+                    <div class="overview-card system-info">
+                        <h3>System Information</h3>
+                        <div class="info-item">
+                            <strong>Claude Model:</strong> <span id="claude-model">--</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Perplexity Model:</strong> <span id="perplexity-model">--</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Web Search:</strong> <span id="web-search-status">--</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Memory System:</strong> <span id="memory-status">--</span>
+                        </div>
+                    </div>
                     
-                    <div class="visualization-container">
-                        <!-- Three.js container for 3D visualization -->
+                    <div class="overview-card visualization-container">
+                        <h3>Memory Visualization</h3>
                         <div id="memory-visualization"></div>
                     </div>
                     
-                    <div class="stats-container">
-                        <div class="stat-card">
-                            <h3>Memory Usage</h3>
-                            <canvas id="memory-chart"></canvas>
-                        </div>
-                        <div class="stat-card">
-                            <h3>Recent Activity</h3>
-                            <div id="recent-activity" class="activity-list"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Memory Tab -->
-                <section id="memory" class="tab-content">
-                    <h2>Memory Explorer</h2>
-                    
-                    <div class="search-container">
-                        <input type="text" id="memory-search" placeholder="Search memory...">
-                        <button id="memory-search-btn">Search</button>
+                    <div class="overview-card recent-activity">
+                        <h3>Recent Activity</h3>
+                        <ul id="recent-activity-list">
+                            <li class="loading">Loading recent activity...</li>
+                        </ul>
                     </div>
                     
-                    <div class="memory-results">
-                        <div class="memory-type">
-                            <h3>Conversation Memory</h3>
-                            <ul id="conversation-memory" class="memory-list"></ul>
+                    <div class="overview-card quick-actions">
+                        <h3>Quick Actions</h3>
+                        <button id="refresh-status">Refresh Status</button>
+                        <button id="clear-recent-activity">Clear Activity</button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Memory Tab -->
+            <section id="memory" class="tab-content">
+                <h2>Memory Management</h2>
+                <div class="search-container">
+                    <input type="text" id="memory-search" placeholder="Search memories...">
+                    <button id="memory-search-btn">Search</button>
+                </div>
+                
+                <div class="memory-display">
+                    <div class="memory-list">
+                        <h3>Memory Items</h3>
+                        <ul id="memory-items">
+                            <li class="loading">Loading memories...</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="memory-details">
+                        <h3>Memory Details</h3>
+                        <div id="memory-detail-content">
+                            <p class="empty-state">Select a memory to view details</p>
                         </div>
-                        <div class="memory-type">
-                            <h3>Semantic Memory</h3>
-                            <ul id="semantic-memory" class="memory-list"></ul>
+                    </div>
+                </div>
+                
+                <div class="memory-actions">
+                    <h3>Add New Knowledge</h3>
+                    <textarea id="new-knowledge" placeholder="Enter new knowledge to add to semantic memory..."></textarea>
+                    <div class="metadata-fields">
+                        <input type="text" id="knowledge-source" placeholder="Source (optional)">
+                        <input type="text" id="knowledge-category" placeholder="Category (optional)">
+                    </div>
+                    <button id="add-knowledge-btn">Add to Memory</button>
+                </div>
+            </section>
+            
+            <!-- Chat Tab -->
+            <section id="chat" class="tab-content">
+                <h2>Chat with VOT1</h2>
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="system-message">
+                            Welcome to VOT1! I'm ready to assist you with access to the latest information through Perplexity's web search capabilities.
                         </div>
                     </div>
                     
-                    <div class="memory-actions">
-                        <h3>Add Knowledge</h3>
-                        <textarea id="knowledge-content" placeholder="Enter knowledge to store..."></textarea>
-                        <button id="add-knowledge-btn">Add to Memory</button>
-                    </div>
-                </section>
-
-                <!-- Chat Tab -->
-                <section id="chat" class="tab-content">
-                    <h2>Chat with Claude</h2>
-                    
-                    <div class="chat-container">
-                        <div id="chat-messages" class="chat-messages"></div>
+                    <div class="chat-controls">
+                        <div class="options">
+                            <label>
+                                <input type="checkbox" id="use-memory" checked>
+                                Use Memory
+                            </label>
+                            <label>
+                                <input type="checkbox" id="use-web-search" checked>
+                                Use Web Search
+                            </label>
+                        </div>
                         
-                        <div class="chat-input">
-                            <textarea id="chat-prompt" placeholder="Type your message..."></textarea>
-                            <div class="chat-options">
-                                <label>
-                                    <input type="checkbox" id="use-memory" checked>
-                                    Use Memory
-                                </label>
-                                <label>
-                                    <input type="checkbox" id="use-perplexity">
-                                    Web Search
-                                </label>
-                            </div>
+                        <div class="input-area">
+                            <textarea id="chat-input" placeholder="Type your message here..."></textarea>
                             <button id="send-message-btn">Send</button>
                         </div>
-                        
-                        <div class="system-prompt">
-                            <h3>System Prompt (Optional)</h3>
-                            <textarea id="system-prompt" placeholder="Enter system prompt..."></textarea>
-                        </div>
                     </div>
-                </section>
-
-                <!-- Settings Tab -->
-                <section id="settings" class="tab-content">
-                    <h2>Settings</h2>
+                </div>
+            </section>
+            
+            <!-- Web Search Tab -->
+            <section id="search" class="tab-content">
+                <h2>Web Search</h2>
+                <div class="search-container">
+                    <input type="text" id="web-search-input" placeholder="Enter your search query...">
+                    <button id="web-search-btn">Search</button>
+                </div>
+                
+                <div class="search-options">
+                    <label>
+                        <input type="checkbox" id="include-links" checked>
+                        Include Source Links
+                    </label>
+                    <label>
+                        <input type="checkbox" id="detailed-responses" checked>
+                        Detailed Responses
+                    </label>
+                </div>
+                
+                <div class="search-results">
+                    <h3>Search Results</h3>
+                    <div id="search-results-content">
+                        <p class="empty-state">Enter a search query to see results</p>
+                    </div>
                     
-                    <div class="settings-container">
-                        <div class="setting-group">
-                            <h3>API Configuration</h3>
-                            <div class="setting">
-                                <label for="api-key">Claude API Key</label>
-                                <input type="password" id="api-key" placeholder="sk-ant-api03-...">
-                            </div>
-                            <div class="setting">
-                                <label for="model-select">Claude Model</label>
-                                <select id="model-select">
-                                    <option value="claude-3.7-sonnet-20240620">Claude 3.7 Sonnet</option>
-                                    <option value="claude-3.7-haiku-20240307">Claude 3.7 Haiku</option>
-                                    <option value="claude-3.7-opus-20240229">Claude 3.7 Opus</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="setting-group">
-                            <h3>GitHub Integration</h3>
-                            <div class="setting">
-                                <label for="github-token">GitHub Token</label>
-                                <input type="password" id="github-token" placeholder="github_pat_...">
-                            </div>
-                            <div class="setting">
-                                <label for="github-repo">Repository</label>
-                                <input type="text" id="github-repo" placeholder="username/repo">
-                            </div>
-                        </div>
-                        
-                        <div class="setting-group">
-                            <h3>Memory Settings</h3>
-                            <div class="setting">
-                                <label for="memory-path">Memory Storage Path</label>
-                                <input type="text" id="memory-path" placeholder=".vot1/memory">
-                            </div>
-                            <button id="clear-memory-btn" class="danger-btn">Clear Memory</button>
-                        </div>
-                        
-                        <div class="setting-actions">
-                            <button id="save-settings-btn">Save Settings</button>
-                            <button id="reset-settings-btn">Reset</button>
-                        </div>
+                    <div id="search-sources" class="search-sources">
+                        <h4>Sources</h4>
+                        <ul id="source-list"></ul>
                     </div>
-                </section>
-            </div>
-        </div>
-    </main>
-
+                </div>
+            </section>
+            
+            <!-- Settings Tab -->
+            <section id="settings" class="tab-content">
+                <h2>Settings</h2>
+                
+                <div class="settings-group">
+                    <h3>API Configuration</h3>
+                    <div class="setting-item">
+                        <label for="claude-api-key">Claude API Key:</label>
+                        <input type="password" id="claude-api-key" placeholder="Set in environment variables">
+                    </div>
+                    <div class="setting-item">
+                        <label for="perplexity-api-key">Perplexity API Key:</label>
+                        <input type="password" id="perplexity-api-key" placeholder="Set in environment variables">
+                    </div>
+                    <button id="save-api-keys" class="primary-btn">Save API Keys</button>
+                </div>
+                
+                <div class="settings-group">
+                    <h3>System Configuration</h3>
+                    <div class="setting-item">
+                        <label for="system-prompt">Default System Prompt:</label>
+                        <textarea id="system-prompt" placeholder="Enter default system prompt..."></textarea>
+                    </div>
+                    <div class="setting-item">
+                        <label for="memory-path">Memory Storage Path:</label>
+                        <input type="text" id="memory-path" placeholder="memory/">
+                    </div>
+                    <button id="save-system-settings" class="primary-btn">Save System Settings</button>
+                </div>
+                
+                <div class="settings-group">
+                    <h3>Memory Management</h3>
+                    <button id="export-memory" class="secondary-btn">Export Memory</button>
+                    <button id="clear-memory" class="danger-btn">Clear Memory</button>
+                </div>
+            </section>
+        </main>
+    </div>
+    
     <footer>
-        <p>&copy; 2025 VOT1 - Enhanced Claude Integration System</p>
-        <div class="powered-by">
-            <a href="https://villageofthousands.io" target="_blank" class="vot-link">
-                Powered by <span class="vot-text">VillageOfThousands.io</span>
-                <span class="vot-animation"></span>
-            </a>
-        </div>
+        <p>&copy; 2025 VillageOfThousands.io - VOT1 v0.2.0</p>
     </footer>
-
-    <!-- App Scripts -->
-    <script src="js/three-visualization.js"></script>
-    <script src="js/charts.js"></script>
+    
+    <!-- JavaScript Files -->
     <script src="js/api.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/three-visualization.js"></script>
+    <script src="js/dashboard.js"></script>
 </body>
 </html> 

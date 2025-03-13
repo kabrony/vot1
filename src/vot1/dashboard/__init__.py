@@ -1,7 +1,10 @@
 """
-VOT1 Dashboard
+VOT1 Dashboard Package
+=====================
 
-A web-based dashboard for VOT1 with Three.js visualization and Flask backend.
+This package provides a web-based dashboard for the VOT1 system,
+allowing users to interact with the system, monitor memory,
+and perform web searches using Perplexity's sonar-reasoning-pro model.
 """
 
 import os
@@ -28,7 +31,7 @@ except ImportError as e:
         return None
 
 # Package version
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Determine the path to the static folder
 DASHBOARD_PATH = os.path.dirname(os.path.abspath(__file__))
