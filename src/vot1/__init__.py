@@ -1,15 +1,25 @@
 """
-VOT1: Enhanced Claude Integration System
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+VOT1 - Memory Management System with OWL Reasoning and Self-Improvement
 
-VOT1 is a powerful integration system for Anthropic's Claude AI models,
-providing seamless GitHub integration and advanced feedback mechanisms.
+This package provides a sophisticated memory management system with OWL reasoning
+capabilities and self-improvement workflows for autonomous code enhancement.
 
-:copyright: (c) 2025 by kabrony.
-:license: MIT, see LICENSE for more details.
+Key modules:
+- memory: Vector-based memory storage and retrieval
+- owl_reasoning: Semantic reasoning using OWL ontologies
+- vot_mcp: Model Control Protocol for AI model interaction
+- self_improvement_workflow: Framework for autonomous system improvement
+- self_improvement_agent: Agent for autonomous code enhancement
+- dashboard: THREE.js visualization with cyberpunk aesthetic
 """
 
-from .client import EnhancedClaudeClient
+__version__ = "0.1.0"
 
-__version__ = '0.1.0'
-__all__ = ['EnhancedClaudeClient'] 
+# Import key classes for easier access
+try:
+    from vot1.enhanced_client import VOT1Client
+    from vot1.perplexity_client import PerplexityMcpClient
+    from vot1.memory import MemoryManager, VectorStore
+except ImportError:
+    # During initial setup these imports might not be available yet
+    pass 

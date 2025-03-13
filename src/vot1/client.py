@@ -1,549 +1,686 @@
 """
-EnhancedClaudeClient module for interacting with Anthropic's Claude models.
+EnhancedClaudeClient: VOT1 Model Control Protocol Implementation
 
-This module provides an enhanced client for Claude with additional features
-such as GitHub integration, feedback collection, and more.
+This module implements an enhanced client for Anthropic's Claude models with:
+1. Advanced Model Control Protocol (VOT-MCP) implementation
+2. Hybrid model approach using Claude 3.7 Sonnet and Thin for cost/performance optimization
+3. Integrated memory management
+4. Tool use capabilities with automatic function execution
+5. Feedback collection and system improvement
 """
 
-from typing import Dict, List, Optional, Union, Any, Literal
 import os
 import json
-import asyncio
 import logging
-from datetime import datetime
-import requests
+import time
+import uuid
+from typing import Dict, List, Any, Optional, Union, Callable
+
 import anthropic
-from anthropic import Anthropic
+from dotenv import load_dotenv
 
-from .memory import MemoryManager
+# Load environment variables
+load_dotenv()
 
-# Setup logging
-logger = logging.getLogger("vot1")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class EnhancedClaudeClient:
-    """Enhanced client for interacting with Anthropic's Claude API.
+    """
+    Enhanced Claude client with VOT1 Model Control Protocol implementation.
     
-    This client extends the basic functionality of Claude with additional
-    features like GitHub integration, feedback collection, and more.
-    
-    Attributes:
-        api_key (str): Anthropic API key
-        model (str): Claude model to use (default: 'claude-3.7-sonnet-20240620')
-        max_tokens (int): Maximum number of tokens to generate
+    This client extends the basic Claude client with:
+    - Hybrid model approach (Claude 3.7 Sonnet/Thin)
+    - Memory integration
+    - Tool use with automated execution
+    - Cost optimization
+    - Adaptive context management
     """
     
-    def __init__(
-        self,
-        api_key: Optional[str] = None,
-        model: str = "claude-3.7-sonnet-20240620",
-        max_tokens: int = 1024,
-        perplexity_api_key: Optional[str] = None,
-        memory_storage_dir: str = ".vot1/memory",
-    ) -> None:
-        """Initialize the EnhancedClaudeClient.
+    SONNET_MODEL = "claude-3-7-sonnet-20240620"
+    THIN_MODEL = "claude-3-5-sonnet-20240620"
+    
+    def __init__(self, 
+                 api_key: Optional[str] = None,
+                 model: Optional[str] = None,
+                 hybrid_mode: bool = True,
+                 system: Optional[str] = None,
+                 temperature: float = 0.7,
+                 max_tokens: int = 1024,
+                 memory_manager=None,
+                 tools: Optional[List[Dict[str, Any]]] = None,
+                 auto_tool_execution: bool = True,
+                 cost_optimization: bool = True):
+        """
+        Initialize the enhanced Claude client.
         
         Args:
-            api_key: API key for Anthropic. If not provided, will try to get from
-                environment variable ANTHROPIC_API_KEY
-            model: Claude model to use
-            max_tokens: Maximum number of tokens to generate
-            perplexity_api_key: API key for Perplexity. If not provided, will try to get from
-                environment variable PERPLEXITY_API_KEY
-            memory_storage_dir: Directory to store memory data
+            api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var)
+            model: Primary model to use (defaults to SONNET_MODEL)
+            hybrid_mode: Whether to use hybrid model approach
+            system: System prompt to use
+            temperature: Temperature for generation
+            max_tokens: Maximum tokens to generate
+            memory_manager: Optional memory manager instance
+            tools: List of available tools
+            auto_tool_execution: Whether to automatically execute tools
+            cost_optimization: Whether to use cost optimization strategies
         """
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not self.api_key:
-            raise ValueError(
-                "API key must be provided either as an argument or "
-                "as the ANTHROPIC_API_KEY environment variable"
-            )
+            raise ValueError("Anthropic API key is required. Set the ANTHROPIC_API_KEY environment variable.")
         
-        self.model = model
+        self.primary_model = model or self.SONNET_MODEL
+        self.secondary_model = self.THIN_MODEL if self.primary_model != self.THIN_MODEL else self.SONNET_MODEL
+        self.hybrid_mode = hybrid_mode
+        self.system = system or self._default_system_prompt()
+        self.temperature = temperature
         self.max_tokens = max_tokens
-        self.conversation_history: List[Dict[str, str]] = []
-        self.github_enabled = False
-        self.github_token = None
-        self.github_repo = None
-        self.github_owner = None
+        self.memory_manager = memory_manager
+        self.tools = tools
+        self.auto_tool_execution = auto_tool_execution
+        self.cost_optimization = cost_optimization
         
-        # Initialize Anthropic client
-        self.client = Anthropic(api_key=self.api_key)
+        # Initialize clients
+        self.client = anthropic.Anthropic(api_key=self.api_key)
         
-        # Initialize Perplexity integration
-        self.perplexity_api_key = perplexity_api_key or os.environ.get("PERPLEXITY_API_KEY")
-        self.perplexity_enabled = self.perplexity_api_key is not None
-        if self.perplexity_enabled:
-            logger.info("Perplexity integration enabled")
+        # Track usage for cost optimization
+        self.usage_stats = {
+            "total_tokens": 0,
+            "sonnet_calls": 0,
+            "thin_calls": 0,
+            "tool_calls": 0,
+            "start_time": time.time()
+        }
         
-        # Initialize Memory Manager
-        self.memory = MemoryManager(storage_dir=memory_storage_dir)
-        
-        logger.info(f"Initialized EnhancedClaudeClient with model {model}")
+        logger.info(f"Initialized EnhancedClaudeClient with primary model: {self.primary_model}")
+        if self.hybrid_mode:
+            logger.info(f"Hybrid mode enabled with secondary model: {self.secondary_model}")
     
-    def send_message(
-        self, 
-        prompt: str, 
-        system_prompt: Optional[str] = None,
-        stream: bool = False,
-        use_perplexity: bool = False,
-        temperature: float = 0.7,
-        use_memory: bool = True,
-        memory_search_query: Optional[str] = None,
-    ) -> Union[str, Dict[str, Any]]:
-        """Send a message to Claude.
+    def _default_system_prompt(self) -> str:
+        """Default system prompt for the VOT1 system."""
+        return """
+        You are Claude, an AI assistant enhanced by VOT1 (Village of Thousands) system. 
+        Your capabilities include access to current information, advanced memory management,
+        and specialized tools when needed.
+        
+        When generating responses:
+        1. Be helpful, harmless, and honest
+        2. Provide comprehensive, accurate information
+        3. When uncertain, acknowledge limitations
+        4. Use available tools when appropriate
+        5. Respect user preferences and specifications
+        
+        You have the ability to use tools to enhance your responses, including web search
+        and other specialized capabilities when requested or needed.
+        """
+    
+    def _select_model(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Select the appropriate model based on the task complexity and cost optimization.
+        
+        In hybrid mode, this intelligently chooses between Sonnet and Thin models:
+        - Uses Thin for simpler queries, shorter responses, or when performance isn't critical
+        - Uses Sonnet for complex reasoning, creative tasks, or when high quality is essential
         
         Args:
-            prompt: The user's input message
-            system_prompt: Optional system prompt to guide Claude's behavior
-            stream: Whether to stream the response
-            use_perplexity: Whether to use Perplexity for web search augmentation
-            temperature: Controls randomness of the output (0.0 to 1.0)
-            use_memory: Whether to use memory for context augmentation
-            memory_search_query: Query to search memory (if None, uses prompt)
+            prompt: The user prompt
+            context: Additional context
             
         Returns:
-            Response from Claude API as a string or dictionary
+            The model name to use
         """
-        # Log the request
-        logger.debug(f"Sending message to Claude: {prompt[:50]}...")
+        if not self.hybrid_mode:
+            return self.primary_model
         
-        # Add to conversation history and memory
-        message_id = self.memory.add_conversation_item("user", prompt)
-        self.conversation_history.append({"role": "user", "content": prompt})
+        # Simple heuristics for model selection
         
-        # Prepare messages
-        messages = [{"role": "user", "content": prompt}]
+        # Get task type hint from context
+        task_type = context.get("task_type", "") if context else ""
         
-        # Add previous messages from conversation history for context
-        # Limited to the last 10 messages to avoid exceeding context limits
-        if len(self.conversation_history) > 1:
-            prev_messages = self.conversation_history[:-1][-10:]
-            messages = prev_messages + messages
+        # Default to the primary model (usually Sonnet)
+        selected_model = self.primary_model
         
-        # Enhance with memory context if enabled
-        memory_context = ""
-        if use_memory and (memory_search_query or prompt):
-            search_query = memory_search_query or prompt
-            memory_results = self.memory.search_all(search_query, limit=3)
+        # Use Thin for simple, short queries
+        if len(prompt) < 100 and not any(complex_indicator in prompt.lower() for complex_indicator in 
+                                        ["explain", "analyze", "compare", "evaluate", "reason"]):
+            selected_model = self.THIN_MODEL
+        
+        # Use Thin for basic information retrieval
+        elif any(simple_task in task_type.lower() for simple_task in 
+                ["lookup", "simple", "information", "basic", "quick"]):
+            selected_model = self.THIN_MODEL
+        
+        # Use Sonnet for complex reasoning
+        elif any(complex_task in task_type.lower() for complex_task in 
+                ["complex", "reasoning", "creative", "important", "nuanced"]):
+            selected_model = self.SONNET_MODEL
             
-            if memory_results["conversation"] or memory_results["semantic"]:
-                memory_context = "Relevant information from memory:\n"
-                
-                for i, item in enumerate(memory_results["conversation"]):
-                    memory_context += f"[Conversation {i+1}] {item.get('role', 'unknown')}: {item.get('content', '')}\n"
-                
-                for i, item in enumerate(memory_results["semantic"]):
-                    memory_context += f"[Knowledge {i+1}] {item.get('content', '')}\n"
+        logger.info(f"Selected model {selected_model} for prompt: {prompt[:50]}...")
+        return selected_model
+    
+    def generate(self, 
+                prompt: str, 
+                system: Optional[str] = None,
+                model: Optional[str] = None,
+                temperature: Optional[float] = None,
+                max_tokens: Optional[int] = None,
+                context: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Generate a response to the given prompt.
         
-        # Combine memory context with system prompt if available
-        if memory_context:
-            if system_prompt:
-                system_prompt = f"{system_prompt}\n\n{memory_context}"
-            else:
-                system_prompt = memory_context
-        
-        if use_perplexity and self.perplexity_enabled:
-            # Enhance the prompt with Perplexity search results
-            search_results = self._query_perplexity(prompt)
-            # Add search results as a system message
-            if system_prompt:
-                system_prompt += f"\n\nAdditional context from web search: {search_results}"
-            else:
-                system_prompt = f"Additional context from web search: {search_results}"
-            logger.debug("Enhanced prompt with Perplexity search results")
-        
-        try:
-            # Call Anthropic API
-            if stream:
-                with self.client.messages.stream(
-                    model=self.model,
-                    max_tokens=self.max_tokens,
-                    temperature=temperature,
-                    system=system_prompt,
-                    messages=messages,
-                ) as stream:
-                    response_content = ""
-                    for text in stream.text_stream:
-                        response_content += text
-                        # Could yield text here if needed
-                    
-                    # Get the final message once stream completes
-                    response = stream.get_final_message()
-                    response_content = response.content[0].text
-            else:
-                response = self.client.messages.create(
-                    model=self.model,
-                    max_tokens=self.max_tokens,
-                    temperature=temperature,
-                    system=system_prompt,
-                    messages=messages,
-                )
-                response_content = response.content[0].text
+        Args:
+            prompt: The prompt to generate a response for
+            system: Optional system prompt override
+            model: Optional model override
+            temperature: Optional temperature override
+            max_tokens: Optional max tokens override
+            context: Additional context for the generation
             
-            # Add to conversation history and memory
-            self.conversation_history.append({"role": "assistant", "content": response_content})
-            self.memory.add_conversation_item("assistant", response_content, {
-                "model": self.model,
-                "system_prompt_used": bool(system_prompt),
-                "memory_used": bool(memory_context),
-                "web_search_used": use_perplexity and self.perplexity_enabled,
-                "in_response_to": message_id
+        Returns:
+            The generated response
+        """
+        context = context or {}
+        
+        # Determine which model to use
+        model_to_use = model or self._select_model(prompt, context)
+        
+        # Retrieve relevant memories if memory manager is available
+        memories = []
+        if self.memory_manager:
+            memories = self.memory_manager.retrieve_relevant_memories(prompt, limit=5)
+            
+            # Add memories to context
+            if memories:
+                memories_text = "\n\n".join([f"Memory {i+1}: {memory['content']}" for i, memory in enumerate(memories)])
+                context["relevant_memories"] = memories_text
+        
+        # Construct the message
+        messages = [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+        
+        # Add context as assistant message if needed
+        if context and any(k for k in context.keys() if k != "task_type"):
+            context_message = "Here is some relevant context:\n\n"
+            
+            for key, value in context.items():
+                if key != "task_type":  # Skip task_type as it's internal
+                    context_message += f"--- {key} ---\n{value}\n\n"
+            
+            messages.insert(0, {
+                "role": "assistant",
+                "content": context_message
             })
-            
-            if stream:
-                return response_content
-            else:
-                return {
-                    "content": response_content,
-                    "model": response.model,
-                    "usage": {
-                        "input_tokens": response.usage.input_tokens,
-                        "output_tokens": response.usage.output_tokens,
-                    },
-                }
-                
-        except Exception as e:
-            logger.error(f"Error calling Claude API: {e}")
-            raise
-    
-    async def send_message_async(
-        self, 
-        prompt: str, 
-        system_prompt: Optional[str] = None,
-        use_perplexity: bool = False,
-        temperature: float = 0.7,
-        use_memory: bool = True,
-        memory_search_query: Optional[str] = None,
-    ) -> Dict[str, Union[str, float]]:
-        """Send a message to Claude asynchronously.
         
-        Args:
-            prompt: The user's input message
-            system_prompt: Optional system prompt to guide Claude's behavior
-            use_perplexity: Whether to use Perplexity for web search augmentation
-            temperature: Controls randomness of the output (0.0 to 1.0)
-            use_memory: Whether to use memory for context augmentation
-            memory_search_query: Query to search memory (if None, uses prompt)
-            
-        Returns:
-            Response from Claude API as a dictionary
-        """
-        # Log the request
-        logger.debug(f"Sending async message to Claude: {prompt[:50]}...")
-        
-        # Add to conversation history and memory
-        message_id = self.memory.add_conversation_item("user", prompt)
-        self.conversation_history.append({"role": "user", "content": prompt})
-        
-        # Prepare messages
-        messages = [{"role": "user", "content": prompt}]
-        
-        # Add previous messages from conversation history for context
-        # Limited to the last 10 messages to avoid exceeding context limits
-        if len(self.conversation_history) > 1:
-            prev_messages = self.conversation_history[:-1][-10:]
-            messages = prev_messages + messages
-        
-        # Enhance with memory context if enabled
-        memory_context = ""
-        if use_memory and (memory_search_query or prompt):
-            search_query = memory_search_query or prompt
-            memory_results = self.memory.search_all(search_query, limit=3)
-            
-            if memory_results["conversation"] or memory_results["semantic"]:
-                memory_context = "Relevant information from memory:\n"
-                
-                for i, item in enumerate(memory_results["conversation"]):
-                    memory_context += f"[Conversation {i+1}] {item.get('role', 'unknown')}: {item.get('content', '')}\n"
-                
-                for i, item in enumerate(memory_results["semantic"]):
-                    memory_context += f"[Knowledge {i+1}] {item.get('content', '')}\n"
-        
-        # Combine memory context with system prompt if available
-        if memory_context:
-            if system_prompt:
-                system_prompt = f"{system_prompt}\n\n{memory_context}"
-            else:
-                system_prompt = memory_context
-        
-        if use_perplexity and self.perplexity_enabled:
-            # Enhance the prompt with Perplexity search results
-            search_results = await self._query_perplexity_async(prompt)
-            # Add search results as a system message
-            if system_prompt:
-                system_prompt += f"\n\nAdditional context from web search: {search_results}"
-            else:
-                system_prompt = f"Additional context from web search: {search_results}"
-            logger.debug("Enhanced prompt with Perplexity search results")
-        
-        # We need to run the synchronous API call in a thread pool since
-        # the anthropic Python client doesn't have async support yet
-        loop = asyncio.get_running_loop()
-        
+        # Make the API call
         try:
-            # Run the synchronous API call in a thread pool
-            response = await loop.run_in_executor(
-                None,
-                lambda: self.client.messages.create(
-                    model=self.model,
-                    max_tokens=self.max_tokens,
-                    temperature=temperature,
-                    system=system_prompt,
-                    messages=messages,
-                )
+            start_time = time.time()
+            
+            response = self.client.messages.create(
+                model=model_to_use,
+                messages=messages,
+                system=system or self.system,
+                temperature=temperature or self.temperature,
+                max_tokens=max_tokens or self.max_tokens,
+                tools=self.tools
             )
             
-            response_content = response.content[0].text
+            content = response.content[0].text
             
-            # Add to conversation history and memory
-            self.conversation_history.append({"role": "assistant", "content": response_content})
-            self.memory.add_conversation_item("assistant", response_content, {
-                "model": self.model,
-                "system_prompt_used": bool(system_prompt),
-                "memory_used": bool(memory_context),
-                "web_search_used": use_perplexity and self.perplexity_enabled,
-                "in_response_to": message_id,
-                "async": True
-            })
-            
-            return {
-                "content": response_content,
-                "model": response.model,
-                "usage": {
-                    "input_tokens": response.usage.input_tokens,
-                    "output_tokens": response.usage.output_tokens,
-                    "total_tokens": response.usage.input_tokens + response.usage.output_tokens
-                },
-                "timestamp": datetime.now().isoformat()
-            }
-                
-        except Exception as e:
-            logger.error(f"Error calling Claude API asynchronously: {e}")
-            raise
-    
-    def _query_perplexity(self, query: str) -> str:
-        """Query Perplexity API for search results.
-        
-        Args:
-            query: Search query to send to Perplexity
-            
-        Returns:
-            Search results as a string
-        """
-        if not self.perplexity_api_key:
-            logger.warning("Perplexity API key not available")
-            return ""
-        
-        try:
-            headers = {
-                "Authorization": f"Bearer {self.perplexity_api_key}",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "query": query,
-                "max_tokens": 250  # Limit response length
-            }
-            response = requests.post(
-                "https://api.perplexity.ai/chat/completions",
-                headers=headers,
-                json=data,
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                # Store the search result in semantic memory
-                self.memory.add_semantic_item(
-                    content=result.get("answer", ""),
-                    metadata={"source": "perplexity", "query": query}
-                )
-                return result.get("answer", "")
+            # Update usage statistics
+            self.usage_stats["total_tokens"] += response.usage.input_tokens + response.usage.output_tokens
+            if model_to_use == self.SONNET_MODEL:
+                self.usage_stats["sonnet_calls"] += 1
             else:
-                logger.error(f"Perplexity API error: {response.status_code} - {response.text}")
-                return ""
-        except Exception as e:
-            logger.error(f"Error querying Perplexity API: {e}")
-            return ""
-    
-    async def _query_perplexity_async(self, query: str) -> str:
-        """Query Perplexity API for search results asynchronously.
-        
-        Args:
-            query: Search query to send to Perplexity
+                self.usage_stats["thin_calls"] += 1
             
-        Returns:
-            Search results as a string
-        """
-        if not self.perplexity_api_key:
-            logger.warning("Perplexity API key not available")
-            return ""
-        
-        try:
-            import aiohttp
-            headers = {
-                "Authorization": f"Bearer {self.perplexity_api_key}",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "query": query,
-                "max_tokens": 250  # Limit response length
-            }
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.perplexity.ai/chat/completions",
-                    headers=headers,
-                    json=data,
-                    timeout=aiohttp.ClientTimeout(total=10)
-                ) as response:
-                    if response.status == 200:
-                        result = await response.json()
-                        # Store the search result in semantic memory
-                        self.memory.add_semantic_item(
-                            content=result.get("answer", ""),
-                            metadata={"source": "perplexity", "query": query, "async": True}
-                        )
-                        return result.get("answer", "")
-                    else:
-                        error_text = await response.text()
-                        logger.error(f"Perplexity API error: {response.status} - {error_text}")
-                        return ""
-        except Exception as e:
-            logger.error(f"Error querying Perplexity API asynchronously: {e}")
-            return ""
-    
-    def setup_github_integration(
-        self,
-        github_token: Optional[str] = None,
-        github_repo: Optional[str] = None,
-        github_owner: Optional[str] = None
-    ) -> None:
-        """Set up GitHub integration.
-        
-        Args:
-            github_token: GitHub personal access token. If not provided, will try to get from
-                environment variable GITHUB_TOKEN
-            github_repo: GitHub repository name. If not provided, will try to get from
-                environment variable GITHUB_REPO
-            github_owner: GitHub repository owner. If not provided, will try to get from
-                environment variable GITHUB_OWNER
-        """
-        self.github_token = github_token or os.environ.get("GITHUB_TOKEN")
-        self.github_repo = github_repo or os.environ.get("GITHUB_REPO")
-        self.github_owner = github_owner or os.environ.get("GITHUB_OWNER")
-        
-        if not all([self.github_token, self.github_repo, self.github_owner]):
-            logger.warning(
-                "GitHub integration not fully configured. "
-                "Need token, repo, and owner."
-            )
-            self.github_enabled = False
-            return
-        
-        self.github_enabled = True
-        logger.info(f"GitHub integration enabled for {self.github_owner}/{self.github_repo}")
-    
-    def create_github_issue(
-        self,
-        title: str,
-        body: str,
-        labels: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
-        """Create a GitHub issue.
-        
-        Args:
-            title: Issue title
-            body: Issue body
-            labels: List of labels to apply to the issue
-            
-        Returns:
-            Response from GitHub API as a dictionary
-        """
-        if not self.github_enabled:
-            raise ValueError("GitHub integration not enabled")
-        
-        try:
-            headers = {
-                "Authorization": f"token {self.github_token}",
-                "Accept": "application/vnd.github.v3+json"
-            }
-            data = {
-                "title": title,
-                "body": body
-            }
-            
-            if labels:
-                data["labels"] = labels
-            
-            response = requests.post(
-                f"https://api.github.com/repos/{self.github_owner}/{self.github_repo}/issues",
-                headers=headers,
-                json=data
-            )
-            
-            if response.status_code == 201:
-                result = response.json()
-                logger.info(f"Created GitHub issue: {result['html_url']}")
-                
-                # Store in semantic memory
-                self.memory.add_semantic_item(
-                    content=f"Created GitHub issue: {title}\n\n{body}",
+            # Store in memory if available
+            if self.memory_manager:
+                self.memory_manager.add_memory(
+                    content=content,
+                    memory_type="conversation",
                     metadata={
-                        "source": "github", 
-                        "type": "issue", 
-                        "url": result['html_url'],
-                        "issue_number": result['number']
+                        "prompt": prompt,
+                        "model": model_to_use,
+                        "timestamp": time.time(),
+                        "response_time": time.time() - start_time
                     }
                 )
-                
-                return result
-            else:
-                logger.error(f"GitHub API error: {response.status_code} - {response.text}")
-                raise ValueError(f"Failed to create GitHub issue: {response.text}")
+            
+            return content
+            
         except Exception as e:
-            logger.error(f"Error creating GitHub issue: {e}")
-            raise
+            logger.error(f"Error generating response: {e}")
+            return f"Error generating response: {str(e)}"
     
-    def clear_conversation_history(self) -> None:
-        """Clear the conversation history."""
-        self.conversation_history = []
-    
-    def get_conversation_history(self) -> List[Dict[str, str]]:
-        """Get the conversation history."""
-        return self.conversation_history.copy()
-    
-    def save_memory(self) -> None:
-        """Save all memory."""
-        self.memory.save_all()
-    
-    def add_knowledge(self, content: str, metadata: Optional[Dict[str, Any]] = None) -> str:
-        """Add knowledge to semantic memory.
+    def generate_with_tools(self,
+                           prompt: str,
+                           system: Optional[str] = None,
+                           model: Optional[str] = None,
+                           temperature: Optional[float] = None,
+                           max_tokens: Optional[int] = None,
+                           context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Generate a response with potential tool use.
         
         Args:
-            content: The knowledge content
-            metadata: Optional metadata about the knowledge
+            prompt: The prompt to generate a response for
+            system: Optional system prompt override
+            model: Optional model override
+            temperature: Optional temperature override
+            max_tokens: Optional max tokens override
+            context: Additional context
             
         Returns:
-            ID of the added knowledge item
+            Dictionary with response and tool use details
         """
-        return self.memory.add_semantic_item(content, metadata)
+        if not self.tools:
+            logger.warning("No tools available for generate_with_tools call")
+            return {
+                "content": self.generate(prompt, system, model, temperature, max_tokens, context),
+                "used_tools": False
+            }
+        
+        context = context or {}
+        
+        # Always use the primary model (usually Sonnet) for tool use
+        model_to_use = model or self.primary_model
+        
+        # Retrieve relevant memories if memory manager is available
+        memories = []
+        if self.memory_manager:
+            memories = self.memory_manager.retrieve_relevant_memories(prompt, limit=5)
+            
+            # Add memories to context
+            if memories:
+                memories_text = "\n\n".join([f"Memory {i+1}: {memory['content']}" for i, memory in enumerate(memories)])
+                context["relevant_memories"] = memories_text
+        
+        # Construct the message
+        messages = []
+        
+        # Add context as assistant message if needed
+        if context and any(k for k in context.keys() if k != "task_type"):
+            context_message = "Here is some relevant context:\n\n"
+            
+            for key, value in context.items():
+                if key != "task_type":  # Skip task_type as it's internal
+                    context_message += f"--- {key} ---\n{value}\n\n"
+            
+            messages.append({
+                "role": "assistant",
+                "content": context_message
+            })
+        
+        # Add user message
+        messages.append({
+            "role": "user",
+            "content": prompt
+        })
+        
+        # Make the API call
+        try:
+            response = self.client.messages.create(
+                model=model_to_use,
+                messages=messages,
+                system=system or self.system,
+                temperature=temperature or self.temperature,
+                max_tokens=max_tokens or self.max_tokens,
+                tools=self.tools
+            )
+            
+            # Update usage statistics
+            self.usage_stats["total_tokens"] += response.usage.input_tokens + response.usage.output_tokens
+            self.usage_stats["sonnet_calls"] += 1
+            
+            # Check if the model wants to use a tool
+            if response.content[0].type == "tool_use":
+                tool_use = response.content[0].tool_use
+                
+                if self.auto_tool_execution:
+                    # Execute the tool
+                    tool_result = self._execute_tool(tool_use)
+                    self.usage_stats["tool_calls"] += 1
+                    
+                    # Continue the conversation with the tool result
+                    messages.append({
+                        "role": "assistant",
+                        "content": None,
+                        "tool_use": {
+                            "name": tool_use.name,
+                            "input": tool_use.input
+                        }
+                    })
+                    
+                    messages.append({
+                        "role": "user",
+                        "content": None,
+                        "tool_result": {
+                            "content": json.dumps(tool_result)
+                        }
+                    })
+                    
+                    # Get the final response
+                    final_response = self.client.messages.create(
+                        model=model_to_use,
+                        messages=messages,
+                        system=system or self.system,
+                        temperature=temperature or self.temperature,
+                        max_tokens=max_tokens or self.max_tokens
+                    )
+                    
+                    # Update usage statistics again
+                    self.usage_stats["total_tokens"] += final_response.usage.input_tokens + final_response.usage.output_tokens
+                    
+                    content = final_response.content[0].text
+                    
+                    result = {
+                        "content": content,
+                        "used_tools": True,
+                        "tool_use": {
+                            "name": tool_use.name,
+                            "input": tool_use.input,
+                            "result": tool_result
+                        }
+                    }
+                else:
+                    # Return without executing
+                    result = {
+                        "content": None,
+                        "used_tools": True,
+                        "tool_use": {
+                            "name": tool_use.name,
+                            "input": tool_use.input,
+                            "result": None
+                        },
+                        "message": "Tool use requested but auto_tool_execution is disabled"
+                    }
+            else:
+                # No tool use
+                content = response.content[0].text
+                result = {
+                    "content": content,
+                    "used_tools": False
+                }
+            
+            # Store in memory if available
+            if self.memory_manager:
+                self.memory_manager.add_memory(
+                    content=result["content"] if result["content"] else str(result),
+                    memory_type="conversation",
+                    metadata={
+                        "prompt": prompt,
+                        "model": model_to_use,
+                        "used_tools": result["used_tools"],
+                        "timestamp": time.time()
+                    }
+                )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error generating response with tools: {e}")
+            return {
+                "content": f"Error generating response: {str(e)}",
+                "used_tools": False,
+                "error": str(e)
+            }
     
-    def search_memory(self, query: str, limit: int = 5) -> Dict[str, List[Dict[str, Any]]]:
-        """Search all memory types.
+    def _execute_tool(self, tool_use: Any) -> Dict[str, Any]:
+        """
+        Execute a tool based on the tool use request.
+        
+        Args:
+            tool_use: Tool use request from Claude
+            
+        Returns:
+            Tool execution result
+        """
+        tool_name = tool_use.name
+        tool_input = json.loads(tool_use.input) if isinstance(tool_use.input, str) else tool_use.input
+        
+        logger.info(f"Executing tool: {tool_name}")
+        
+        try:
+            # Here we would dispatch to the appropriate tool handler
+            # This is a simplified implementation
+            if tool_name == "web_search" and hasattr(self, "_web_search"):
+                return self._web_search(tool_input.get("query", ""))
+            elif tool_name == "calculator" and hasattr(self, "_calculator"):
+                return self._calculator(tool_input.get("expression", ""))
+            else:
+                logger.warning(f"Unknown tool or no handler available: {tool_name}")
+                return {"error": f"Unknown tool or no handler available: {tool_name}"}
+        except Exception as e:
+            logger.error(f"Error executing tool {tool_name}: {e}")
+            return {"error": f"Error executing tool {tool_name}: {str(e)}"}
+    
+    def register_tool_handler(self, tool_name: str, handler: Callable) -> None:
+        """
+        Register a handler for a specific tool.
+        
+        Args:
+            tool_name: Name of the tool
+            handler: Function to handle tool execution
+        """
+        setattr(self, f"_{tool_name}", handler)
+        logger.info(f"Registered handler for tool: {tool_name}")
+    
+    def add_web_search_capability(self, perplexity_client=None) -> None:
+        """
+        Add web search capability using Perplexity.
+        
+        Args:
+            perplexity_client: Optional pre-configured Perplexity client
+        """
+        try:
+            from vot1.perplexity_client import PerplexityClient
+            
+            # Initialize Perplexity client if not provided
+            self.perplexity_client = perplexity_client or PerplexityClient()
+            
+            # Define web search tool
+            web_search_tool = {
+                "type": "function",
+                "function": {
+                    "name": "web_search",
+                    "description": "Search the web for current information on a specific topic",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "The search query to look up on the web"
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            }
+            
+            # Add tool to available tools
+            self.tools = self.tools or []
+            self.tools.append(web_search_tool)
+            
+            # Register handler
+            self.register_tool_handler("web_search", self._web_search_handler)
+            
+            logger.info("Web search capability added successfully")
+            
+        except ImportError as e:
+            logger.error(f"Failed to add web search capability: {e}")
+            raise
+    
+    def _web_search_handler(self, query: str) -> Dict[str, Any]:
+        """
+        Handle web search requests.
         
         Args:
             query: Search query
-            limit: Maximum number of results per memory type
             
         Returns:
-            Dictionary with search results grouped by memory type
+            Search results
         """
-        return self.memory.search_all(query, limit)
+        if not hasattr(self, "perplexity_client"):
+            return {"error": "Perplexity client not initialized"}
+        
+        try:
+            result = self.perplexity_client.search(query)
+            
+            # Store in memory if available
+            if self.memory_manager:
+                self.memory_manager.add_memory(
+                    content=result["content"],
+                    memory_type="semantic",
+                    metadata={
+                        "source": "web_search",
+                        "query": query,
+                        "timestamp": time.time()
+                    }
+                )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Web search failed: {e}")
+            return {"error": f"Web search failed: {str(e)}"}
     
-    def __repr__(self) -> str:
-        """Return string representation of the client."""
-        return (
-            f"EnhancedClaudeClient(model={self.model}, "
-            f"github_enabled={self.github_enabled}, "
-            f"perplexity_enabled={self.perplexity_enabled})"
-        ) 
+    def add_reasoning_capability(self, reasoning_engine=None) -> None:
+        """
+        Add enhanced reasoning capabilities using OWL integration.
+        
+        Args:
+            reasoning_engine: Optional pre-configured reasoning engine
+        """
+        try:
+            from vot1.owl_integration import OwlEnhancedReasoning
+            
+            # Initialize reasoning engine if not provided
+            self.reasoning_engine = reasoning_engine or OwlEnhancedReasoning(model_name=self.primary_model)
+            
+            # Define reasoning tool
+            reasoning_tool = {
+                "type": "function",
+                "function": {
+                    "name": "enhanced_reasoning",
+                    "description": "Apply advanced reasoning techniques to solve complex problems",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "The problem or question to reason about"
+                            },
+                            "strategy": {
+                                "type": "string",
+                                "description": "The reasoning strategy to use (react, cot, reflexion, tot)",
+                                "enum": ["react", "cot", "reflexion", "tot"]
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            }
+            
+            # Add tool to available tools
+            self.tools = self.tools or []
+            self.tools.append(reasoning_tool)
+            
+            # Register handler
+            self.register_tool_handler("enhanced_reasoning", self._reasoning_handler)
+            
+            logger.info("Enhanced reasoning capability added successfully")
+            
+        except ImportError as e:
+            logger.error(f"Failed to add reasoning capability: {e}")
+            raise
+    
+    def _reasoning_handler(self, query: str, strategy: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Handle enhanced reasoning requests.
+        
+        Args:
+            query: The problem to reason about
+            strategy: Optional reasoning strategy
+            
+        Returns:
+            Reasoning results
+        """
+        if not hasattr(self, "reasoning_engine"):
+            return {"error": "Reasoning engine not initialized"}
+        
+        try:
+            result = self.reasoning_engine.reason(query, strategy=strategy)
+            
+            # Store in memory if available
+            if self.memory_manager:
+                self.memory_manager.add_memory(
+                    content=f"Reasoning: {result.get('answer', '')}",
+                    memory_type="semantic",
+                    metadata={
+                        "source": "enhanced_reasoning",
+                        "query": query,
+                        "strategy": strategy,
+                        "reasoning": result.get("reasoning", ""),
+                        "timestamp": time.time()
+                    }
+                )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Enhanced reasoning failed: {e}")
+            return {"error": f"Enhanced reasoning failed: {str(e)}"}
+    
+    def get_usage_stats(self) -> Dict[str, Any]:
+        """
+        Get usage statistics for the client.
+        
+        Returns:
+            Dictionary with usage statistics
+        """
+        stats = self.usage_stats.copy()
+        stats["runtime"] = time.time() - stats["start_time"]
+        
+        # Calculate approximate costs
+        stats["estimated_cost"] = self._calculate_estimated_cost()
+        
+        return stats
+    
+    def _calculate_estimated_cost(self) -> float:
+        """
+        Calculate estimated API cost based on usage.
+        
+        Returns:
+            Estimated cost in USD
+        """
+        # These rates are approximations and should be updated as pricing changes
+        sonnet_input_cost_per_1k = 0.009
+        sonnet_output_cost_per_1k = 0.027
+        thin_input_cost_per_1k = 0.003
+        thin_output_cost_per_1k = 0.015
+        
+        # Estimate token split between models and between input/output
+        # This is a simplified calculation
+        total_tokens = self.usage_stats["total_tokens"]
+        sonnet_ratio = self.usage_stats["sonnet_calls"] / (self.usage_stats["sonnet_calls"] + self.usage_stats["thin_calls"]) if (self.usage_stats["sonnet_calls"] + self.usage_stats["thin_calls"]) > 0 else 0
+        
+        sonnet_tokens = total_tokens * sonnet_ratio
+        thin_tokens = total_tokens * (1 - sonnet_ratio)
+        
+        # Assume 30% input, 70% output split on average
+        sonnet_input_tokens = sonnet_tokens * 0.3
+        sonnet_output_tokens = sonnet_tokens * 0.7
+        thin_input_tokens = thin_tokens * 0.3
+        thin_output_tokens = thin_tokens * 0.7
+        
+        # Calculate costs
+        sonnet_cost = (sonnet_input_tokens / 1000 * sonnet_input_cost_per_1k) + (sonnet_output_tokens / 1000 * sonnet_output_cost_per_1k)
+        thin_cost = (thin_input_tokens / 1000 * thin_input_cost_per_1k) + (thin_output_tokens / 1000 * thin_output_cost_per_1k)
+        
+        return sonnet_cost + thin_cost 
