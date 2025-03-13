@@ -1,5 +1,13 @@
 # VOT1 - Self-Improving Memory System
 
+
+## About Us
+
+VOT1 is developed by a passionate team of AI researchers and engineers dedicated to pushing the boundaries of artificial intelligence and memory systems. Our mission is to create self-improving systems that enhance human-AI collaboration.
+
+For more detailed information about our team, philosophy, and research focus, please see [ABOUT.md](ABOUT.md).
+
+
 [![CI](https://github.com/villageofthousands/vot1/actions/workflows/ci.yml/badge.svg)](https://github.com/villageofthousands/vot1/actions/workflows/ci.yml)
 [![Self-Improvement](https://github.com/villageofthousands/vot1/actions/workflows/self-improvement.yml/badge.svg)](https://github.com/villageofthousands/vot1/actions/workflows/self-improvement.yml)
 
