@@ -1,0 +1,2019 @@
+/**
+ * VOT1 Dashboard - THREE.js Memory Visualization
+ * Version 3.0 (2025)
+ * 
+ * This module implements an interactive 3D visualization of the VOT1 memory system
+ * using THREE.js r173 with advanced cyberpunk-inspired aesthetics.
+ */
+
+// Core visualization variables
+let container, scene, camera, renderer, controls;
+let nodes = [], connections = [];
+let raycaster, mouse, intersectedObject;
+let visualizationReady = false;
+let isAnimating = true;
+let nodeGroups = {};
+let selectedNode = null;
+let memoryData = null;
+let stats, clock;
+let composer, effectFXAA, bloomPass;
+
+// Visual settings
+const settings = {
+    backgroundColor: 0x070714,
+    nodeColors: {
+        memory: 0x4facfe,
+        concept: 0xf8a5c2,
+        reasoning: 0x43e97b,
+        metadata: 0xfcda92
+    },
+    nodeSize: {
+        min: 1.0,
+        max: 4.0,
+        default: 2.0
+    },
+    glowIntensity: 0.8,
+    connectionOpacity: 0.6,
+    maxConnections: 1000,
+    maxNodes: 500,
+    clusteringEnabled: true,
+    pulseEffect: true,
+    rotationSpeed: 0.001,
+    zoomSpeed: 1.0,
+    postProcessing: true,
+    bloomStrength: 0.8,
+    bloomRadius: 0.5,
+    bloomThreshold: 0.2,
+    fxaaEnabled: true
+};
+
+// Initialize the visualization
+function initVisualization() {
+    // Get the container
+    container = document.getElementById('memory-visualization');
+    if (!container) {
+        console.error('Visualization container not found!');
+        return;
+    }
+
+    // Initialize clock for animations
+    clock = new THREE.Clock();
+
+    // Initialize renderer with proper color management
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: true, 
+        alpha: true,
+        powerPreference: 'high-performance',
+        stencil: false,
+        depth: true
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit for performance
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setClearColor(settings.backgroundColor, 1);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
+    // Set proper color output encoding (modern Three.js color management)
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    
+    // Enable high performance rendering
+    renderer.info.autoReset = false;
+    
+    container.appendChild(renderer.domElement);
+
+    // Initialize scene
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(settings.backgroundColor, 0.001);
+    
+    // Initialize camera with perspective
+    camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(0, 0, 100);
+    camera.lookAt(0, 0, 0);
+
+    // Initialize controls with modern approach
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;
+    controls.rotateSpeed = settings.zoomSpeed;
+    controls.zoomSpeed = settings.zoomSpeed;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
+    controls.minDistance = 20;
+    controls.maxDistance = 200;
+    controls.enablePan = true;
+    controls.screenSpacePanning = true; // Modern panning mode
+    controls.maxPolarAngle = Math.PI * 0.85; // Prevent going below the ground plane
+
+    // Initialize raycaster for interaction
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+
+    // Add lighting
+    addLighting();
+    
+    // Initialize post-processing effects
+    if (settings.postProcessing) {
+        initPostProcessing();
+    }
+
+    // Add event listeners
+    window.addEventListener('resize', onWindowResize, false);
+    container.addEventListener('mousemove', onMouseMove, false);
+    container.addEventListener('click', onMouseClick, false);
+
+    // Add UI controls
+    setupUIControls();
+
+    // Initialize node groups
+    initNodeGroups();
+
+    // Load sample data or connect to API
+    loadMemoryData();
+
+    // Mark visualization as ready
+    visualizationReady = true;
+
+    // Start render loop
+    animate();
+
+    // Log initialization
+    console.log('THREE.js Memory Visualization initialized successfully (v3.0 with r173)');
+}
+
+// Initialize post-processing effects
+function initPostProcessing() {
+    try {
+        composer = new THREE.EffectComposer(renderer);
+        const renderPass = new THREE.RenderPass(scene, camera);
+        composer.addPass(renderPass);
+        
+        // Add FXAA for anti-aliasing
+        if (settings.fxaaEnabled) {
+            effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+            effectFXAA.uniforms['resolution'].value.set(
+                1 / (container.clientWidth * renderer.getPixelRatio()),
+                1 / (container.clientHeight * renderer.getPixelRatio())
+            );
+            composer.addPass(effectFXAA);
+        }
+        
+        // Add bloom effect
+        bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(container.clientWidth, container.clientHeight),
+            settings.bloomStrength,
+            settings.bloomRadius,
+            settings.bloomThreshold
+        );
+        composer.addPass(bloomPass);
+        
+        console.log('Post-processing initialized');
+    } catch (error) {
+        console.warn('Post-processing initialization failed:', error);
+        settings.postProcessing = false;
+    }
+}
+
+// Initialize node groups for different types of nodes
+function initNodeGroups() {
+    // Create groups for different node types
+    const types = ['memory', 'concept', 'reasoning', 'metadata'];
+    
+    types.forEach(type => {
+        nodeGroups[type] = new THREE.Group();
+        nodeGroups[type].name = `${type}-nodes`;
+        scene.add(nodeGroups[type]);
+    });
+
+    // Create a group for connections
+    nodeGroups['connections'] = new THREE.Group();
+    nodeGroups['connections'].name = 'connections';
+    scene.add(nodeGroups['connections']);
+}
+
+// Load memory data from API or use sample data
+function loadMemoryData() {
+    // Try to load from API first
+    fetch('/api/memories/graph')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            memoryData = data;
+            console.log('Loaded memory data from API:', data);
+            createVisualizationFromData(data);
+        })
+        .catch(error => {
+            console.warn('Failed to load data from API, using sample data instead:', error);
+            // Use sample data
+            memoryData = generateSampleData();
+            createVisualizationFromData(memoryData);
+        });
+}
+
+// Generate sample memory data for development/testing
+function generateSampleData() {
+    console.log('Generating sample memory data...');
+    
+    const types = ['memory', 'concept', 'reasoning', 'metadata'];
+    const sampleData = {
+        nodes: [],
+        connections: []
+    };
+    
+    // Generate sample nodes
+    const nodeCount = 100;
+    for (let i = 0; i < nodeCount; i++) {
+        const type = types[Math.floor(Math.random() * types.length)];
+        const node = {
+            id: `node-${i}`,
+            type: type,
+            label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${i}`,
+            importance: Math.random(),
+            timestamp: new Date(Date.now() - Math.random() * 604800000).toISOString(),
+            data: {
+                content: `Sample content for ${type} ${i}`,
+                embedding: Array.from({length: 3}, () => Math.random() * 2 - 1)
+            }
+        };
+        sampleData.nodes.push(node);
+    }
+    
+    // Generate sample connections (edges)
+    const connectionCount = Math.min(nodeCount * 3, 200);
+    for (let i = 0; i < connectionCount; i++) {
+        const sourceIndex = Math.floor(Math.random() * nodeCount);
+        let targetIndex;
+        do {
+            targetIndex = Math.floor(Math.random() * nodeCount);
+        } while (targetIndex === sourceIndex);
+        
+        const connection = {
+            id: `connection-${i}`,
+            source: sampleData.nodes[sourceIndex].id,
+            target: sampleData.nodes[targetIndex].id,
+            strength: Math.random(),
+            type: Math.random() > 0.5 ? 'semantic' : 'causal'
+        };
+        sampleData.connections.push(connection);
+    }
+    
+    return sampleData;
+}
+
+// Create visualization from memory data
+function createVisualizationFromData(data) {
+    // Clear existing visualization
+    clearVisualization();
+    
+    // Create nodes
+    if (data.nodes && data.nodes.length > 0) {
+        createNodes(data.nodes);
+    }
+    
+    // Create connections
+    if (data.connections && data.connections.length > 0) {
+        createConnections(data.connections, data.nodes);
+    }
+    
+    // Apply force-directed layout
+    if (settings.clusteringEnabled) {
+        applyForceDirectedLayout();
+    }
+    
+    // Update stats display
+    updateStats(data);
+}
+
+// Clear existing visualization
+function clearVisualization() {
+    // Properly dispose of geometries and materials
+    nodes.forEach(node => {
+        if (node.geometry) node.geometry.dispose();
+        if (node.material) {
+            if (Array.isArray(node.material)) {
+                node.material.forEach(mat => mat.dispose());
+            } else {
+                node.material.dispose();
+            }
+        }
+        scene.remove(node);
+    });
+    nodes = [];
+    
+    // Dispose of connection geometries and materials
+    connections.forEach(connection => {
+        if (connection.geometry) connection.geometry.dispose();
+        if (connection.material) connection.material.dispose();
+        scene.remove(connection);
+    });
+    connections = [];
+    
+    // Clear node groups
+    Object.values(nodeGroups).forEach(group => {
+        while (group.children.length > 0) {
+            const child = group.children[0];
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(mat => mat.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
+            group.remove(child);
+        }
+    });
+    
+    // Reset selected node
+    selectedNode = null;
+    
+    // Force garbage collection
+    if (renderer) renderer.info.reset();
+}
+
+// Create 3D nodes from data
+function createNodes(nodesData) {
+    // Limit the number of nodes to prevent performance issues
+    const nodesToRender = nodesData.slice(0, settings.maxNodes);
+    
+    // Use instanced mesh for better performance if there are many nodes
+    const useInstancing = nodesToRender.length > 50;
+    let instancedMeshes = {};
+    
+    if (useInstancing) {
+        // Setup instanced meshes for each type
+        const types = ['memory', 'concept', 'reasoning', 'metadata'];
+        
+        types.forEach(type => {
+            // Create geometry
+            const geometry = new THREE.SphereGeometry(1.0, 32, 32);
+            
+            // Create material with proper color space
+            const material = new THREE.MeshStandardMaterial({
+                color: settings.nodeColors[type] || settings.nodeColors.memory,
+                emissive: settings.nodeColors[type] || settings.nodeColors.memory,
+                emissiveIntensity: settings.glowIntensity,
+                metalness: 0.8,
+                roughness: 0.2,
+                toneMapped: true
+            });
+            
+            // Create instanced mesh
+            const count = nodesToRender.filter(node => (node.type || 'memory') === type).length;
+            if (count > 0) {
+                const instancedMesh = new THREE.InstancedMesh(geometry, material, count);
+                instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+                instancedMesh.count = 0; // Start with 0 and increment as we add instances
+                instancedMeshes[type] = instancedMesh;
+                nodeGroups[type].add(instancedMesh);
+            }
+        });
+    }
+    
+    // Create dummy for transformation matrix
+    const dummy = new THREE.Object3D();
+    
+    nodesToRender.forEach((nodeData, index) => {
+        // Determine node type and appearance
+        const type = nodeData.type || 'memory';
+        const importance = nodeData.importance || Math.random();
+        const size = settings.nodeSize.min + (settings.nodeSize.max - settings.nodeSize.min) * importance;
+        
+        // Position node (will be adjusted by force-directed layout)
+        const position = nodeData.data && nodeData.data.embedding ? 
+            new THREE.Vector3(...nodeData.data.embedding.map(v => v * 50)) : 
+            new THREE.Vector3(
+                (Math.random() - 0.5) * 100,
+                (Math.random() - 0.5) * 100,
+                (Math.random() - 0.5) * 100
+            );
+        
+        if (useInstancing && instancedMeshes[type]) {
+            // Set position and scale in instanced mesh
+            dummy.position.copy(position);
+            dummy.scale.set(size, size, size);
+            dummy.updateMatrix();
+            
+            const instancedMesh = instancedMeshes[type];
+            const instanceId = instancedMesh.count;
+            
+            instancedMesh.setMatrixAt(instanceId, dummy.matrix);
+            instancedMesh.count++;
+            
+            // Store node data
+            if (!instancedMesh.userData.nodes) {
+                instancedMesh.userData.nodes = [];
+            }
+            
+            instancedMesh.userData.nodes.push({
+                ...nodeData,
+                originalPosition: position.clone(),
+                index: instanceId,
+                size: size,
+                connections: 0
+            });
+            
+            // Add to tracking array as a reference to the instanced mesh
+            const nodeReference = {
+                isInstancedReference: true,
+                instancedMesh: instancedMesh,
+                instanceId: instanceId,
+                position: position.clone(),
+                userData: {
+                    ...nodeData,
+                    originalPosition: position.clone(),
+                    index: instanceId,
+                    size: size,
+                    connections: 0
+                }
+            };
+            
+            nodes.push(nodeReference);
+            
+        } else {
+            // Create geometry
+            const geometry = new THREE.SphereGeometry(size, 32, 32);
+            
+            // Create material with proper color encoding
+            const material = new THREE.MeshStandardMaterial({
+                color: settings.nodeColors[type] || settings.nodeColors.memory,
+                emissive: settings.nodeColors[type] || settings.nodeColors.memory,
+                emissiveIntensity: settings.glowIntensity * importance,
+                metalness: 0.8,
+                roughness: 0.2,
+                toneMapped: true
+            });
+            
+            // Create mesh
+            const node = new THREE.Mesh(geometry, material);
+            node.position.copy(position);
+            
+            // Store node data
+            node.userData = {
+                ...nodeData,
+                originalPosition: position.clone(),
+                index: index,
+                size: size,
+                connections: 0
+            };
+            
+            // Add to scene and tracking arrays
+            nodeGroups[type].add(node);
+            nodes.push(node);
+        }
+    });
+    
+    // Update instanced matrix if using instancing
+    if (useInstancing) {
+        Object.values(instancedMeshes).forEach(mesh => {
+            if (mesh) mesh.instanceMatrix.needsUpdate = true;
+        });
+    }
+    
+    console.log(`Created ${nodes.length} nodes${useInstancing ? ' using instanced rendering' : ''}`);
+}
+
+// Create connections between nodes
+function createConnections(connectionsData, nodesData) {
+    // Create map of node IDs to indices
+    const nodeMap = {};
+    nodesData.forEach((node, index) => {
+        nodeMap[node.id] = index;
+    });
+    
+    // Use line segments for better performance with many connections
+    const useLineSegments = connectionsData.length > 100;
+    
+    if (useLineSegments) {
+        // Group connections by type for better batching
+        const connectionsByType = {
+            'semantic': [],
+            'causal': []
+        };
+        
+        // Process connections and group them
+        connectionsData.slice(0, settings.maxConnections).forEach(connectionData => {
+            const sourceIndex = nodeMap[connectionData.source];
+            const targetIndex = nodeMap[connectionData.target];
+            
+            // Skip if source or target node doesn't exist
+            if (sourceIndex === undefined || targetIndex === undefined) return;
+            if (sourceIndex >= nodes.length || targetIndex >= nodes.length) return;
+            
+            const sourceNode = nodes[sourceIndex];
+            const targetNode = nodes[targetIndex];
+            
+            // Skip if source or target node is the same
+            if (sourceNode === targetNode) return;
+            
+            // Update connection count
+            sourceNode.userData.connections = (sourceNode.userData.connections || 0) + 1;
+            targetNode.userData.connections = (targetNode.userData.connections || 0) + 1;
+            
+            // Get positions
+            const sourcePosition = sourceNode.isInstancedReference ? 
+                sourceNode.position : sourceNode.position.clone();
+            
+            const targetPosition = targetNode.isInstancedReference ? 
+                targetNode.position : targetNode.position.clone();
+            
+            // Add to connection type group
+            const type = connectionData.type || 'semantic';
+            
+            connectionsByType[type].push({
+                sourcePosition,
+                targetPosition,
+                sourceNode,
+                targetNode,
+                userData: connectionData,
+                strength: connectionData.strength || 0.5
+            });
+        });
+        
+        // Create line segments for each connection type
+        Object.entries(connectionsByType).forEach(([type, connections]) => {
+            if (connections.length === 0) return;
+            
+            // Create geometry for all connections of this type
+            const positions = new Float32Array(connections.length * 6); // 2 points per connection, 3 coords per point
+            const colors = new Float32Array(connections.length * 6); // 2 colors per connection, 3 values per color
+            
+            let color;
+            if (type === 'semantic') {
+                color = new THREE.Color(0x43e97b);
+            } else {
+                color = new THREE.Color(0xf83a3a);
+            }
+            
+            // Fill position and color arrays
+            connections.forEach((conn, i) => {
+                const idx = i * 6;
+                
+                // Source position
+                positions[idx] = conn.sourcePosition.x;
+                positions[idx + 1] = conn.sourcePosition.y;
+                positions[idx + 2] = conn.sourcePosition.z;
+                
+                // Target position
+                positions[idx + 3] = conn.targetPosition.x;
+                positions[idx + 4] = conn.targetPosition.y;
+                positions[idx + 5] = conn.targetPosition.z;
+                
+                // Source color (with strength)
+                colors[idx] = color.r;
+                colors[idx + 1] = color.g;
+                colors[idx + 2] = color.b;
+                
+                // Target color (with strength)
+                colors[idx + 3] = color.r;
+                colors[idx + 4] = color.g;
+                colors[idx + 5] = color.b;
+            });
+            
+            // Create buffer geometry with positions and colors
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            // Create material with proper color encoding
+            const material = new THREE.LineBasicMaterial({
+                vertexColors: true,
+                transparent: true,
+                opacity: settings.connectionOpacity,
+                toneMapped: true
+            });
+            
+            // Create line segments
+            const lineSegments = new THREE.LineSegments(geometry, material);
+            
+            // Store connection data
+            lineSegments.userData = {
+                isConnectionGroup: true,
+                type: type,
+                connections: connections.map(conn => ({
+                    sourceNode: conn.sourceNode,
+                    targetNode: conn.targetNode,
+                    userData: conn.userData
+                }))
+            };
+            
+            // Add to scene
+            nodeGroups['connections'].add(lineSegments);
+            
+            // Add reference to each connection for tracking
+            connections.forEach((conn, i) => {
+                const connection = {
+                    isConnectionReference: true,
+                    lineSegments: lineSegments,
+                    index: i,
+                    sourceNode: conn.sourceNode,
+                    targetNode: conn.targetNode,
+                    userData: conn.userData
+                };
+                
+                this.connections.push(connection);
+            });
+        });
+        
+        console.log(`Created connections using LineSegments for better performance`);
+        
+    } else {
+        // Limit connections to prevent performance issues
+        const connectionsToRender = connectionsData.slice(0, settings.maxConnections);
+        
+        connectionsToRender.forEach(connectionData => {
+            const sourceIndex = nodeMap[connectionData.source];
+            const targetIndex = nodeMap[connectionData.target];
+            
+            // Skip if source or target node doesn't exist
+            if (sourceIndex === undefined || targetIndex === undefined) return;
+            if (sourceIndex >= nodes.length || targetIndex >= nodes.length) return;
+            
+            const sourceNode = nodes[sourceIndex];
+            const targetNode = nodes[targetIndex];
+            
+            // Skip if source or target node is the same
+            if (sourceNode === targetNode) return;
+            
+            // Update connection count
+            sourceNode.userData.connections = (sourceNode.userData.connections || 0) + 1;
+            targetNode.userData.connections = (targetNode.userData.connections || 0) + 1;
+            
+            // Get positions
+            const sourcePosition = sourceNode.isInstancedReference ? 
+                sourceNode.position : sourceNode.position;
+                
+            const targetPosition = targetNode.isInstancedReference ? 
+                targetNode.position : targetNode.position;
+            
+            // Create geometry
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+                sourcePosition.x, sourcePosition.y, sourcePosition.z,
+                targetPosition.x, targetPosition.y, targetPosition.z
+            ], 3));
+            
+            // Determine color and width based on connection type and strength
+            const strength = connectionData.strength || 0.5;
+            const connectionType = connectionData.type || 'semantic';
+            const color = connectionType === 'semantic' ? 0x43e97b : 0xf83a3a;
+            const width = 0.1 + strength * 0.5;
+            
+            // Create material with proper color encoding
+            const material = new THREE.LineBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: settings.connectionOpacity * strength,
+                linewidth: width,
+                toneMapped: true
+            });
+            
+            // Create line
+            const connection = new THREE.Line(geometry, material);
+            
+            // Store connection data
+            connection.userData = {
+                ...connectionData,
+                sourceNode: sourceNode,
+                targetNode: targetNode
+            };
+            
+            // Add to scene and tracking arrays
+            nodeGroups['connections'].add(connection);
+            connections.push(connection);
+        });
+        
+        console.log(`Created ${connections.length} connections`);
+    }
+}
+
+// Advanced force-directed layout for nodes
+function applyForceDirectedLayout() {
+    console.log('Applying advanced force-directed layout to nodes...');
+    
+    if (!nodes.length) return;
+    
+    // Track layout iterations
+    const iterations = 300;
+    const coolingFactor = 0.95;
+    const initialTemperature = 100;
+    
+    // Layout parameters
+    const params = {
+        repulsionStrength: 200,
+        attractionStrength: 0.1,
+        centralGravity: 0.05,
+        maxVelocity: 2.0,
+        minDistance: 5,
+        theta: 0.8,  // Barnes-Hut approximation threshold
+        temperature: initialTemperature
+    };
+    
+    // Create position and velocity arrays for efficient computation
+    const positions = [];
+    const velocities = [];
+    const nodeTypes = [];
+    
+    // Initialize positions and velocities
+    nodes.forEach((node, i) => {
+        // Get position from node (handling instanced nodes)
+        const pos = node.isInstancedReference ? 
+            node.position.clone() : 
+            node.position.clone();
+        
+        positions.push(pos);
+        velocities.push(new THREE.Vector3(0, 0, 0));
+        nodeTypes.push(node.userData.type || 'memory');
+    });
+    
+    // Perform simulation iterations
+    for (let iter = 0; iter < iterations; iter++) {
+        // Cool down the system
+        params.temperature *= coolingFactor;
+        
+        // Calculate repulsive forces (node-node repulsion)
+        for (let i = 0; i < nodes.length; i++) {
+            const pos1 = positions[i];
+            const importance1 = nodes[i].userData.importance || 0.5;
+            
+            for (let j = i + 1; j < nodes.length; j++) {
+                const pos2 = positions[j];
+                const importance2 = nodes[j].userData.importance || 0.5;
+                
+                // Same types have stronger repulsion
+                const typeMultiplier = nodeTypes[i] === nodeTypes[j] ? 1.5 : 1.0;
+                
+                // Calculate distance vector
+                const dx = pos1.x - pos2.x;
+                const dy = pos1.y - pos2.y;
+                const dz = pos1.z - pos2.z;
+                
+                // Avoid division by zero
+                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.1;
+                
+                // Calculate repulsive force
+                if (distance < params.minDistance * 10) {
+                    const force = params.repulsionStrength * 
+                        (importance1 + importance2) * 0.5 * 
+                        typeMultiplier / (distance * distance);
+                    
+                    // Apply force to velocity
+                    const fx = dx * force / distance;
+                    const fy = dy * force / distance;
+                    const fz = dz * force / distance;
+                    
+                    velocities[i].x += fx;
+                    velocities[i].y += fy;
+                    velocities[i].z += fz;
+                    
+                    velocities[j].x -= fx;
+                    velocities[j].y -= fy;
+                    velocities[j].z -= fz;
+                }
+            }
+        }
+        
+        // Calculate attractive forces (connections)
+        for (let i = 0; i < connections.length; i++) {
+            const connection = connections[i];
+            
+            // Skip connection references (we'll handle them in the group)
+            if (connection.isConnectionReference) continue;
+            
+            const sourceNode = connection.userData.sourceNode;
+            const targetNode = connection.userData.targetNode;
+            
+            if (!sourceNode || !targetNode) continue;
+            
+            // Find indices
+            const sourceIndex = nodes.indexOf(sourceNode);
+            const targetIndex = nodes.indexOf(targetNode);
+            
+            if (sourceIndex < 0 || targetIndex < 0) continue;
+            
+            const pos1 = positions[sourceIndex];
+            const pos2 = positions[targetIndex];
+            
+            // Calculate distance vector
+            const dx = pos1.x - pos2.x;
+            const dy = pos1.y - pos2.y;
+            const dz = pos1.z - pos2.z;
+            
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.1;
+            
+            // Calculate attractive force
+            const strength = connection.userData.strength || 0.5;
+            const force = params.attractionStrength * distance * strength;
+            
+            // Apply force to velocity
+            const fx = dx * force / distance;
+            const fy = dy * force / distance;
+            const fz = dz * force / distance;
+            
+            velocities[sourceIndex].x -= fx;
+            velocities[sourceIndex].y -= fy;
+            velocities[sourceIndex].z -= fz;
+            
+            velocities[targetIndex].x += fx;
+            velocities[targetIndex].y += fy;
+            velocities[targetIndex].z += fz;
+        }
+        
+        // Apply central gravity
+        for (let i = 0; i < nodes.length; i++) {
+            const pos = positions[i];
+            const importance = nodes[i].userData.importance || 0.5;
+            
+            // Calculate distance from center
+            const distance = pos.length();
+            if (distance > 0.1) {
+                // Apply gravity force towards center
+                const force = params.centralGravity * distance * importance;
+                velocities[i].x -= pos.x * force / distance;
+                velocities[i].y -= pos.y * force / distance;
+                velocities[i].z -= pos.z * force / distance;
+            }
+        }
+        
+        // Apply velocity and temperature limits
+        for (let i = 0; i < nodes.length; i++) {
+            const vel = velocities[i];
+            
+            // Limit velocity
+            const speed = vel.length();
+            if (speed > params.maxVelocity) {
+                vel.multiplyScalar(params.maxVelocity / speed);
+            }
+            
+            // Apply temperature (maximum movement per iteration)
+            if (speed > params.temperature) {
+                vel.multiplyScalar(params.temperature / speed);
+            }
+            
+            // Update position
+            const pos = positions[i];
+            pos.add(vel);
+            
+            // Apply position to node (different for instanced meshes)
+            if (nodes[i].isInstancedReference) {
+                nodes[i].position.copy(pos);
+                
+                // Update instanced mesh matrix
+                const dummy = new THREE.Object3D();
+                dummy.position.copy(pos);
+                const size = nodes[i].userData.size || 1.0;
+                dummy.scale.set(size, size, size);
+                dummy.updateMatrix();
+                
+                nodes[i].instancedMesh.setMatrixAt(nodes[i].instanceId, dummy.matrix);
+                nodes[i].instancedMesh.instanceMatrix.needsUpdate = true;
+            } else {
+                nodes[i].position.copy(pos);
+            }
+            
+            // Dampen velocity for next iteration
+            vel.multiplyScalar(0.9);
+        }
+    }
+    
+    // Update connections to follow nodes
+    updateConnections();
+    
+    console.log('Force-directed layout completed');
+}
+
+// Add lighting to the scene
+function addLighting() {
+    // Ambient light
+    const ambientLight = new THREE.AmbientLight(0x444444, 0.6);
+    scene.add(ambientLight);
+
+    // Directional light (sun)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(1, 1, 1).normalize();
+    directionalLight.castShadow = true;
+    
+    // Optimize shadow maps
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 500;
+    directionalLight.shadow.bias = -0.0005;
+    
+    scene.add(directionalLight);
+
+    // Point lights for cyberpunk effect
+    const colors = [0x4facfe, 0xf83a3a, 0x43e97b];
+    
+    colors.forEach((color, index) => {
+        const light = new THREE.PointLight(color, 1, 50);
+        const angle = (index / colors.length) * Math.PI * 2;
+        const radius = 30;
+        light.position.set(
+            Math.cos(angle) * radius,
+            Math.sin(angle) * radius,
+            10
+        );
+        scene.add(light);
+    });
+}
+
+// Handle window resize
+function onWindowResize() {
+    if (!container) return;
+    
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    
+    // Update post-processing sizes
+    if (settings.postProcessing && composer) {
+        composer.setSize(container.clientWidth, container.clientHeight);
+        
+        // Update FXAA resolution
+        if (effectFXAA) {
+            effectFXAA.uniforms['resolution'].value.set(
+                1 / (container.clientWidth * renderer.getPixelRatio()),
+                1 / (container.clientHeight * renderer.getPixelRatio())
+            );
+        }
+    }
+}
+
+// Animation loop
+function animate() {
+    requestAnimationFrame(animate);
+    
+    if (!visualizationReady) return;
+    
+    // Get elapsed time
+    const delta = clock.getDelta();
+    const elapsedTime = clock.getElapsedTime();
+    
+    // Update controls
+    controls.update();
+    
+    // Update node animations if enabled
+    if (isAnimating && settings.pulseEffect) {
+        animateNodes(elapsedTime);
+    }
+    
+    // Update connections (they need to follow nodes)
+    updateConnections();
+    
+    // Render the scene
+    if (settings.postProcessing && composer) {
+        composer.render();
+    } else {
+        renderer.render(scene, camera);
+    }
+    
+    // Reset renderer stats periodically
+    if (elapsedTime % 60 < delta) {
+        renderer.info.reset();
+    }
+}
+
+// Update connections positions based on node positions
+function updateConnections() {
+    connections.forEach(connection => {
+        const sourceNode = connection.userData.sourceNode;
+        const targetNode = connection.userData.targetNode;
+        
+        if (!sourceNode || !targetNode) return;
+        
+        const positions = connection.geometry.attributes.position.array;
+        
+        // Update source position
+        positions[0] = sourceNode.position.x;
+        positions[1] = sourceNode.position.y;
+        positions[2] = sourceNode.position.z;
+        
+        // Update target position
+        positions[3] = targetNode.position.x;
+        positions[4] = targetNode.position.y;
+        positions[5] = targetNode.position.z;
+        
+        connection.geometry.attributes.position.needsUpdate = true;
+    });
+}
+
+// Animate nodes (pulse effect)
+function animateNodes(elapsedTime) {
+    const time = elapsedTime * 0.001;
+    
+    nodes.forEach((node, index) => {
+        // Skip selected nodes
+        if (node === selectedNode) return;
+        
+        // Pulse effect based on importance
+        const importance = node.userData.importance || 0.5;
+        const pulse = Math.sin(time + index * 0.1) * 0.1 * importance;
+        
+        // Apply pulse to emissive intensity
+        const type = node.userData.type || 'memory';
+        const baseIntensity = settings.glowIntensity * importance;
+        
+        if (node.material) {
+            node.material.emissiveIntensity = baseIntensity + pulse;
+        }
+        
+        // Slight movement
+        if (!node.userData.isHighlighted && node !== intersectedObject) {
+            node.position.x += Math.sin(time * 0.5 + index) * 0.01;
+            node.position.y += Math.cos(time * 0.5 + index * 0.5) * 0.01;
+            node.position.z += Math.sin(time * 0.3 + index * 0.2) * 0.01;
+        }
+    });
+}
+
+// Setup UI controls
+function setupUIControls() {
+    // Toggle animation button
+    const toggleAnimationBtn = document.getElementById('toggle-animation');
+    if (toggleAnimationBtn) {
+        toggleAnimationBtn.addEventListener('click', () => {
+            isAnimating = !isAnimating;
+            controls.autoRotate = isAnimating;
+            toggleAnimationBtn.textContent = isAnimating ? 'Pause Animation' : 'Resume Animation';
+        });
+    }
+    
+    // Reset camera button
+    const resetCameraBtn = document.getElementById('reset-camera');
+    if (resetCameraBtn) {
+        resetCameraBtn.addEventListener('click', () => {
+            controls.reset();
+            camera.position.set(0, 0, 100);
+            camera.lookAt(0, 0, 0);
+        });
+    }
+    
+    // Filter buttons
+    const nodeTypes = ['memory', 'concept', 'reasoning', 'metadata'];
+    nodeTypes.forEach(type => {
+        const filterBtn = document.getElementById(`filter-${type}`);
+        if (filterBtn) {
+            filterBtn.addEventListener('click', () => {
+                toggleNodeTypeVisibility(type);
+            });
+        }
+    });
+    
+    // Refresh data button
+    const refreshBtn = document.getElementById('refresh-data');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            loadMemoryData();
+        });
+    }
+}
+
+// Toggle visibility of a node type
+function toggleNodeTypeVisibility(type) {
+    if (!nodeGroups[type]) return;
+    
+    nodeGroups[type].visible = !nodeGroups[type].visible;
+    
+    // Update button state
+    const filterBtn = document.getElementById(`filter-${type}`);
+    if (filterBtn) {
+        if (nodeGroups[type].visible) {
+            filterBtn.classList.add('active');
+        } else {
+            filterBtn.classList.remove('active');
+        }
+    }
+}
+
+// Show info about a node
+function showNodeInfo(nodeData) {
+    const nodeInfo = document.getElementById('node-info');
+    if (!nodeInfo || !nodeData) return;
+    
+    nodeInfo.innerHTML = `
+        <h3>${nodeData.label || 'Memory Node'}</h3>
+        <p><strong>Type:</strong> ${nodeData.type || 'Unknown'}</p>
+        <p><strong>Connections:</strong> ${nodeData.connections || 0}</p>
+        <p><strong>Created:</strong> ${new Date(nodeData.timestamp).toLocaleString() || 'Unknown'}</p>
+    `;
+    
+    nodeInfo.style.display = 'block';
+}
+
+// Hide node info
+function hideNodeInfo() {
+    const nodeInfo = document.getElementById('node-info');
+    if (!nodeInfo) return;
+    
+    nodeInfo.style.display = 'none';
+}
+
+// Show detailed info about a node
+function showDetailedNodeInfo(nodeData) {
+    const detailPanel = document.getElementById('node-detail-panel');
+    if (!detailPanel || !nodeData) return;
+    
+    // Format node content
+    const content = nodeData.data && nodeData.data.content 
+        ? nodeData.data.content 
+        : 'No content available';
+    
+    // Build connected nodes list
+    let connectedNodesList = '<p>No connections found</p>';
+    if (memoryData && memoryData.connections) {
+        const connectedNodes = memoryData.connections.filter(conn => 
+            conn.source === nodeData.id || conn.target === nodeData.id
+        );
+        
+        if (connectedNodes.length > 0) {
+            connectedNodesList = '<ul class="connected-nodes-list">';
+            connectedNodes.forEach(conn => {
+                const connectedId = conn.source === nodeData.id ? conn.target : conn.source;
+                const connectedNode = memoryData.nodes.find(n => n.id === connectedId);
+                if (connectedNode) {
+                    connectedNodesList += `
+                        <li>
+                            <span class="node-type-indicator ${connectedNode.type}"></span>
+                            ${connectedNode.label} 
+                            <span class="connection-type">(${conn.type})</span>
+                        </li>
+                    `;
+                }
+            });
+            connectedNodesList += '</ul>';
+        }
+    }
+    
+    // Populate detail panel
+    detailPanel.innerHTML = `
+        <div class="detail-header">
+            <h2>${nodeData.label || 'Memory Node'}</h2>
+            <span class="node-type ${nodeData.type}">${nodeData.type || 'unknown'}</span>
+            <button id="close-detail-panel" class="close-button">×</button>
+        </div>
+        <div class="detail-content">
+            <div class="detail-section">
+                <h3>Content</h3>
+                <div class="content-box">${content}</div>
+            </div>
+            <div class="detail-section">
+                <h3>Metadata</h3>
+                <table class="metadata-table">
+                    <tr>
+                        <td>ID:</td>
+                        <td>${nodeData.id}</td>
+                    </tr>
+                    <tr>
+                        <td>Created:</td>
+                        <td>${new Date(nodeData.timestamp).toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                        <td>Importance:</td>
+                        <td>${(nodeData.importance * 100).toFixed(0)}%</td>
+                    </tr>
+                    <tr>
+                        <td>Connections:</td>
+                        <td>${nodeData.connections || 0}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="detail-section">
+                <h3>Connected Nodes</h3>
+                <div class="connected-nodes">
+                    ${connectedNodesList}
+                </div>
+            </div>
+        </div>
+        <div class="detail-actions">
+            <button id="analyze-node" class="action-button">Analyze with Claude</button>
+            <button id="research-node" class="action-button">Research with Perplexity</button>
+            <button id="visualize-node" class="action-button">Focus Visualization</button>
+        </div>
+    `;
+    
+    // Show the panel
+    detailPanel.style.display = 'block';
+    
+    // Add event listeners
+    const closeBtn = document.getElementById('close-detail-panel');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            detailPanel.style.display = 'none';
+        });
+    }
+    
+    // Node analysis with Claude (will be implemented in Batch 4)
+    const analyzeBtn = document.getElementById('analyze-node');
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', () => {
+            console.log('Analyze with Claude clicked for node:', nodeData);
+            // Analysis function will be implemented in Batch 4
+        });
+    }
+    
+    // Research with Perplexity (will be implemented in Batch 4)
+    const researchBtn = document.getElementById('research-node');
+    if (researchBtn) {
+        researchBtn.addEventListener('click', () => {
+            console.log('Research with Perplexity clicked for node:', nodeData);
+            // Research function will be implemented in Batch 4
+        });
+    }
+    
+    // Focus visualization
+    const visualizeBtn = document.getElementById('visualize-node');
+    if (visualizeBtn) {
+        visualizeBtn.addEventListener('click', () => {
+            focusOnNode(nodeData.id);
+        });
+    }
+}
+
+// Focus camera on a specific node
+function focusOnNode(nodeId) {
+    const node = nodes.find(n => n.userData.id === nodeId);
+    if (!node) return;
+    
+    // Animate camera to focus on node
+    const targetPosition = node.position.clone();
+    const distance = 20;
+    
+    // Calculate camera position
+    const cameraTargetPosition = targetPosition.clone().add(
+        new THREE.Vector3(distance, distance, distance)
+    );
+    
+    // Animate camera movement
+    const startPosition = camera.position.clone();
+    const duration = 1000; // ms
+    const startTime = Date.now();
+    
+    function animateCamera() {
+        const elapsedTime = Date.now() - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+        
+        // Easing function
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        
+        // Interpolate position
+        camera.position.lerpVectors(startPosition, cameraTargetPosition, easeProgress);
+        
+        // Look at target
+        camera.lookAt(targetPosition);
+        
+        // Continue animation if not complete
+        if (progress < 1) {
+            requestAnimationFrame(animateCamera);
+        }
+    }
+    
+    // Start animation
+    animateCamera();
+}
+
+// Update stats display
+function updateStats(data) {
+    const stats = {
+        totalNodes: data.nodes.length,
+        totalConnections: data.connections.length,
+        nodesByType: {}
+    };
+    
+    // Count nodes by type
+    data.nodes.forEach(node => {
+        const type = node.type || 'unknown';
+        stats.nodesByType[type] = (stats.nodesByType[type] || 0) + 1;
+    });
+    
+    // Update DOM elements
+    const totalNodesEl = document.getElementById('total-memories');
+    if (totalNodesEl) totalNodesEl.textContent = stats.totalNodes;
+    
+    // Update other stats elements if they exist
+    Object.entries(stats.nodesByType).forEach(([type, count]) => {
+        const el = document.getElementById(`${type}-memories`);
+        if (el) el.textContent = count;
+    });
+    
+    console.log('Memory stats updated:', stats);
+}
+
+// Handle mouse movement
+function onMouseMove(event) {
+    // Calculate mouse position in normalized device coordinates
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    
+    // Update raycaster
+    raycaster.setFromCamera(mouse, camera);
+    
+    // Check for intersections with nodes
+    const intersects = raycaster.intersectObjects(nodes);
+    
+    if (intersects.length > 0) {
+        if (intersectedObject !== intersects[0].object) {
+            // Reset previous intersected object
+            if (intersectedObject) {
+                intersectedObject.material.emissive.setHex(intersectedObject.currentHex);
+            }
+            
+            // Set new intersected object
+            intersectedObject = intersects[0].object;
+            intersectedObject.currentHex = intersectedObject.material.emissive.getHex();
+            intersectedObject.material.emissive.setHex(0xffff00);
+            
+            // Show node info
+            showNodeInfo(intersectedObject.userData);
+            
+            // Set cursor to pointer
+            container.style.cursor = 'pointer';
+        }
+    } else {
+        // Reset intersected object
+        if (intersectedObject) {
+            intersectedObject.material.emissive.setHex(intersectedObject.currentHex);
+            intersectedObject = null;
+            
+            // Hide node info
+            hideNodeInfo();
+            
+            // Reset cursor
+            container.style.cursor = 'auto';
+        }
+    }
+}
+
+// Handle mouse click
+function onMouseClick(event) {
+    if (intersectedObject) {
+        // Show detailed info about the selected node
+        showDetailedNodeInfo(intersectedObject.userData);
+        
+        // Highlight connections
+        highlightNodeConnections(intersectedObject);
+        
+        // Store as selected node
+        selectedNode = intersectedObject;
+    } else {
+        // Reset highlighted connections
+        resetHighlightedConnections();
+        
+        // Clear selected node
+        selectedNode = null;
+    }
+}
+
+// Highlight connections for a selected node
+function highlightNodeConnections(node) {
+    // Reset previous highlighted connections
+    resetHighlightedConnections();
+    
+    // Find all connections for this node
+    const nodeConnections = connections.filter(connection => 
+        connection.userData.sourceNode === node ||
+        connection.userData.targetNode === node
+    );
+    
+    // Highlight connections
+    nodeConnections.forEach(connection => {
+        connection.material.color.setHex(0xffff00);
+        connection.material.opacity = 1.0;
+        connection.material.linewidth = 2;
+        
+        // Store original values
+        connection.userData.originalColor = connection.material.color.getHex();
+        connection.userData.originalOpacity = connection.material.opacity;
+        
+        // Also highlight connected nodes
+        const connectedNode = connection.userData.sourceNode === node ?
+            connection.userData.targetNode : connection.userData.sourceNode;
+        
+        if (connectedNode) {
+            connectedNode.material.emissive.setHex(0x88ff88);
+            connectedNode.userData.isHighlighted = true;
+        }
+    });
+}
+
+// Reset highlighted connections
+function resetHighlightedConnections() {
+    connections.forEach(connection => {
+        if (connection.userData.originalColor) {
+            connection.material.color.setHex(connection.userData.originalColor);
+            connection.material.opacity = connection.userData.originalOpacity;
+            connection.userData.originalColor = null;
+            connection.userData.originalOpacity = null;
+        }
+    });
+    
+    // Reset highlighted nodes
+    nodes.forEach(node => {
+        if (node.userData.isHighlighted) {
+            const type = node.userData.type || 'memory';
+            node.material.emissive.setHex(settings.nodeColors[type]);
+            node.userData.isHighlighted = false;
+        }
+    });
+}
+
+// Setup real-time data updates
+function setupRealTimeUpdates() {
+    // Update interval in milliseconds
+    const updateInterval = 10000; // 10 seconds
+    
+    console.log('Setting up real-time data updates every', updateInterval/1000, 'seconds');
+    
+    // Set up periodic fetching
+    setInterval(() => {
+        if (!visualizationReady || !isAnimating) return;
+        
+        // Fetch new data from API
+        fetch('/api/memories/graph?timestamp=' + Date.now())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Check if data is different from current
+                if (hasDataChanged(data)) {
+                    console.log('Memory data updated:', data);
+                    
+                    // Update visualization with new data
+                    updateVisualizationWithNewData(data);
+                } else {
+                    console.log('No changes in memory data');
+                }
+            })
+            .catch(error => {
+                console.warn('Failed to fetch real-time updates:', error);
+            });
+    }, updateInterval);
+    
+    // Also setup WebSocket connection if available
+    setupWebSocketConnection();
+}
+
+// Check if new data is different from current data
+function hasDataChanged(newData) {
+    if (!memoryData) return true;
+    
+    // Compare node counts
+    if (newData.nodes.length !== memoryData.nodes.length) return true;
+    
+    // Compare connection counts
+    if (newData.connections.length !== memoryData.connections.length) return true;
+    
+    // Check for any new nodes
+    const currentNodeIds = new Set(memoryData.nodes.map(node => node.id));
+    for (const node of newData.nodes) {
+        if (!currentNodeIds.has(node.id)) return true;
+    }
+    
+    return false;
+}
+
+// Update visualization with new data without full reset
+function updateVisualizationWithNewData(newData) {
+    // Store current camera position and orientation
+    const cameraPosition = camera.position.clone();
+    const cameraTarget = controls.target.clone();
+    
+    // Map current nodes by ID for quick lookup
+    const currentNodesMap = {};
+    memoryData.nodes.forEach(node => {
+        currentNodesMap[node.id] = node;
+    });
+    
+    // Find nodes to add, update, or remove
+    const nodesToAdd = [];
+    const nodesToUpdate = [];
+    const nodeIdsToKeep = new Set();
+    
+    newData.nodes.forEach(newNode => {
+        nodeIdsToKeep.add(newNode.id);
+        
+        if (currentNodesMap[newNode.id]) {
+            // Node exists - check if needs update
+            const currentNode = currentNodesMap[newNode.id];
+            if (JSON.stringify(currentNode) !== JSON.stringify(newNode)) {
+                nodesToUpdate.push(newNode);
+            }
+        } else {
+            // New node to add
+            nodesToAdd.push(newNode);
+        }
+    });
+    
+    // Find nodes to remove
+    const nodeIdsToRemove = memoryData.nodes
+        .filter(node => !nodeIdsToKeep.has(node.id))
+        .map(node => node.id);
+    
+    // Same process for connections
+    const currentConnectionsMap = {};
+    memoryData.connections.forEach(conn => {
+        currentConnectionsMap[conn.id] = conn;
+    });
+    
+    const connectionsToAdd = [];
+    const connectionsToUpdate = [];
+    const connectionIdsToKeep = new Set();
+    
+    newData.connections.forEach(newConn => {
+        connectionIdsToKeep.add(newConn.id);
+        
+        if (currentConnectionsMap[newConn.id]) {
+            // Connection exists - check if needs update
+            const currentConn = currentConnectionsMap[newConn.id];
+            if (JSON.stringify(currentConn) !== JSON.stringify(newConn)) {
+                connectionsToUpdate.push(newConn);
+            }
+        } else {
+            // New connection to add
+            connectionsToAdd.push(newConn);
+        }
+    });
+    
+    // Find connections to remove
+    const connectionIdsToRemove = memoryData.connections
+        .filter(conn => !connectionIdsToKeep.has(conn.id))
+        .map(conn => conn.id);
+    
+    // Log changes
+    console.log(`Changes detected: +${nodesToAdd.length} nodes, ~${nodesToUpdate.length} nodes, -${nodeIdsToRemove.length} nodes`);
+    console.log(`Changes detected: +${connectionsToAdd.length} connections, ~${connectionsToUpdate.length} connections, -${connectionIdsToRemove.length} connections`);
+    
+    // Apply changes
+    if (nodesToAdd.length > 0 || connectionsToAdd.length > 0 || 
+        nodeIdsToRemove.length > 0 || connectionIdsToRemove.length > 0) {
+        
+        // If many changes, perform a full reset
+        if (nodesToAdd.length + nodeIdsToRemove.length > 20 || 
+            connectionsToAdd.length + connectionIdsToRemove.length > 50) {
+            console.log('Many changes detected, performing full visualization reset');
+            
+            // Update memory data
+            memoryData = newData;
+            
+            // Recreate visualization
+            createVisualizationFromData(newData);
+        } else {
+            // Apply incremental updates
+            console.log('Applying incremental updates to visualization');
+            
+            // Remove nodes
+            removeNodesById(nodeIdsToRemove);
+            
+            // Remove connections
+            removeConnectionsById(connectionIdsToRemove);
+            
+            // Add new nodes
+            if (nodesToAdd.length > 0) {
+                createNodes(nodesToAdd);
+            }
+            
+            // Add new connections
+            if (connectionsToAdd.length > 0) {
+                createConnections(connectionsToAdd, newData.nodes);
+            }
+            
+            // Update data
+            memoryData = newData;
+            
+            // Apply layout
+            applyForceDirectedLayout();
+        }
+    } else if (nodesToUpdate.length > 0 || connectionsToUpdate.length > 0) {
+        // Only node/connection properties changed, not structure
+        // Update properties without recreating
+        updateNodeProperties(nodesToUpdate);
+        updateConnectionProperties(connectionsToUpdate);
+        
+        // Update data
+        memoryData = newData;
+    }
+    
+    // Update stats display
+    updateStats(newData);
+    
+    // Restore camera position
+    camera.position.copy(cameraPosition);
+    controls.target.copy(cameraTarget);
+}
+
+// WebSocket connection for real-time updates
+function setupWebSocketConnection() {
+    try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/api/memories/stream`);
+        
+        ws.onopen = function(event) {
+            console.log('WebSocket connection established for real-time memory updates');
+        };
+        
+        ws.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'memory_update') {
+                    console.log('Received memory update via WebSocket');
+                    updateVisualizationWithNewData(data.payload);
+                } else if (data.type === 'memory_created') {
+                    // Add single new memory node
+                    const newNode = data.payload;
+                    console.log('New memory node created:', newNode);
+                    
+                    // Add node to memoryData
+                    memoryData.nodes.push(newNode);
+                    
+                    // Add node to visualization with animation
+                    createNodesWithAnimation([newNode]);
+                } else if (data.type === 'memory_deleted') {
+                    // Remove a memory node
+                    const nodeId = data.payload.id;
+                    console.log('Memory node deleted:', nodeId);
+                    
+                    // Remove from memoryData
+                    memoryData.nodes = memoryData.nodes.filter(node => node.id !== nodeId);
+                    memoryData.connections = memoryData.connections.filter(
+                        conn => conn.source !== nodeId && conn.target !== nodeId
+                    );
+                    
+                    // Remove from visualization
+                    removeNodesById([nodeId]);
+                }
+            } catch (error) {
+                console.error('Error processing WebSocket message:', error);
+            }
+        };
+        
+        ws.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+        
+        ws.onclose = function(event) {
+            console.log('WebSocket connection closed, code:', event.code);
+            
+            // Attempt to reconnect after 5 seconds
+            setTimeout(setupWebSocketConnection, 5000);
+        };
+        
+        // Store WebSocket reference
+        window.memoryWebSocket = ws;
+        
+    } catch (error) {
+        console.warn('WebSocket connection failed:', error);
+        console.log('Falling back to polling for updates');
+    }
+}
+
+// Create nodes with animation
+function createNodesWithAnimation(nodesData) {
+    // Create nodes normally
+    createNodes(nodesData);
+    
+    // Add animation effect
+    const newNodeMeshes = nodes.slice(-nodesData.length);
+    
+    newNodeMeshes.forEach(node => {
+        if (node.isInstancedReference) return; // Skip instanced references
+        
+        // Store original scale
+        node.userData.originalScale = node.scale.clone();
+        
+        // Start with zero scale
+        node.scale.set(0, 0, 0);
+        
+        // Animate to full scale
+        const duration = 1000; // ms
+        const startTime = Date.now();
+        
+        function animateScale() {
+            const elapsedTime = Date.now() - startTime;
+            const progress = Math.min(elapsedTime / duration, 1);
+            
+            // Elastic easing function
+            const easeElastic = function(t) {
+                return t === 0 ? 0 : t === 1 ? 1 :
+                    Math.pow(2, -10 * t) * Math.sin((t - 0.1) * 5 * Math.PI) + 1;
+            };
+            
+            const scaleValue = easeElastic(progress);
+            
+            // Set scale based on original scale
+            node.scale.set(
+                node.userData.originalScale.x * scaleValue,
+                node.userData.originalScale.y * scaleValue,
+                node.userData.originalScale.z * scaleValue
+            );
+            
+            // Continue animation if not complete
+            if (progress < 1) {
+                requestAnimationFrame(animateScale);
+            }
+        }
+        
+        // Start animation
+        animateScale();
+    });
+}
+
+// Remove nodes by ID
+function removeNodesById(nodeIds) {
+    if (!nodeIds.length) return;
+    
+    const nodeIdsSet = new Set(nodeIds);
+    const nodesToRemove = [];
+    
+    // Find nodes to remove
+    nodes.forEach(node => {
+        if (nodeIdsSet.has(node.userData.id)) {
+            nodesToRemove.push(node);
+        }
+    });
+    
+    // Remove nodes with fade-out animation
+    nodesToRemove.forEach(node => {
+        removeNodeWithAnimation(node);
+    });
+    
+    // Also remove any connections to/from these nodes
+    connections = connections.filter(connection => {
+        const source = connection.userData.sourceNode;
+        const target = connection.userData.targetNode;
+        
+        if (!source || !target) return false;
+        
+        const sourceId = source.userData.id;
+        const targetId = target.userData.id;
+        
+        if (nodeIdsSet.has(sourceId) || nodeIdsSet.has(targetId)) {
+            // Remove connection from scene
+            if (connection.parent) {
+                connection.parent.remove(connection);
+            }
+            return false;
+        }
+        
+        return true;
+    });
+}
+
+// Remove a node with animation
+function removeNodeWithAnimation(node) {
+    if (node.isInstancedReference) {
+        // Instanced meshes are harder to animate individually
+        const index = nodes.indexOf(node);
+        if (index !== -1) {
+            nodes.splice(index, 1);
+        }
+        return;
+    }
+    
+    // Start with normal scale
+    const originalScale = node.scale.clone();
+    const originalOpacity = node.material.opacity;
+    
+    // Make material transparent
+    node.material.transparent = true;
+    
+    // Animate to zero scale and opacity
+    const duration = 800; // ms
+    const startTime = Date.now();
+    
+    function animateRemoval() {
+        const elapsedTime = Date.now() - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+        
+        // Ease out cubic
+        const easeOutCubic = function(t) {
+            return 1 - Math.pow(1 - t, 3);
+        };
+        
+        const scaleValue = 1 - easeOutCubic(progress);
+        const opacityValue = 1 - easeOutCubic(progress);
+        
+        // Set scale
+        node.scale.set(
+            originalScale.x * scaleValue,
+            originalScale.y * scaleValue,
+            originalScale.z * scaleValue
+        );
+        
+        // Set opacity
+        node.material.opacity = originalOpacity * opacityValue;
+        
+        // Continue animation if not complete
+        if (progress < 1) {
+            requestAnimationFrame(animateRemoval);
+        } else {
+            // Remove from scene
+            if (node.parent) {
+                node.parent.remove(node);
+            }
+            
+            // Remove from nodes array
+            const index = nodes.indexOf(node);
+            if (index !== -1) {
+                nodes.splice(index, 1);
+            }
+            
+            // Dispose resources
+            if (node.geometry) node.geometry.dispose();
+            if (node.material) {
+                if (Array.isArray(node.material)) {
+                    node.material.forEach(mat => mat.dispose());
+                } else {
+                    node.material.dispose();
+                }
+            }
+        }
+    }
+    
+    // Start animation
+    animateRemoval();
+}
+
+// Remove connections by ID
+function removeConnectionsById(connectionIds) {
+    if (!connectionIds.length) return;
+    
+    const connectionIdsSet = new Set(connectionIds);
+    const connectionsToRemove = [];
+    
+    // Find connections to remove
+    connections.forEach(connection => {
+        if (connectionIdsSet.has(connection.userData.id)) {
+            connectionsToRemove.push(connection);
+        }
+    });
+    
+    // Remove connections with animation
+    connectionsToRemove.forEach(connection => {
+        removeConnectionWithAnimation(connection);
+    });
+}
+
+// Remove a connection with animation
+function removeConnectionWithAnimation(connection) {
+    if (connection.isConnectionReference) {
+        // Connection references are harder to animate individually
+        const index = connections.indexOf(connection);
+        if (index !== -1) {
+            connections.splice(index, 1);
+        }
+        return;
+    }
+    
+    // Store original opacity
+    const originalOpacity = connection.material.opacity;
+    
+    // Make sure material is transparent
+    connection.material.transparent = true;
+    
+    // Animate to zero opacity
+    const duration = 500; // ms
+    const startTime = Date.now();
+    
+    function animateRemoval() {
+        const elapsedTime = Date.now() - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+        
+        // Linear fade
+        connection.material.opacity = originalOpacity * (1 - progress);
+        
+        // Continue animation if not complete
+        if (progress < 1) {
+            requestAnimationFrame(animateRemoval);
+        } else {
+            // Remove from scene
+            if (connection.parent) {
+                connection.parent.remove(connection);
+            }
+            
+            // Remove from connections array
+            const index = connections.indexOf(connection);
+            if (index !== -1) {
+                connections.splice(index, 1);
+            }
+            
+            // Dispose resources
+            if (connection.geometry) connection.geometry.dispose();
+            if (connection.material) connection.material.dispose();
+        }
+    }
+    
+    // Start animation
+    animateRemoval();
+}
+
+// Update node properties
+function updateNodeProperties(nodesToUpdate) {
+    // Map nodes by ID for quick lookup
+    const nodesMap = {};
+    nodes.forEach(node => {
+        nodesMap[node.userData.id] = node;
+    });
+    
+    // Update node properties
+    nodesToUpdate.forEach(nodeData => {
+        const node = nodesMap[nodeData.id];
+        if (!node) return;
+        
+        // Update userData
+        node.userData = {
+            ...node.userData,
+            ...nodeData,
+            originalPosition: node.userData.originalPosition, // Keep original position
+            index: node.userData.index // Keep index
+        };
+        
+        // Update visual properties if needed
+        const type = nodeData.type || 'memory';
+        const importance = nodeData.importance || 0.5;
+        
+        if (!node.isInstancedReference && node.material) {
+            // Update color
+            node.material.color.setHex(settings.nodeColors[type] || settings.nodeColors.memory);
+            node.material.emissive.setHex(settings.nodeColors[type] || settings.nodeColors.memory);
+            node.material.emissiveIntensity = settings.glowIntensity * importance;
+            
+            // Update size
+            const size = settings.nodeSize.min + 
+                (settings.nodeSize.max - settings.nodeSize.min) * importance;
+            
+            // Only update geometry if size has changed significantly
+            if (Math.abs(node.geometry.parameters.radius - size) > 0.2) {
+                const oldGeometry = node.geometry;
+                node.geometry = new THREE.SphereGeometry(size, 32, 32);
+                oldGeometry.dispose();
+            }
+        }
+    });
+}
+
+// Update connection properties
+function updateConnectionProperties(connectionsToUpdate) {
+    // Map connections by ID for quick lookup
+    const connectionsMap = {};
+    connections.forEach(connection => {
+        connectionsMap[connection.userData.id] = connection;
+    });
+    
+    // Update connection properties
+    connectionsToUpdate.forEach(connectionData => {
+        const connection = connectionsMap[connectionData.id];
+        if (!connection || connection.isConnectionReference) return;
+        
+        // Update userData
+        connection.userData = {
+            ...connection.userData,
+            ...connectionData,
+            sourceNode: connection.userData.sourceNode, // Keep references
+            targetNode: connection.userData.targetNode
+        };
+        
+        // Update visual properties if needed
+        const strength = connectionData.strength || 0.5;
+        const connectionType = connectionData.type || 'semantic';
+        const color = connectionType === 'semantic' ? 0x43e97b : 0xf83a3a;
+        
+        // Update color
+        connection.material.color.setHex(color);
+        
+        // Update opacity
+        connection.material.opacity = settings.connectionOpacity * strength;
+    });
+}
+
+// Initialize visualization on page load
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Initializing THREE.js Memory Visualization with r173...');
+    
+    // Check if all required scripts are loaded
+    if (typeof THREE === 'undefined') {
+        console.error('THREE.js library not loaded');
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'error-message';
+        errorMessage.textContent = 'THREE.js library not loaded. Please check console for details.';
+        document.getElementById('memory-visualization').appendChild(errorMessage);
+        return;
+    }
+    
+    // Log THREE.js version
+    console.log(`Using THREE.js version: ${THREE.REVISION}`);
+    
+    initVisualization();
+    
+    // Set up real-time updates after initialization
+    setTimeout(() => {
+        setupRealTimeUpdates();
+    }, 2000);
+});
