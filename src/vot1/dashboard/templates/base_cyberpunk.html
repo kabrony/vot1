@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VOT1 Cyberpunk Dashboard{% endblock %}</title>
+    
+    <!-- Base Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cyberpunk.css') }}">
+    
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r132/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.0/examples/js/postprocessing/EffectComposer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.0/examples/js/postprocessing/RenderPass.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.0/examples/js/postprocessing/ShaderPass.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.0/examples/js/shaders/CopyShader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.0/examples/js/shaders/LuminosityHighPassShader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.0/examples/js/postprocessing/UnrealBloomPass.min.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="cyberpunk-theme">
+    <!-- Scanline effect overlay -->
+    <div class="scanlines"></div>
+    <div class="noise-overlay"></div>
+    
+    <!-- Main Grid Container -->
+    <div class="grid-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="logo">
+                <div class="logo-glitch" data-text="VOT1">VOT1</div>
+                <div class="logo-subtitle">AUTONOMOUS INTELLIGENCE</div>
+            </div>
+            
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                        <i class="fas fa-home"></i> <span>DASHBOARD</span>
+                    </a></li>
+                    <li><a href="{{ url_for('dashboard.memory') }}" class="nav-link {% if request.endpoint == 'dashboard.memory' %}active{% endif %}">
+                        <i class="fas fa-brain"></i> <span>MEMORY</span>
+                    </a></li>
+                    <li><a href="{{ url_for('dashboard.cyberpunk_chat') }}" class="nav-link {% if request.endpoint == 'dashboard.cyberpunk_chat' %}active{% endif %}">
+                        <i class="fas fa-robot"></i> <span>AI CHAT</span>
+                    </a></li>
+                    <li><a href="{{ url_for('dashboard.visualization') }}" class="nav-link {% if request.endpoint == 'dashboard.visualization' %}active{% endif %}">
+                        <i class="fas fa-project-diagram"></i> <span>VISUALIZE</span>
+                    </a></li>
+                    <li><a href="{{ url_for('dashboard.settings') }}" class="nav-link {% if request.endpoint == 'dashboard.settings' %}active{% endif %}">
+                        <i class="fas fa-cogs"></i> <span>SETTINGS</span>
+                    </a></li>
+                </ul>
+            </nav>
+            
+            <div class="user-controls">
+                <button id="theme-toggle" class="control-btn" title="Toggle Theme">
+                    <i class="fas fa-adjust"></i>
+                </button>
+                <button id="fullscreen-toggle" class="control-btn" title="Toggle Fullscreen">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button id="notifications" class="control-btn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">0</span>
+                </button>
+            </div>
+        </header>
+        
+        <!-- Main Content Area -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+        
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <div class="status-item">
+                <i class="fas fa-microchip"></i>
+                <span id="system-status">SYSTEM: ONLINE</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-brain"></i>
+                <span id="memory-status">MEMORY: OPERATIONAL</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-network-wired"></i>
+                <span id="network-status">NETWORK: CONNECTED</span>
+            </div>
+            <div class="status-item" id="clock">
+                00:00:00
+            </div>
+            <div class="status-item version">
+                <span>VOT1 v0.1.0</span>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+    
+    <!-- Modal Container -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div id="modal-content" class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal Title</h3>
+                <button id="modal-close" class="modal-close">&times;</button>
+            </div>
+            <div id="modal-body" class="modal-body">
+                <!-- Modal content will be dynamically inserted here -->
+            </div>
+            <div id="modal-footer" class="modal-footer">
+                <!-- Modal footer content will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Core Scripts -->
+    <script src="{{ url_for('static', filename='js/cyberpunk-core.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+    
+    <script>
+        // Initialize the digital clock in the status bar
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toTimeString().split(' ')[0];
+            document.getElementById('clock').textContent = timeString;
+        }
+        
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        updateClock(); // Initial update
+        
+        // Simulate system status updates
+        function simulateStatusUpdates() {
+            const statuses = ['ONLINE', 'OPTIMIZING', 'LEARNING', 'PROCESSING'];
+            const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+            document.getElementById('system-status').textContent = `SYSTEM: ${randomStatus}`;
+            
+            // Update memory status
+            const memoryStatuses = ['OPERATIONAL', 'OPTIMIZING', 'SYNCING', 'ANALYZING'];
+            const randomMemoryStatus = memoryStatuses[Math.floor(Math.random() * memoryStatuses.length)];
+            document.getElementById('memory-status').textContent = `MEMORY: ${randomMemoryStatus}`;
+            
+            // Schedule next update in 5-10 seconds
+            setTimeout(simulateStatusUpdates, 5000 + Math.random() * 5000);
+        }
+        
+        // Start simulating status updates
+        setTimeout(simulateStatusUpdates, 3000);
+        
+        // Document ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Theme toggle
+            document.getElementById('theme-toggle').addEventListener('click', function() {
+                document.body.classList.toggle('alternate-theme');
+            });
+            
+            // Fullscreen toggle
+            document.getElementById('fullscreen-toggle').addEventListener('click', function() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                    this.innerHTML = '<i class="fas fa-compress"></i>';
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                        this.innerHTML = '<i class="fas fa-expand"></i>';
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

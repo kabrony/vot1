@@ -34,6 +34,9 @@ $(document).ready(function() {
     
     // Initialize MCP Hybrid Automation
     initializeMcpHybridAutomation();
+    
+    // Initialize Feedback System
+    initializeFeedbackSystem();
 });
 
 /**
@@ -268,4 +271,308 @@ function showNotification(message, type = 'info', duration = 5000) {
             notification.remove();
         }, 300);
     }, duration);
+}
+
+/**
+ * Initialize Feedback System
+ */
+function initializeFeedbackSystem() {
+    console.log('Initializing feedback system...');
+    
+    // Create feedback panel if it doesn't exist
+    if ($('#feedback-panel').length === 0) {
+        const feedbackPanel = $(`
+            <div id="feedback-panel" class="panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-comment-dots"></i> Feedback System</h2>
+                    <div class="panel-controls">
+                        <button id="feedback-minimize" class="btn-icon" title="Minimize">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <p>Help improve VOT1 by providing feedback on your experience.</p>
+                    
+                    <div class="feedback-options">
+                        <div class="feedback-option-group">
+                            <label>Feedback Type:</label>
+                            <select id="feedback-type">
+                                <option value="general">General Feedback</option>
+                                <option value="suggestion">Suggestion</option>
+                                <option value="correction">Correction</option>
+                                <option value="rating">Rating</option>
+                            </select>
+                        </div>
+                        
+                        <div id="rating-container" class="feedback-option-group" style="display: none;">
+                            <label>Rating:</label>
+                            <div class="rating-stars">
+                                <i class="far fa-star" data-rating="1"></i>
+                                <i class="far fa-star" data-rating="2"></i>
+                                <i class="far fa-star" data-rating="3"></i>
+                                <i class="far fa-star" data-rating="4"></i>
+                                <i class="far fa-star" data-rating="5"></i>
+                            </div>
+                            <input type="hidden" id="feedback-rating" value="0">
+                        </div>
+                    </div>
+                    
+                    <div class="feedback-content">
+                        <label for="feedback-text">Your Feedback:</label>
+                        <textarea id="feedback-text" rows="4" placeholder="Please share your thoughts, suggestions, or corrections..."></textarea>
+                    </div>
+                    
+                    <div class="feedback-actions">
+                        <button id="submit-feedback" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Submit Feedback
+                        </button>
+                        <button id="submit-streaming-feedback" class="btn btn-accent">
+                            <i class="fas fa-stream"></i> Submit with Live Response
+                        </button>
+                    </div>
+                    
+                    <div id="feedback-response" class="feedback-response" style="display: none;"></div>
+                </div>
+            </div>
+        `);
+        
+        // Add to UI
+        $('.main-content').append(feedbackPanel);
+        
+        // Set up event handlers
+        setupFeedbackEventHandlers();
+    }
+}
+
+/**
+ * Set up event handlers for the feedback system
+ */
+function setupFeedbackEventHandlers() {
+    // Show/hide rating based on feedback type
+    $('#feedback-type').on('change', function() {
+        if ($(this).val() === 'rating') {
+            $('#rating-container').show();
+        } else {
+            $('#rating-container').hide();
+        }
+    });
+    
+    // Handle star rating
+    $('.rating-stars i').on('click', function() {
+        const rating = $(this).data('rating');
+        $('#feedback-rating').val(rating);
+        
+        // Update stars
+        $('.rating-stars i').removeClass('fas').addClass('far');
+        $('.rating-stars i').each(function() {
+            if ($(this).data('rating') <= rating) {
+                $(this).removeClass('far').addClass('fas');
+            }
+        });
+    });
+    
+    // Hover effects for stars
+    $('.rating-stars i').on('mouseenter', function() {
+        const hoverRating = $(this).data('rating');
+        
+        $('.rating-stars i').each(function() {
+            if ($(this).data('rating') <= hoverRating) {
+                $(this).addClass('star-hover');
+            }
+        });
+    }).on('mouseleave', function() {
+        $('.rating-stars i').removeClass('star-hover');
+    });
+    
+    // Handle regular feedback submission
+    $('#submit-feedback').on('click', function() {
+        submitFeedback(false);
+    });
+    
+    // Handle streaming feedback submission
+    $('#submit-streaming-feedback').on('click', function() {
+        submitFeedback(true);
+    });
+    
+    // Minimize panel
+    $('#feedback-minimize').on('click', function() {
+        $('#feedback-panel .panel-body').toggle();
+        $(this).find('i').toggleClass('fa-minus fa-plus');
+    });
+}
+
+/**
+ * Submit feedback to the server
+ */
+function submitFeedback(streaming = false) {
+    const feedbackType = $('#feedback-type').val();
+    const feedbackContent = $('#feedback-text').val().trim();
+    const rating = feedbackType === 'rating' ? parseInt($('#feedback-rating').val()) : null;
+    
+    if (!feedbackContent) {
+        showNotification('Please enter your feedback', 'warning');
+        return;
+    }
+    
+    // Disable buttons
+    $('#submit-feedback, #submit-streaming-feedback').prop('disabled', true);
+    
+    // Prepare feedback data
+    const feedbackData = {
+        type: feedbackType,
+        content: feedbackContent
+    };
+    
+    if (rating) {
+        feedbackData.rating = rating;
+    }
+    
+    // Clear previous response
+    $('#feedback-response').empty().show();
+    
+    if (streaming) {
+        // Set up streaming UI
+        const responseContainer = $(`
+            <div class="streaming-response">
+                <div class="thinking-indicator">
+                    <span>Processing your feedback</span>
+                    <div class="thinking-dots">
+                        <div class="thinking-dot"></div>
+                        <div class="thinking-dot"></div>
+                        <div class="thinking-dot"></div>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar"></div>
+                </div>
+                <div class="response-content"></div>
+            </div>
+        `);
+        
+        $('#feedback-response').append(responseContainer);
+        
+        // Make streaming request
+        $.ajax({
+            url: '/api/feedback/stream',
+            method: 'POST',
+            data: JSON.stringify(feedbackData),
+            contentType: 'application/json',
+            xhrFields: {
+                onprogress: function(e) {
+                    const response = e.currentTarget.response;
+                    const lines = response.split('\n');
+                    
+                    for (const line of lines) {
+                        if (!line) continue;
+                        
+                        try {
+                            const data = JSON.parse(line);
+                            handleStreamingFeedbackResponse(data);
+                        } catch (err) {
+                            console.error('Error parsing streaming response:', err);
+                        }
+                    }
+                }
+            },
+            success: function() {
+                // Re-enable buttons
+                $('#submit-feedback, #submit-streaming-feedback').prop('disabled', false);
+                
+                // Remove streaming elements when complete
+                setTimeout(function() {
+                    $('.thinking-indicator, .progress-container').fadeOut(function() {
+                        $(this).remove();
+                    });
+                }, 1000);
+            },
+            error: function(xhr, status, error) {
+                showNotification('Error submitting feedback: ' + error, 'error');
+                $('#submit-feedback, #submit-streaming-feedback').prop('disabled', false);
+                $('#feedback-response').hide();
+            }
+        });
+    } else {
+        // Regular submission
+        const loadingIndicator = $('<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Submitting feedback...</div>');
+        $('#feedback-response').append(loadingIndicator);
+        
+        $.ajax({
+            url: '/api/feedback',
+            method: 'POST',
+            data: JSON.stringify(feedbackData),
+            contentType: 'application/json',
+            success: function(data) {
+                loadingIndicator.remove();
+                
+                // Show success message
+                const successMessage = $(`
+                    <div class="success-message">
+                        <i class="fas fa-check-circle"></i>
+                        <span>${data.message}</span>
+                    </div>
+                `);
+                
+                $('#feedback-response').append(successMessage);
+                $('#feedback-text').val('');
+                $('#feedback-rating').val(0);
+                $('.rating-stars i').removeClass('fas').addClass('far');
+                
+                // Re-enable buttons
+                $('#submit-feedback, #submit-streaming-feedback').prop('disabled', false);
+                
+                // Hide message after a delay
+                setTimeout(function() {
+                    $('#feedback-response').fadeOut();
+                }, 5000);
+            },
+            error: function(xhr, status, error) {
+                loadingIndicator.remove();
+                showNotification('Error submitting feedback: ' + error, 'error');
+                $('#submit-feedback, #submit-streaming-feedback').prop('disabled', false);
+            }
+        });
+    }
+}
+
+/**
+ * Handle streaming feedback response
+ */
+function handleStreamingFeedbackResponse(data) {
+    if (data.status === 'thinking') {
+        // Already showing thinking indicator
+        return;
+    }
+    
+    if (data.status === 'processing') {
+        $('.thinking-indicator span').text(data.message);
+        $('.progress-bar').css('width', (data.progress * 100) + '%');
+        return;
+    }
+    
+    if (data.status === 'responding') {
+        $('.thinking-indicator span').text(data.message);
+        $('.progress-bar').css('width', (data.progress * 100) + '%');
+        
+        // Add response content container if not exists
+        if ($('.response-content').children().length === 0) {
+            $('.response-content').html('<div class="response-text"></div><span class="streaming-cursor"></span>');
+        }
+        
+        return;
+    }
+    
+    if (data.status === 'complete') {
+        $('.progress-bar').css('width', (data.progress * 100) + '%');
+        
+        // Append chunk to response
+        $('.response-text').append(data.chunk);
+        
+        // If progress is 100%, complete the response
+        if (data.progress >= 0.99) {
+            $('.streaming-cursor').remove();
+        }
+        
+        return;
+    }
 }

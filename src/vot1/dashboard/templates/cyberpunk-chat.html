@@ -1,0 +1,808 @@
+{% extends "base.html" %}
+
+{% block title %}VOT1 Cyberpunk AI Chat{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cyberpunk-chat.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/firacode@6.2.0/distr/fira_code.css" rel="stylesheet">
+<!-- Highlight.js for code syntax highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/tokyo-night-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<!-- Marked.js for markdown parsing -->
+<script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Cyberpunk Chat Interface -->
+<div id="cyberpunk-chat">
+    <!-- Scan line effect -->
+    <div class="scan-line"></div>
+    
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <div class="chat-header-title">
+            <i class="fas fa-robot"></i>
+            <span>VOT1 Cyberpunk AI Chat</span>
+        </div>
+        <div class="chat-header-controls">
+            <button class="chat-control-btn" id="minimize-chat" title="Minimize">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button class="chat-control-btn" id="expand-chat" title="Expand">
+                <i class="fas fa-expand"></i>
+            </button>
+            <button class="chat-control-btn" id="settings-chat" title="Settings">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- MCP Status Bar -->
+    <div id="mcp-status-bar" class="mcp-status-bar">
+        <div class="mcp-status-item">
+            <i class="fas fa-brain"></i>
+            <span class="mcp-label">Claude 3.7</span>
+            <span id="claude-status" class="status-indicator connected">ACTIVE</span>
+        </div>
+        <div class="mcp-status-item">
+            <i class="fas fa-search"></i>
+            <span class="mcp-label">Perplexity</span>
+            <span id="perplexity-status" class="status-indicator">checking...</span>
+        </div>
+        <div class="mcp-status-item">
+            <i class="fas fa-spider"></i>
+            <span class="mcp-label">Firecrawl</span>
+            <span id="firecrawl-status" class="status-indicator">checking...</span>
+        </div>
+        <div class="mcp-status-item">
+            <i class="fas fa-code"></i>
+            <span class="mcp-label">Dev Assistant</span>
+            <span id="dev-assistant-status" class="status-indicator">checking...</span>
+        </div>
+        <div class="mcp-actions">
+            <button id="mcp-connect-button" class="mcp-connect-btn" title="Connect Tools">
+                <i class="fas fa-plug"></i>
+            </button>
+            <button id="dev-assistant-button" class="mcp-connect-btn" title="Development Tools">
+                <i class="fas fa-code-branch"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Chat Messages Container -->
+    <div id="chat-messages" class="chat-messages">
+        <!-- Messages will be dynamically added here -->
+        
+        <!-- Welcome message with MCP information -->
+        <div class="chat-message system-message">
+            <div class="message-avatar">
+                <i class="fas fa-terminal"></i>
+            </div>
+            <div class="message-content">
+                <h3>VOT1 Cyberpunk Chat with Advanced Integration</h3>
+                <p>Welcome to the enhanced chat interface with Machine Capability Provider (MCP) integration and Development Assistant.</p>
+                <p>Available commands:</p>
+                <ul>
+                    <li><code>/research [topic]</code> - Perform in-depth research with Perplexity AI</li>
+                    <li><code>/crawl [url]</code> - Crawl a website with Firecrawl</li>
+                    <li><code>/analyze [path]</code> - Analyze codebase structure</li>
+                    <li><code>/architecture</code> - Analyze project architecture</li>
+                    <li><code>/generate [script|docs|test] [description]</code> - Generate code/docs</li>
+                    <li><code>/troubleshoot [code]</code> - Troubleshoot code issues</li>
+                    <li><code>/memory [list|get|save|delete]</code> - Manage persistent memory</li>
+                </ul>
+                <p>This hybrid system combines Claude 3.7 with Perplexity AI for enhanced capabilities.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add this right after the chat messages container -->
+    <div id="thinking-visualization" class="thinking-visualization"></div>
+    
+    <!-- Thinking Indicator -->
+    <div id="thinking-indicator">Thinking...</div>
+    
+    <!-- Commands Container -->
+    <div id="commands-container">
+        <!-- Command suggestions will be dynamically added here -->
+    </div>
+    
+    <!-- Add this before the chat input container -->
+    <div class="hybrid-mode-container">
+        <div class="hybrid-mode-indicator">
+            <span class="icon"></span>
+            <span class="label">CLAUDE+PERPLEXITY HYBRID</span>
+        </div>
+    </div>
+    
+    <!-- Chat Input Area -->
+    <div id="chat-input-container" class="chat-input-container">
+        <div class="chat-input-wrapper">
+            <textarea id="chat-input" class="chat-input" placeholder="Type your message or '/command'..." rows="3"></textarea>
+            <button id="chat-send" class="chat-send" title="Send">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        
+        <div class="chat-controls">
+            <div class="chat-options">
+                <!-- Streaming Toggle -->
+                <div class="chat-option">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="stream-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="chat-option-label">Streaming</span>
+                </div>
+                
+                <!-- Thinking Toggle -->
+                <div class="chat-option">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="thinking-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="chat-option-label">Extended Thinking</span>
+                </div>
+                
+                <!-- Model Selector -->
+                <div class="chat-option">
+                    <select id="model-selector" class="model-selector">
+                        <option value="claude-3-7-sonnet-20240620">Claude 3.7 Sonnet</option>
+                        <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                        <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                    </select>
+                </div>
+                
+                <!-- MCP Integration Toggle -->
+                <div class="chat-option">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="hybrid-mode-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="chat-option-label">Hybrid Mode</span>
+                </div>
+            </div>
+            
+            <div class="chat-actions">
+                <button id="clear-chat" class="btn-secondary btn-sm" title="Clear Chat">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Telemetry Display -->
+    <div id="telemetry-display">
+        <div class="telemetry-item">
+            <span class="telemetry-label">Model:</span>
+            <span class="telemetry-value" id="telemetry-model">Claude 3.7 Sonnet</span>
+        </div>
+        <div class="telemetry-item">
+            <span class="telemetry-label">Tokens:</span>
+            <span class="telemetry-value" id="telemetry-tokens">0</span>
+        </div>
+        <div class="telemetry-item">
+            <span class="telemetry-label">Response:</span>
+            <span class="telemetry-value" id="telemetry-response">0ms</span>
+        </div>
+        <div class="telemetry-item">
+            <span class="telemetry-label">Memory:</span>
+            <span class="telemetry-value" id="telemetry-memory">0</span>
+        </div>
+        <div class="telemetry-item">
+            <span class="telemetry-label">Research:</span>
+            <span class="telemetry-value" id="telemetry-research">0</span>
+        </div>
+    </div>
+</div>
+
+<!-- MCP Connect Modal -->
+<div id="mcp-connect-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Connect MCP Tools</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="settings-section">
+                <h4>Perplexity AI</h4>
+                <div class="setting-item status-container">
+                    <span class="status-label">Status:</span>
+                    <span id="perplexity-modal-status" class="status-value">Not Connected</span>
+                </div>
+                <div class="setting-item">
+                    <button id="connect-perplexity" class="btn-primary">Connect to Perplexity</button>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h4>Firecrawl</h4>
+                <div class="setting-item status-container">
+                    <span class="status-label">Status:</span>
+                    <span id="firecrawl-modal-status" class="status-value">Not Connected</span>
+                </div>
+                <div class="setting-item">
+                    <label for="firecrawl-api-key">API Key</label>
+                    <input type="password" id="firecrawl-api-key" placeholder="Enter your Firecrawl API key">
+                </div>
+                <div class="setting-item">
+                    <button id="connect-firecrawl" class="btn-primary">Connect to Firecrawl</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Development Assistant Modal -->
+<div id="dev-assistant-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Development Assistant Tools</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="settings-section">
+                <h4>Project Settings</h4>
+                <div class="setting-item">
+                    <label for="project-root">Project Root</label>
+                    <input type="text" id="project-root" placeholder="Project root directory path">
+                </div>
+                <div class="setting-item">
+                    <label for="memory-path">Memory Path</label>
+                    <input type="text" id="memory-path" placeholder="Memory storage directory path">
+                </div>
+                <div class="setting-item">
+                    <button id="update-project-settings" class="btn-primary">Update Settings</button>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h4>Analysis Options</h4>
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="auto-analyze-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Auto-analyze new code</span>
+                </div>
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="deep-research-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Deep research with Perplexity</span>
+                </div>
+                <div class="setting-item">
+                    <label for="thinking-tokens">Max Thinking Tokens</label>
+                    <input type="range" id="thinking-tokens" min="10000" max="100000" step="5000" value="60000">
+                    <span id="thinking-tokens-display">60,000</span>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h4>Memory Storage</h4>
+                <div class="setting-item">
+                    <button id="view-memory-categories" class="btn-secondary">View Memory Categories</button>
+                </div>
+                <div class="setting-item">
+                    <div id="memory-categories-list" style="display: none; margin-top: 10px; max-height: 150px; overflow-y: auto;">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h4>Quick Actions</h4>
+                <div class="setting-item">
+                    <button id="analyze-codebase" class="btn-primary">Analyze Codebase</button>
+                </div>
+                <div class="setting-item">
+                    <button id="analyze-architecture" class="btn-primary">Analyze Architecture</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Chat Settings</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="settings-section">
+                <h4>Appearance</h4>
+                <div class="setting-item">
+                    <label for="layout-selector">Layout</label>
+                    <select id="layout-selector">
+                        <option value="default">Default</option>
+                        <option value="compact">Compact</option>
+                        <option value="fullscreen">Fullscreen</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="theme-selector">Theme</label>
+                    <select id="theme-selector">
+                        <option value="cyberpunk">Cyberpunk</option>
+                        <option value="matrix">Matrix</option>
+                        <option value="midnight">Midnight</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h4>Tools</h4>
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="tool-toggle" data-tool="webSearch" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Web Search</span>
+                </div>
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="tool-toggle" data-tool="codeExecution" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Code Execution</span>
+                </div>
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="tool-toggle" data-tool="fileAccess" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>File Access</span>
+                </div>
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="tool-toggle" data-tool="visualization" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Visualization</span>
+                </div>
+                
+                <!-- Added MCP-specific tool toggles -->
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="tool-toggle" data-tool="perplexityResearch" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Perplexity Research</span>
+                </div>
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="tool-toggle" data-tool="firecrawlWeb" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Firecrawl Web Scraping</span>
+                </div>
+                <div class="setting-item">
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="tool-toggle" data-tool="devAssistant" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Development Assistant</span>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h4>Advanced</h4>
+                <div class="setting-item">
+                    <label for="system-prompt">System Prompt</label>
+                    <textarea id="system-prompt" placeholder="Enter custom system prompt..."></textarea>
+                </div>
+                <div class="setting-item">
+                    <label for="max-thinking-tokens">Max Thinking Tokens</label>
+                    <input type="range" id="max-thinking-tokens" min="1000" max="60000" step="1000" value="60000">
+                    <span id="thinking-tokens-value">60000</span>
+                </div>
+                <div class="setting-item">
+                    <button id="export-chat" class="btn-primary">Export Chat History</button>
+                </div>
+            </div>
+
+            <!-- Update the settings modal to include new options -->
+            <div class="settings-section">
+                <h3>Hybrid System Settings</h3>
+                <div class="settings-option">
+                    <label for="deep-research-threshold">Deep Research Threshold</label>
+                    <select id="deep-research-threshold">
+                        <option value="auto">Auto (Based on Query)</option>
+                        <option value="always">Always Use Deep Research</option>
+                        <option value="never">Never Use Deep Research</option>
+                    </select>
+                </div>
+                <div class="settings-option">
+                    <label for="thinking-visualization-level">Thinking Visualization</label>
+                    <select id="thinking-visualization-level">
+                        <option value="detailed">Detailed (Show Network Graph)</option>
+                        <option value="minimal">Minimal (Show Particles Only)</option>
+                        <option value="off">Off</option>
+                    </select>
+                </div>
+                <div class="settings-option">
+                    <label for="max-thinking-tokens-hybrid">Max Thinking Tokens</label>
+                    <select id="max-thinking-tokens-hybrid">
+                        <option value="2000">2,000 (Quick)</option>
+                        <option value="15000">15,000 (Detailed)</option>
+                        <option value="60000" selected>60,000 (Maximum)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Templates for dynamic content -->
+<template id="message-template">
+    <div class="chat-message">
+        <div class="message-avatar">
+            <i class="fas fa-user"></i>
+        </div>
+        <div class="message-content"></div>
+        <div class="message-timestamp"></div>
+    </div>
+</template>
+
+<template id="command-item-template">
+    <div class="command-item">
+        <div class="command-icon">
+            <i class="fas fa-terminal"></i>
+        </div>
+        <div class="command-name"></div>
+        <div class="command-description"></div>
+    </div>
+</template>
+
+<template id="tool-usage-template">
+    <div class="tool-usage">
+        <div class="tool-header">
+            <div class="tool-icon">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="tool-name"></div>
+        </div>
+        <div class="tool-params"></div>
+        <div class="tool-result"></div>
+    </div>
+</template>
+
+<!-- Research Results Template -->
+<template id="research-result-template">
+    <div class="research-result">
+        <div class="research-header">
+            <div class="research-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="research-title">Research Results</div>
+        </div>
+        <div class="research-content"></div>
+        <div class="research-citations">
+            <h4>Sources</h4>
+            <ul class="citation-list"></ul>
+        </div>
+    </div>
+</template>
+
+<!-- Code Analysis Template -->
+<template id="code-analysis-template">
+    <div class="code-analysis-result">
+        <div class="code-analysis-header">
+            <div class="code-analysis-icon">
+                <i class="fas fa-code"></i>
+            </div>
+            <div class="code-analysis-title">Code Analysis</div>
+        </div>
+        <div class="code-analysis-content"></div>
+        <div class="code-analysis-stats">
+            <h4>Stats</h4>
+            <ul class="stats-list"></ul>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cyberpunk-chat.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mcp-integration.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dev-assistant-integration.js') }}"></script>
+<script>
+    // Initialize chat when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Look for chat container
+        const chatElement = document.getElementById('cyberpunk-chat');
+        if (chatElement) {
+            initCyberpunkChat();
+            
+            // Set up MCP connect modal
+            const mcpConnectButton = document.getElementById('mcp-connect-button');
+            const mcpConnectModal = document.getElementById('mcp-connect-modal');
+            const closeModalButtons = document.querySelectorAll('.close-modal');
+            
+            if (mcpConnectButton && mcpConnectModal) {
+                mcpConnectButton.addEventListener('click', () => {
+                    mcpConnectModal.style.display = 'block';
+                    
+                    // Update status in modal
+                    const perplexityStatus = mcpState?.connections?.perplexity?.status || 'disconnected';
+                    const firecrawlStatus = mcpState?.connections?.firecrawl?.status || 'disconnected';
+                    
+                    const perplexityModalStatus = document.getElementById('perplexity-modal-status');
+                    const firecrawlModalStatus = document.getElementById('firecrawl-modal-status');
+                    
+                    if (perplexityModalStatus) {
+                        perplexityModalStatus.textContent = perplexityStatus.charAt(0).toUpperCase() + perplexityStatus.slice(1);
+                        perplexityModalStatus.className = `status-value ${perplexityStatus}`;
+                    }
+                    
+                    if (firecrawlModalStatus) {
+                        firecrawlModalStatus.textContent = firecrawlStatus.charAt(0).toUpperCase() + firecrawlStatus.slice(1);
+                        firecrawlModalStatus.className = `status-value ${firecrawlStatus}`;
+                    }
+                });
+                
+                closeModalButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        mcpConnectModal.style.display = 'none';
+                    });
+                });
+                
+                // Connect to Perplexity button
+                const connectPerplexityButton = document.getElementById('connect-perplexity');
+                if (connectPerplexityButton) {
+                    connectPerplexityButton.addEventListener('click', async () => {
+                        connectPerplexityButton.disabled = true;
+                        connectPerplexityButton.textContent = 'Connecting...';
+                        
+                        try {
+                            if (window.mcpIntegration) {
+                                await window.mcpIntegration.connectToPerplexity();
+                                
+                                const perplexityModalStatus = document.getElementById('perplexity-modal-status');
+                                if (perplexityModalStatus) {
+                                    perplexityModalStatus.textContent = 'Connected';
+                                    perplexityModalStatus.className = 'status-value connected';
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error connecting to Perplexity:', error);
+                            
+                            const perplexityModalStatus = document.getElementById('perplexity-modal-status');
+                            if (perplexityModalStatus) {
+                                perplexityModalStatus.textContent = 'Connection Failed';
+                                perplexityModalStatus.className = 'status-value error';
+                            }
+                        } finally {
+                            connectPerplexityButton.disabled = false;
+                            connectPerplexityButton.textContent = 'Connect to Perplexity';
+                        }
+                    });
+                }
+                
+                // Connect to Firecrawl button
+                const connectFirecrawlButton = document.getElementById('connect-firecrawl');
+                const firecrawlApiKeyInput = document.getElementById('firecrawl-api-key');
+                if (connectFirecrawlButton && firecrawlApiKeyInput) {
+                    connectFirecrawlButton.addEventListener('click', async () => {
+                        const apiKey = firecrawlApiKeyInput.value.trim();
+                        if (!apiKey) {
+                            alert('Please enter your Firecrawl API key');
+                            return;
+                        }
+                        
+                        connectFirecrawlButton.disabled = true;
+                        connectFirecrawlButton.textContent = 'Connecting...';
+                        
+                        try {
+                            if (window.mcpIntegration) {
+                                await window.mcpIntegration.connectToFirecrawl({ api_key: apiKey });
+                                
+                                const firecrawlModalStatus = document.getElementById('firecrawl-modal-status');
+                                if (firecrawlModalStatus) {
+                                    firecrawlModalStatus.textContent = 'Connected';
+                                    firecrawlModalStatus.className = 'status-value connected';
+                                }
+                                
+                                firecrawlApiKeyInput.value = '';
+                            }
+                        } catch (error) {
+                            console.error('Error connecting to Firecrawl:', error);
+                            
+                            const firecrawlModalStatus = document.getElementById('firecrawl-modal-status');
+                            if (firecrawlModalStatus) {
+                                firecrawlModalStatus.textContent = 'Connection Failed';
+                                firecrawlModalStatus.className = 'status-value error';
+                            }
+                        } finally {
+                            connectFirecrawlButton.disabled = false;
+                            connectFirecrawlButton.textContent = 'Connect to Firecrawl';
+                        }
+                    });
+                }
+            }
+            
+            // Set up Development Assistant modal
+            const devAssistantButton = document.getElementById('dev-assistant-button');
+            const devAssistantModal = document.getElementById('dev-assistant-modal');
+            
+            if (devAssistantButton && devAssistantModal) {
+                devAssistantButton.addEventListener('click', () => {
+                    devAssistantModal.style.display = 'block';
+                    
+                    // Initialize fields with current values
+                    if (window.devAssistant && window.devAssistant.state) {
+                        document.getElementById('project-root').value = window.devAssistant.state.config.codebaseRoot || '';
+                        document.getElementById('memory-path').value = window.devAssistant.state.config.memoryPath || '';
+                        document.getElementById('auto-analyze-toggle').checked = window.devAssistant.state.config.autoTroubleshoot || true;
+                        document.getElementById('deep-research-toggle').checked = window.devAssistant.state.config.defaultResearchDepth === 'deep';
+                        document.getElementById('thinking-tokens').value = window.devAssistant.state.maxThinkingTokens || 60000;
+                        document.getElementById('thinking-tokens-display').textContent = (window.devAssistant.state.maxThinkingTokens || 60000).toLocaleString();
+                    }
+                });
+                
+                // Set up thinking tokens slider
+                const thinkingTokensSlider = document.getElementById('thinking-tokens');
+                const thinkingTokensDisplay = document.getElementById('thinking-tokens-display');
+                
+                if (thinkingTokensSlider && thinkingTokensDisplay) {
+                    thinkingTokensSlider.addEventListener('input', () => {
+                        const value = parseInt(thinkingTokensSlider.value);
+                        thinkingTokensDisplay.textContent = value.toLocaleString();
+                        
+                        if (window.devAssistant && window.devAssistant.state) {
+                            window.devAssistant.state.maxThinkingTokens = value;
+                        }
+                    });
+                }
+                
+                // Set up analyze codebase button
+                const analyzeCodebaseButton = document.getElementById('analyze-codebase');
+                if (analyzeCodebaseButton) {
+                    analyzeCodebaseButton.addEventListener('click', async () => {
+                        devAssistantModal.style.display = 'none'; // Close modal
+                        
+                        // Execute the analyze command
+                        if (window.devAssistant && window.devAssistant.analyze) {
+                            try {
+                                const result = await window.devAssistant.analyze([]);
+                                if (window.addMessageToUI) {
+                                    window.addMessageToUI('system', result);
+                                }
+                            } catch (error) {
+                                console.error('Error analyzing codebase:', error);
+                                if (window.addMessageToUI) {
+                                    window.addMessageToUI('system', `Error analyzing codebase: ${error.message}`);
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Set up analyze architecture button
+                const analyzeArchitectureButton = document.getElementById('analyze-architecture');
+                if (analyzeArchitectureButton) {
+                    analyzeArchitectureButton.addEventListener('click', async () => {
+                        devAssistantModal.style.display = 'none'; // Close modal
+                        
+                        // Execute the architecture command
+                        if (window.devAssistant && window.devAssistant.architecture) {
+                            try {
+                                const result = await window.devAssistant.architecture([]);
+                                if (window.addMessageToUI) {
+                                    window.addMessageToUI('system', result);
+                                }
+                            } catch (error) {
+                                console.error('Error analyzing architecture:', error);
+                                if (window.addMessageToUI) {
+                                    window.addMessageToUI('system', `Error analyzing architecture: ${error.message}`);
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Set up view memory categories button
+                const viewMemoryCategoriesButton = document.getElementById('view-memory-categories');
+                const memoryCategoriesList = document.getElementById('memory-categories-list');
+                
+                if (viewMemoryCategoriesButton && memoryCategoriesList) {
+                    viewMemoryCategoriesButton.addEventListener('click', async () => {
+                        try {
+                            // Fetch memory categories
+                            const response = await fetch('/api/dev-assistant/memory/list');
+                            
+                            if (!response.ok) {
+                                throw new Error(`Error fetching memory categories: ${response.status}`);
+                            }
+                            
+                            const data = await response.json();
+                            
+                            // Display categories
+                            memoryCategoriesList.innerHTML = '';
+                            if (data.categories && data.categories.length > 0) {
+                                data.categories.forEach(category => {
+                                    const categoryItem = document.createElement('div');
+                                    categoryItem.className = 'memory-category-item';
+                                    categoryItem.textContent = category;
+                                    categoryItem.style.padding = '5px';
+                                    categoryItem.style.cursor = 'pointer';
+                                    categoryItem.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
+                                    
+                                    categoryItem.addEventListener('click', () => {
+                                        devAssistantModal.style.display = 'none'; // Close modal
+                                        
+                                        // Execute memory list command
+                                        if (window.addMessageToUI) {
+                                            window.addMessageToUI('system', `Listing memory category: ${category}`);
+                                        }
+                                        
+                                        if (window.devAssistant) {
+                                            window.devAssistant.memory(['list', category]);
+                                        }
+                                    });
+                                    
+                                    memoryCategoriesList.appendChild(categoryItem);
+                                });
+                            } else {
+                                memoryCategoriesList.innerHTML = '<div style="padding: 5px;">No memory categories found</div>';
+                            }
+                            
+                            memoryCategoriesList.style.display = 'block';
+                        } catch (error) {
+                            console.error('Error fetching memory categories:', error);
+                            memoryCategoriesList.innerHTML = `<div style="padding: 5px; color: var(--error-color);">Error: ${error.message}</div>`;
+                            memoryCategoriesList.style.display = 'block';
+                        }
+                    });
+                }
+            }
+            
+            // Handle all modal close buttons
+            closeModalButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const modal = button.closest('.modal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Update dev assistant status
+            const updateDevAssistantStatus = async () => {
+                const devAssistantStatus = document.getElementById('dev-assistant-status');
+                if (!devAssistantStatus) return;
+                
+                try {
+                    const response = await fetch('/api/dev-assistant/status');
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.initialized) {
+                            devAssistantStatus.textContent = 'connected';
+                            devAssistantStatus.className = 'status-indicator connected';
+                        } else {
+                            devAssistantStatus.textContent = 'disconnected';
+                            devAssistantStatus.className = 'status-indicator disconnected';
+                        }
+                    } else {
+                        devAssistantStatus.textContent = 'unavailable';
+                        devAssistantStatus.className = 'status-indicator error';
+                    }
+                } catch (error) {
+                    console.error('Error checking dev assistant status:', error);
+                    devAssistantStatus.textContent = 'error';
+                    devAssistantStatus.className = 'status-indicator error';
+                }
+            };
+            
+            // Check dev assistant status initially
+            setTimeout(updateDevAssistantStatus, 1500);
+        }
+    });
+</script>
+{% endblock %} 

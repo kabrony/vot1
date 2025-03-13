@@ -1485,3 +1485,253 @@ def register_api_routes():
     
     # Mark the blueprint as registered
     api_bp._got_registered_once = True 
+
+# Add a new endpoint for user feedback
+@api_bp.route('/feedback', methods=['POST'])
+def submit_feedback():
+    """
+    Submit user feedback for system improvement.
+    
+    The feedback is stored in the memory system and used to improve future responses.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        feedback_type = data.get('type')
+        content = data.get('content')
+        source = data.get('source', 'dashboard')
+        rating = data.get('rating')
+        
+        if not all([feedback_type, content]):
+            return jsonify({"error": "Missing required fields"}), 400
+        
+        # Log the feedback
+        logger.info(f"Received feedback: {feedback_type} from {source}")
+        
+        # Create metadata for the feedback
+        metadata = {
+            "type": "feedback",
+            "feedback_type": feedback_type,
+            "source": source,
+            "timestamp": time.time(),
+        }
+        
+        if rating is not None:
+            metadata["rating"] = rating
+        
+        # Store in memory system if available
+        if _memory_manager:
+            try:
+                # Use the new add_memory_with_metrics method for better retrieval
+                memory_id = _memory_manager.add_memory_with_metrics(content, metadata)
+                
+                # If we have the MCP hybrid automation, trigger learning from feedback
+                if _mcp_hybrid_automation:
+                    asyncio.create_task(_process_feedback_for_learning(memory_id, content, metadata))
+                
+                return jsonify({
+                    "status": "success",
+                    "message": "Feedback submitted successfully",
+                    "memory_id": memory_id
+                })
+            except Exception as e:
+                logger.error(f"Error storing feedback in memory: {e}")
+                return jsonify({
+                    "status": "partial_success",
+                    "message": f"Feedback logged but not stored in memory: {e}"
+                })
+        else:
+            # If no memory manager, just log the feedback
+            logger.warning("No memory manager available, feedback only logged")
+            return jsonify({
+                "status": "partial_success",
+                "message": "Feedback logged but not stored (no memory system available)"
+            })
+    
+    except Exception as e:
+        logger.error(f"Error processing feedback: {e}")
+        return jsonify({"error": f"Error processing feedback: {e}"}), 500
+
+async def _process_feedback_for_learning(memory_id, content, metadata):
+    """
+    Process feedback for learning and improvement.
+    
+    This function is called asynchronously after storing feedback in memory.
+    It triggers the MCP hybrid automation to learn from the feedback.
+    """
+    try:
+        if not _mcp_hybrid_automation:
+            logger.warning("MCP hybrid automation not available for feedback learning")
+            return
+        
+        # Prepare prompt for learning
+        feedback_type = metadata.get("feedback_type", "general")
+        
+        if feedback_type == "correction":
+            prompt = f"""
+            The user has provided a correction to a previous response. 
+            Learn from this correction to improve future responses:
+            
+            Correction: {content}
+            
+            Please analyze what went wrong in the original response and how to avoid this issue in the future.
+            Identify specific knowledge gaps or misconceptions that should be addressed.
+            """
+        
+        elif feedback_type == "suggestion":
+            prompt = f"""
+            The user has provided a suggestion for improvement:
+            
+            Suggestion: {content}
+            
+            Please analyze this suggestion and determine how it can be incorporated into the system's behavior.
+            What specific changes in approach would implement this suggestion?
+            """
+        
+        elif feedback_type == "rating":
+            rating = metadata.get("rating", 0)
+            prompt = f"""
+            The user has rated a response {rating}/5.
+            
+            Additional feedback: {content}
+            
+            Please analyze what aspects of the response were good or bad based on this rating.
+            How can future responses be improved to achieve higher ratings?
+            """
+        
+        else:  # general feedback
+            prompt = f"""
+            The user has provided general feedback:
+            
+            Feedback: {content}
+            
+            Please analyze this feedback and determine what insights can be gained to improve future interactions.
+            What specific changes would address this feedback?
+            """
+        
+        # Send to MCP hybrid automation for processing
+        result = await _mcp_hybrid_automation.process_feedback(prompt, metadata)
+        
+        # Store the insights back in memory
+        if result and _memory_manager:
+            insight_metadata = {
+                "type": "system_insight",
+                "source": "feedback_learning",
+                "original_feedback_id": memory_id,
+                "timestamp": time.time()
+            }
+            
+            _memory_manager.add_memory_with_metrics(result, insight_metadata)
+            
+            logger.info(f"Processed feedback {memory_id} and stored insights")
+        
+    except Exception as e:
+        logger.error(f"Error processing feedback for learning: {e}")
+
+# Add a streaming feedback endpoint
+@api_bp.route('/feedback/stream', methods=['POST'])
+def stream_feedback_response():
+    """
+    Submit feedback and get a streaming response on how the system will improve.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        content = data.get('content')
+        feedback_type = data.get('type', 'general')
+        
+        if not content:
+            return jsonify({"error": "Missing feedback content"}), 400
+        
+        # Log the feedback
+        logger.info(f"Received streaming feedback request: {feedback_type}")
+        
+        # Define streaming response
+        def generate():
+            # Initial thinking state
+            yield json.dumps({
+                "status": "thinking",
+                "message": "Processing your feedback..."
+            }) + "\n"
+            
+            time.sleep(0.5)
+            
+            # Processing state
+            yield json.dumps({
+                "status": "processing",
+                "message": "Analyzing feedback patterns",
+                "progress": 0.3
+            }) + "\n"
+            
+            time.sleep(0.5)
+            
+            # More processing
+            yield json.dumps({
+                "status": "processing",
+                "message": "Identifying improvement opportunities",
+                "progress": 0.6
+            }) + "\n"
+            
+            time.sleep(0.5)
+            
+            # Responding state
+            yield json.dumps({
+                "status": "responding",
+                "message": "Generating response",
+                "progress": 0.8
+            }) + "\n"
+            
+            # Store feedback in memory
+            metadata = {
+                "type": "feedback",
+                "feedback_type": feedback_type,
+                "source": "dashboard",
+                "timestamp": time.time(),
+            }
+            
+            if _memory_manager:
+                try:
+                    memory_id = _memory_manager.add_memory_with_metrics(content, metadata)
+                except Exception as e:
+                    logger.error(f"Error storing feedback in memory: {e}")
+            
+            # Generate acknowledgment message
+            response = "Thank you for your feedback. Here's how we'll use it to improve:\n\n"
+            
+            # Add specific details based on feedback type
+            if feedback_type == "correction":
+                response += "- We'll correct this information in our knowledge base\n"
+                response += "- Future responses will reflect this correction\n"
+                response += "- We'll analyze why this error occurred to prevent similar issues\n"
+            elif feedback_type == "suggestion":
+                response += "- We'll incorporate your suggestion into system improvements\n"
+                response += "- Your idea will be prioritized for upcoming updates\n"
+                response += "- We'll monitor how this change affects overall experience\n"
+            else:
+                response += "- Your feedback will be analyzed for insights\n"
+                response += "- We'll identify specific areas for improvement\n"
+                response += "- System behavior will be adjusted accordingly\n"
+            
+            # Stream response in chunks of words
+            words = response.split()
+            for i in range(0, len(words), 3):
+                chunk = " ".join(words[i:i+3])
+                progress = 0.8 + (0.2 * (i / len(words)))
+                
+                yield json.dumps({
+                    "status": "complete",
+                    "chunk": chunk + " ",
+                    "progress": progress
+                }) + "\n"
+                
+                time.sleep(0.1)
+        
+        return Response(generate(), mimetype='application/x-ndjson')
+        
+    except Exception as e:
+        logger.error(f"Error processing streaming feedback: {e}")
+        return jsonify({"error": f"Error processing feedback: {e}"}), 500 

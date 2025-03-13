@@ -15,6 +15,7 @@ from datetime import datetime
 import uuid
 import numpy as np
 from pathlib import Path
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -334,6 +335,8 @@ class MemoryManager:
                     self.memory_stats.update(json.load(f))
             except:
                 logger.warning("Failed to load memory statistics, using defaults")
+        
+        self.storage_dir = memory_path  # Add this line to fix the dashboard issue
         
         logger.info(f"Initialized MemoryManager with storage at {memory_path}")
     
@@ -793,4 +796,65 @@ class MemoryManager:
             # Just apply threshold
             results = [r for r in results if r.get("score", 0) >= threshold][:limit]
         
-        return results 
+        return results
+    
+    def add_memory_with_metrics(self, content, metadata=None):
+        """
+        Add memory with advanced linguistic metrics for more natural retrieval.
+        Implements perplexity (word complexity) and burstiness (sentence variation).
+        """
+        # Calculate perplexity score (lower is more predictable)
+        tokens = content.split()
+        perplexity_score = self._calculate_perplexity(tokens)
+        
+        # Calculate burstiness (sentence length variation)
+        sentences = re.split(r'[.!?]+', content)
+        sentence_lengths = [len(s.split()) for s in sentences if s.strip()]
+        burstiness = np.std(sentence_lengths) if sentence_lengths else 0
+        
+        # Store extended metadata
+        enhanced_metadata = metadata or {}
+        enhanced_metadata.update({
+            "perplexity": perplexity_score,
+            "burstiness": burstiness,
+            "timestamp": datetime.now().timestamp(),
+            "memory_type": self._classify_memory_type(content)
+        })
+        
+        # Add to vector store with enhanced retrieval properties
+        memory_id = self.vector_store.add(content, enhanced_metadata)
+        
+        return memory_id
+    
+    def _calculate_perplexity(self, tokens):
+        """Calculate a simple perplexity score based on token frequency."""
+        if not tokens:
+            return 0
+            
+        # Simple approximation - in real implementation, use a proper language model
+        token_freqs = {}
+        for token in tokens:
+            token_freqs[token] = token_freqs.get(token, 0) + 1
+            
+        # Calculate entropy as a proxy for perplexity
+        token_count = len(tokens)
+        entropy = 0
+        for token, freq in token_freqs.items():
+            prob = freq / token_count
+            entropy -= prob * np.log2(prob)
+            
+        return entropy
+    
+    def _classify_memory_type(self, content):
+        """Classify memory type based on content."""
+        # Simple rule-based classification - in real implementation, use ML
+        content_lower = content.lower()
+        
+        if "how to" in content_lower or "steps" in content_lower:
+            return "procedure"
+        elif any(q in content_lower for q in ["what is", "who is", "when", "where"]):
+            return "fact"
+        elif "i think" in content_lower or "could be" in content_lower:
+            return "insight"
+        else:
+            return "concept" 

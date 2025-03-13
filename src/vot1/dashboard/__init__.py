@@ -13,6 +13,9 @@ from typing import Optional, Union
 from pathlib import Path
 from flask import Flask
 from flask_socketio import SocketIO
+from .routes import init_routes
+from .api.mcp_handler import init_mcp_api  # Import MCP API initializer
+from .api.dev_assistant_api import init_dev_assistant_api  # Import Development Assistant API initializer
 
 # Import the server implementation
 try:
@@ -77,13 +80,16 @@ __all__ = ["create_dashboard", "DashboardServer"]
 from .api import api_bp, init_api
 from .mcp_hybrid_api import mcp_hybrid_bp
 from .github_ecosystem_api import github_ecosystem_bp
-from .routes import init_routes
 from ..memory import MemoryManager
 
 # Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-def create_app(client=None, memory_path=None, no_memory=False, mcp_hybrid_options=None):
+def create_app(client=None, memory_path=None, no_memory=False, mcp_hybrid_options=None, dev_assistant_options=None):
     """
     Create and configure the Flask application for the VOT1 dashboard.
     
@@ -92,6 +98,7 @@ def create_app(client=None, memory_path=None, no_memory=False, mcp_hybrid_option
         memory_path: Path to the memory storage directory
         no_memory: Whether to disable memory management
         mcp_hybrid_options: Configuration options for MCP hybrid automation
+        dev_assistant_options: Configuration options for Development Assistant
     
     Returns:
         A Flask application instance
@@ -104,13 +111,28 @@ def create_app(client=None, memory_path=None, no_memory=False, mcp_hybrid_option
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_change_in_production')
     app.config['JSON_SORT_KEYS'] = False
     app.config['MCP_HYBRID_OPTIONS'] = mcp_hybrid_options or {
-        "enabled": False,
+        "enabled": True,  # Enable MCP by default
         "primary_model": "claude-3-7-sonnet-20240620",
         "secondary_model": "claude-3-5-sonnet-20240620",
-        "use_extended_thinking": False,
-        "max_thinking_tokens": 8000,
-        "enable_streaming": False
+        "use_extended_thinking": True,
+        "max_thinking_tokens": 60000,  # Increased for deep research
+        "enable_streaming": True,
+        "perplexity_integration": True,  # Enable Perplexity integration
+        "firecrawl_integration": True   # Enable Firecrawl integration
     }
+    
+    # Configure Development Assistant options
+    app.config['DEV_ASSISTANT_OPTIONS'] = dev_assistant_options or {
+        "enabled": True,  # Enable Development Assistant by default
+        "project_root": os.getcwd(),
+        "memory_path": memory_path or os.path.join(os.getcwd(), 'memory'),
+        "max_thinking_tokens": 60000,
+        "perplexity_research": True
+    }
+    
+    # Set the project root and memory path for the Development Assistant
+    app.config['PROJECT_ROOT'] = app.config['DEV_ASSISTANT_OPTIONS']['project_root']
+    app.config['MEMORY_PATH'] = app.config['DEV_ASSISTANT_OPTIONS']['memory_path']
     
     # Initialize SocketIO
     socketio = SocketIO(app, cors_allowed_origins="*")
@@ -151,6 +173,14 @@ def create_app(client=None, memory_path=None, no_memory=False, mcp_hybrid_option
     # Initialize UI routes
     init_routes(app)
     
-    logger.info("VOT1 Dashboard initialized successfully")
+    # Initialize MCP API
+    init_mcp_api(app)
+    
+    # Initialize Development Assistant API if enabled
+    if app.config['DEV_ASSISTANT_OPTIONS']['enabled']:
+        init_dev_assistant_api(app)
+        logger.info("Development Assistant API initialized")
+    
+    logger.info("VOT1 Dashboard initialized successfully with MCP and Development Assistant integration")
     
     return app 
