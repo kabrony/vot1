@@ -1,0 +1,30 @@
+# VOT1 Code Ownership
+
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# these users will be requested for review when someone opens a pull request.
+* @villageofthousands/core-team
+
+# Memory Management System
+/src/vot1/memory/ @villageofthousands/memory-team
+
+# OWL Reasoning Engine
+/src/vot1/owl/ @villageofthousands/reasoning-team
+
+# Dashboard and Visualization
+/src/vot1/dashboard/ @villageofthousands/dashboard-team
+/src/vot1/dashboard/static/ @villageofthousands/ui-team
+
+# MCP Hybrid Automation 
+/src/vot1/mcp/ @villageofthousands/mcp-team
+/scripts/mcp_hybrid_automation.py @villageofthousands/mcp-team
+
+# Integration Layer (GitHub, Composio, etc.)
+/src/vot1/integrations/ @villageofthousands/integrations-team
+
+# Documentation
+/docs/ @villageofthousands/docs-team
+*.md @villageofthousands/docs-team
+
+# CI/CD and GitHub Actions
+/.github/workflows/ @villageofthousands/devops-team 

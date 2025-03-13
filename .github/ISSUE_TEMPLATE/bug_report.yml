@@ -1,0 +1,105 @@
+name: "🐛 Bug Report"
+description: "Report an issue with VOT1"
+title: "[BUG] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        <div style="background-color: #3c1f3c; padding: 15px; border-radius: 10px; border-left: 5px solid #6c4f9c;">
+          <h2 style="color: #f9f9fb; margin-top: 0;">🐛 VOT1 Bug Report</h2>
+          <p style="color: #f9f9fb;">Thanks for taking the time to report a bug! Please fill out this form as completely as possible to help us resolve the issue quickly.</p>
+        </div>
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: "🧩 Component"
+      description: "Which component of VOT1 is affected by this bug?"
+      options:
+        - Memory Management System
+        - OWL Reasoning Engine
+        - Dashboard & Visualization
+        - MCP Hybrid Automation
+        - Integration (GitHub/Composio/etc.)
+        - AI Chat Interface
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: "📋 Bug Description"
+      description: "Provide a clear and detailed description of the bug"
+      placeholder: "When I try to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: "🔄 Steps to Reproduce"
+      description: "List the steps to reproduce the bug"
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "✅ Expected Behavior"
+      description: "What did you expect to happen?"
+      placeholder: "I expected VOT1 to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "📜 Logs & Screenshots"
+      description: "If applicable, add logs, error messages, or screenshots to help explain your problem"
+      placeholder: "Paste any relevant logs or error messages here"
+      render: shell
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: "💻 Environment"
+      description: "Where are you running VOT1?"
+      options:
+        - Local installation (Windows)
+        - Local installation (MacOS)
+        - Local installation (Linux)
+        - Docker container
+        - Cloud deployment
+        - Other (specify in additional info)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: "🔢 VOT1 Version"
+      description: "Which version of VOT1 are you using?"
+      placeholder: "e.g., v1.2.0 or Git commit hash"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: "ℹ️ Additional Information"
+      description: "Add any other context about the problem here"
+      placeholder: "Any additional details that might help..."
+
+  - type: markdown
+    attributes:
+      value: |
+        <div style="background-color: #1f3c3c; padding: 15px; border-radius: 10px; margin-top: 20px;">
+          <p style="color: #f9f9fb; margin: 0;">Thank you for helping improve VOT1! Your bug report will help us make our autonomous intelligence system more robust and reliable for everyone in the Village of Thousands community.</p>
+        </div> 

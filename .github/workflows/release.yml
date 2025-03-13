@@ -1,0 +1,161 @@
+name: VOT1 Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (format: vX.Y.Z)'
+        required: true
+        default: 'v0.0.0'
+
+jobs:
+  build-release:
+    name: 🚀 Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: 🔢 Set version from tag or input
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_number=${VERSION#v}" >> $GITHUB_OUTPUT
+      
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build wheel setuptools twine
+      
+      - name: 📋 Generate changelog
+        id: changelog
+        uses: metcalfc/changelog-generator@v4.1.0
+        with:
+          myToken: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 📝 Create Release Notes
+        run: |
+          cat > release_notes.md << EOL
+          # VOT1 ${{ steps.version.outputs.version }} Release
+
+          ![VOT1 Release Banner](https://raw.githubusercontent.com/villageofthousands/vot1-assets/main/vot1-release-banner.png)
+
+          ## What's New
+          
+          ${{ steps.changelog.outputs.changelog }}
+
+          ## Installation
+
+          ```bash
+          pip install vot1==${{ steps.version.outputs.version_number }}
+          ```
+
+          ## Documentation
+
+          Full documentation for this release is available at:
+          https://villageofthousands.github.io/vot1/
+
+          ## Docker Image
+
+          ```bash
+          docker pull ghcr.io/villageofthousands/vot1:${{ steps.version.outputs.version }}
+          ```
+          EOL
+      
+      - name: 🔨 Build Python package
+        run: |
+          python -m build
+      
+      - name: 🧪 Test built package
+        run: |
+          twine check dist/*
+      
+      - name: 🚀 Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: VOT1 ${{ steps.version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+      
+      - name: 🐳 Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: 📦 Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip_existing: true
+
+  announce:
+    name: 📢 Announce Release
+    needs: build-release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: 🔢 Get version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+      
+      - name: 🐦 Announce on Twitter
+        uses: ethomson/send-tweet-action@v1
+        with:
+          status: "🎉 VOT1 ${{ steps.version.outputs.version }} has been released! Featuring improved memory management, enhanced OWL reasoning, and more. Download now: https://github.com/villageofthousands/vot1/releases/tag/${{ steps.version.outputs.version }} #VOT1 #AI #AutonomousIntelligence"
+          consumer-key: ${{ secrets.TWITTER_CONSUMER_API_KEY }}
+          consumer-secret: ${{ secrets.TWITTER_CONSUMER_API_SECRET }}
+          access-token: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          access-token-secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+      
+      - name: 💬 Announce on Discord
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            🚀 **VOT1 ${{ steps.version.outputs.version }} Released!**
+            
+            A new version of VOT1 is now available with new features and improvements.
+            
+            📥 **Download**: https://github.com/villageofthousands/vot1/releases/tag/${{ steps.version.outputs.version }}
+            📚 **Docs**: https://villageofthousands.github.io/vot1/
+            🐳 **Docker**: `docker pull ghcr.io/villageofthousands/vot1:${{ steps.version.outputs.version }}` 
