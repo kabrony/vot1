@@ -1,0 +1,232 @@
+openapi: 3.0.0
+info:
+  title: Sample API
+  description: A sample API for testing OpenAPI import
+  version: 1.0.0
+  contact:
+    name: VOT1 Team
+    email: support@vot1.com
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+paths:
+  /items:
+    get:
+      summary: List all items
+      description: Returns a list of all items
+      operationId: listItems
+      tags:
+        - items
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: A list of items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Create a new item
+      description: Creates a new item
+      operationId: createItem
+      tags:
+        - items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewItem'
+      responses:
+        '201':
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /items/{itemId}:
+    get:
+      summary: Get item by ID
+      description: Returns a single item by ID
+      operationId: getItem
+      tags:
+        - items
+      parameters:
+        - name: itemId
+          in: path
+          description: ID of the item to get
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Update an item
+      description: Updates an existing item
+      operationId: updateItem
+      tags:
+        - items
+      parameters:
+        - name: itemId
+          in: path
+          description: ID of the item to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewItem'
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Delete an item
+      description: Deletes an existing item
+      operationId: deleteItem
+      tags:
+        - items
+      parameters:
+        - name: itemId
+          in: path
+          description: ID of the item to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Item deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  schemas:
+    Item:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the item
+        name:
+          type: string
+          description: Name of the item
+        description:
+          type: string
+          description: Description of the item
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+    NewItem:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the item
+        description:
+          type: string
+          description: Description of the item
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Error code
+        message:
+          type: string
+          description: Error message
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+security:
+  - ApiKeyAuth: [] 

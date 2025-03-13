@@ -1,0 +1,88 @@
+# Configuration for GitHub 
+
+### New Issue Welcome Message
+newIssueWelcomeComment: >
+  <div style="background-color: #3c1f3c; padding: 15px; border-radius: 10px; border-left: 5px solid #6c4f9c;">
+    <h3 style="color: #f9f9fb; margin-top: 0;">🌟 Thank you for opening your first issue!</h3>
+    <p style="color: #f9f9fb;">Welcome to the Village of Thousands community! We appreciate your contribution to the VOT1 project. Our team will review your issue soon and respond accordingly.</p>
+    <p style="color: #f9f9fb;">While you wait, consider checking out our <a href="https://github.com/villageofthousands/vot1/blob/main/CONTRIBUTING.md" style="color: #6c4f9c;">contribution guidelines</a> and <a href="https://discord.gg/villagethousands" style="color: #6c4f9c;">joining our Discord</a> to connect with other community members.</p>
+  </div>
+
+### New PR Welcome Message
+newPRWelcomeComment: >
+  <div style="background-color: #3c1f3c; padding: 15px; border-radius: 10px; border-left: 5px solid #6c4f9c;">
+    <h3 style="color: #f9f9fb; margin-top: 0;">🎉 Thank you for your first pull request!</h3>
+    <p style="color: #f9f9fb;">Welcome to the Village of Thousands community! We're excited to review your contribution to the VOT1 project.</p>
+    <p style="color: #f9f9fb;">Our team will review your PR soon. In the meantime, please make sure your PR:</p>
+    <ul style="color: #f9f9fb;">
+      <li>Follows our code style guidelines</li>
+      <li>Includes appropriate tests</li>
+      <li>Provides clear documentation of changes</li>
+    </ul>
+    <p style="color: #f9f9fb;">If you haven't already, consider <a href="https://discord.gg/villagethousands" style="color: #6c4f9c;">joining our Discord</a> to connect with other contributors!</p>
+  </div>
+
+### First PR Merged Message
+firstPRMergeComment: >
+  <div style="background-color: #1f3c3c; padding: 15px; border-radius: 10px; border-left: 5px solid #6c4f9c;">
+    <h3 style="color: #f9f9fb; margin-top: 0;">🚀 Congratulations on your first merged PR!</h3>
+    <p style="color: #f9f9fb;">You are now officially a contributor to the VOT1 project! Thank you for helping make our autonomous intelligence system better.</p>
+    <p style="color: #f9f9fb;">We hope to see more of your contributions in the future. Don't forget to:</p>
+    <ul style="color: #f9f9fb;">
+      <li>Star the repository if you haven't already</li>
+      <li>Check out other open issues you might be interested in</li>
+      <li>Share your experience with others in our community</li>
+    </ul>
+    <p style="color: #f9f9fb;">Welcome to the Village of Thousands family! 💜</p>
+  </div>
+
+# Repository settings
+repository:
+  # See https://developer.github.com/v3/repos/#edit for all available settings.
+  name: vot1
+  description: "VOT1: An advanced autonomous intelligence system with memory management, OWL reasoning, and self-improvement workflows"
+  homepage: https://villageofthousands.io
+  topics: autonomous-intelligence, memory-management, owl-reasoning, self-improvement, ai, vector-database, visualization, dashboard, hybrid-intelligence
+  private: false
+  has_issues: true
+  has_projects: true
+  has_wiki: true
+  has_downloads: true
+  default_branch: main
+  allow_squash_merge: true
+  allow_merge_commit: true
+  allow_rebase_merge: true
+  delete_branch_on_merge: true
+
+# Label settings
+labels:
+  - name: "bug"
+    color: "d73a4a"
+    description: "Something isn't working"
+  - name: "enhancement"
+    color: "6c4f9c"
+    description: "New feature or request"
+  - name: "documentation"
+    color: "0075ca"
+    description: "Improvements or additions to documentation"
+  - name: "good first issue"
+    color: "7057ff"
+    description: "Good for newcomers"
+  - name: "help wanted"
+    color: "008672"
+    description: "Extra attention is needed"
+  - name: "triage"
+    color: "fbca04" 
+    description: "This issue needs to be triaged"
+  - name: "memory-system"
+    color: "3c1f3c"
+    description: "Related to the memory management system"
+  - name: "owl-reasoning"
+    color: "1f3c3c"
+    description: "Related to the OWL reasoning engine"
+  - name: "dashboard"
+    color: "5c3f5c"
+    description: "Related to the dashboard and visualization"
+  - name: "mcp-hybrid"
+    color: "6c4f9c"
+    description: "Related to the MCP Hybrid Automation" 

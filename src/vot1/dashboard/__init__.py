@@ -11,6 +11,8 @@ import os
 import logging
 from typing import Optional, Union
 from pathlib import Path
+from flask import Flask
+from flask_socketio import SocketIO
 
 # Import the server implementation
 try:
@@ -69,4 +71,86 @@ else:
         logging.info("Dashboard files verified successfully")
 
 # Export the public interface
-__all__ = ["create_dashboard", "DashboardServer"] 
+__all__ = ["create_dashboard", "DashboardServer"]
+
+# Import API and routes
+from .api import api_bp, init_api
+from .mcp_hybrid_api import mcp_hybrid_bp
+from .github_ecosystem_api import github_ecosystem_bp
+from .routes import init_routes
+from ..memory import MemoryManager
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
+def create_app(client=None, memory_path=None, no_memory=False, mcp_hybrid_options=None):
+    """
+    Create and configure the Flask application for the VOT1 dashboard.
+    
+    Args:
+        client: An instance of EnhancedClaudeClient for AI interactions
+        memory_path: Path to the memory storage directory
+        no_memory: Whether to disable memory management
+        mcp_hybrid_options: Configuration options for MCP hybrid automation
+    
+    Returns:
+        A Flask application instance
+    """
+    app = Flask(__name__, 
+                static_folder='static', 
+                template_folder='templates')
+    
+    # Configure app
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_change_in_production')
+    app.config['JSON_SORT_KEYS'] = False
+    app.config['MCP_HYBRID_OPTIONS'] = mcp_hybrid_options or {
+        "enabled": False,
+        "primary_model": "claude-3-7-sonnet-20240620",
+        "secondary_model": "claude-3-5-sonnet-20240620",
+        "use_extended_thinking": False,
+        "max_thinking_tokens": 8000,
+        "enable_streaming": False
+    }
+    
+    # Initialize SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*")
+    
+    # Initialize memory manager if enabled
+    memory_manager = None
+    if not no_memory:
+        try:
+            # Ensure a valid memory path
+            if memory_path is None:
+                memory_path = os.environ.get('VOT1_MEMORY_PATH', os.path.join(os.getcwd(), 'memory'))
+                logger.info(f"Using default memory path: {memory_path}")
+            
+            # Create memory directory if it doesn't exist
+            os.makedirs(memory_path, exist_ok=True)
+            
+            memory_manager = MemoryManager(memory_path=memory_path)
+            logger.info(f"Memory manager initialized at {memory_manager.storage_dir}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize memory manager: {e}")
+    
+    # Store memory manager in app config for access by views
+    app.config['memory_manager'] = memory_manager
+    
+    # Register API blueprint
+    app.register_blueprint(api_bp)
+    
+    # Register MCP hybrid blueprint
+    app.register_blueprint(mcp_hybrid_bp)
+    
+    # Register GitHub ecosystem analyzer blueprint
+    app.register_blueprint(github_ecosystem_bp)
+    
+    # Initialize API with components
+    with app.app_context():
+        init_api(socketio, client, memory_manager)
+    
+    # Initialize UI routes
+    init_routes(app)
+    
+    logger.info("VOT1 Dashboard initialized successfully")
+    
+    return app 

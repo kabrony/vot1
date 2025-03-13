@@ -715,4 +715,436 @@ footer {
 /* Error State */
 .error {
     color: #d32f2f;
+}
+
+/* Status indicators */
+.status-available {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+.status-error {
+    color: var(--error-color);
+    font-weight: bold;
+}
+
+.status-warning {
+    color: var(--warning-color);
+    font-weight: bold;
+}
+
+/* MCP Hybrid Automation Section */
+#mcp-hybrid-section {
+    margin-bottom: 2rem;
+}
+
+#mcp-hybrid-config {
+    background: var(--bg-color-secondary);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+#mcp-hybrid-controls {
+    background: var(--bg-color-secondary);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+#mcp-hybrid-result {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-color-tertiary);
+    border-radius: 0.5rem;
+}
+
+.result-box {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--bg-color);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    white-space: pre-wrap;
+}
+
+#mcp-hybrid-temperature-value {
+    display: inline-block;
+    width: 2rem;
+    text-align: center;
+    margin-left: 0.5rem;
+}
+
+/* Advanced settings dialog */
+#mcp-hybrid-dialog {
+    /* Add appropriate styles for the dialog */
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.notification-success {
+    background-color: #4caf50;
+}
+
+.notification-error {
+    background-color: #f44336;
+}
+
+.notification-warning {
+    background-color: #ff9800;
+}
+
+.notification-info {
+    background-color: #2196f3;
+}
+
+/* Streaming Controls */
+.streaming-toggle {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background-color: var(--bg-color);
+    border-radius: 0.25rem;
+    border: 1px solid var(--border-color);
+}
+
+.streaming-toggle label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.streaming-toggle input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+/* Animated cursor for streaming */
+.streaming-cursor:after {
+    content: '|';
+    display: inline-block;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+#mcp-hybrid-result-content.streaming {
+    border-left: 3px solid var(--accent);
+}
+
+/* MCP Hybrid Section improvements */
+#mcp-hybrid-section {
+    background-color: var(--bg-color-secondary);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    margin-top: 2rem;
+}
+
+#mcp-hybrid-section h2 {
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+/* Advanced settings dialog */
+#mcp-hybrid-dialog {
+    /* Add appropriate styles for the dialog */
+}
+
+/* GitHub Automation UI Styles */
+
+.update-areas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+}
+
+.checkbox-item label {
+    margin-left: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-item label i {
+    margin-right: 5px;
+}
+
+.range-value {
+    text-align: center;
+    margin-top: 5px;
+    font-size: 0.9em;
+    color: #aaa;
+}
+
+.results-visualization {
+    margin-top: 20px;
+    border: 1px solid #2a2a2a;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.results-visualization .tabs {
+    display: flex;
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.results-visualization .tab {
+    padding: 10px 15px;
+    cursor: pointer;
+    color: #aaa;
+    transition: background-color 0.2s;
+}
+
+.results-visualization .tab:hover {
+    background-color: #222;
+    color: #fff;
+}
+
+.results-visualization .tab.active {
+    background-color: #252525;
+    color: #fff;
+    border-bottom: 2px solid #0088ff;
+}
+
+.results-tab-content {
+    display: none;
+    padding: 15px;
+    background-color: #1e1e1e;
+}
+
+.results-tab-content.active {
+    display: block;
+}
+
+.three-js-container {
+    height: 400px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 3px;
+    background-color: #111;
+}
+
+.visualization-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    gap: 10px;
+}
+
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.toggle-switch input[type="checkbox"] {
+    height: 0;
+    width: 0;
+    visibility: hidden;
+    position: absolute;
+}
+
+.toggle-switch label {
+    cursor: pointer;
+    width: 36px;
+    height: 18px;
+    background: #333;
+    display: block;
+    border-radius: 18px;
+    position: relative;
+    margin-right: 10px;
+}
+
+.toggle-switch label:after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: #999;
+    border-radius: 14px;
+    transition: 0.3s;
+}
+
+.toggle-switch input:checked + label {
+    background: #0088ff;
+}
+
+.toggle-switch input:checked + label:after {
+    left: calc(100% - 2px);
+    transform: translateX(-100%);
+    background: #fff;
+}
+
+.toggle-label {
+    font-size: 0.9em;
+    color: #ddd;
+}
+
+.option-toggles {
+    margin-top: 15px;
+}
+
+.reasoning-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    border-left: 3px solid #0088ff;
+}
+
+.ai-reasoning-container {
+    padding: 15px;
+    background-color: #1e1e1e;
+    border-radius: 3px;
+    margin-bottom: 20px;
+}
+
+.reasoning-content h5 {
+    color: #0088ff;
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+.memory-integration {
+    margin-top: 20px;
+}
+
+.memory-container {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #1e1e1e;
+    border-radius: 3px;
+}
+
+.memory-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.memory-item {
+    padding: 10px;
+    background-color: #252525;
+    border-radius: 3px;
+    border-left: 2px solid #0088ff;
+}
+
+.memory-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.8em;
+}
+
+.memory-type {
+    color: #0088ff;
+    font-weight: bold;
+}
+
+.memory-date {
+    color: #777;
+}
+
+.memory-content {
+    color: #ddd;
+    font-size: 0.9em;
+}
+
+.placeholder-text {
+    color: #777;
+    text-align: center;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Custom Range Slider Styles */
+input[type="range"].custom-range {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #333;
+    outline: none;
+}
+
+input[type="range"].custom-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #0088ff;
+    cursor: pointer;
+}
+
+input[type="range"].custom-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #0088ff;
+    cursor: pointer;
+    border: none;
+}
+
+/* Form Row Layout */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -10px;
+    margin-left: -10px;
+}
+
+.form-row > .form-group {
+    padding-right: 10px;
+    padding-left: 10px;
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .update-areas {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .three-js-container {
+        height: 300px;
+    }
 } 

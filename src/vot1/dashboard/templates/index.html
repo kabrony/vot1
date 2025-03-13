@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOT1 Memory Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three-forcegraph@1.39.3/dist/three-forcegraph.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.8.0/dist/three-spritetext.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="{{ url_for('static', filename='js/visualization.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    
+    <!-- Marked.js for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    
+    <!-- jQuery and Socket.IO libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</head>
+<body class="dark-theme">
+    <header>
+        <div class="logo">
+            <h1>VOT1<span class="subtitle">Memory System</span></h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#" id="nav-overview" class="active">Overview</a></li>
+                <li><a href="#" id="nav-memories">Memories</a></li>
+                <li><a href="#" id="nav-reasoning">Reasoning</a></li>
+                <li><a href="#" id="nav-integrations">Integrations</a></li>
+                <li><a href="#" id="nav-settings">Settings</a></li>
+            </ul>
+        </nav>
+        <div class="user-info">
+            <div class="theme-toggle" id="theme-toggle">
+                <i class="fas fa-moon"></i>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Search memories...">
+                <button id="search-button"><i class="fas fa-search"></i></button>
+            </div>
+            <div class="memory-stats">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-brain"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="memory-count">0</span>
+                        <span class="stat-label">Memories</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-project-diagram"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="connection-count">0</span>
+                        <span class="stat-label">Connections</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-lightbulb"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="insight-count">0</span>
+                        <span class="stat-label">Insights</span>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-container">
+                <h3>Filters</h3>
+                <div class="filter-group">
+                    <label>Memory Type</label>
+                    <select id="memory-type-filter">
+                        <option value="all">All Types</option>
+                        <option value="fact">Facts</option>
+                        <option value="concept">Concepts</option>
+                        <option value="procedure">Procedures</option>
+                        <option value="insight">Insights</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Time Range</label>
+                    <select id="time-range-filter">
+                        <option value="all">All Time</option>
+                        <option value="day">Last 24 Hours</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Relevance</label>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="50" id="relevance-slider">
+                        <span id="relevance-value">50%</span>
+                    </div>
+                </div>
+                <button id="apply-filters" class="btn btn-primary">Apply Filters</button>
+            </div>
+        </div>
+        
+        <main>
+            <div class="section active" id="section-overview">
+                <div class="overview-header">
+                    <h2>Memory Network</h2>
+                    <div class="visualization-controls">
+                        <button class="control-btn" id="zoom-in"><i class="fas fa-search-plus"></i></button>
+                        <button class="control-btn" id="zoom-out"><i class="fas fa-search-minus"></i></button>
+                        <button class="control-btn" id="reset-view"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <div class="visualization-container" id="visualization-container"></div>
+                <div class="memory-detail" id="memory-detail">
+                    <div class="memory-detail-header">
+                        <h3 id="memory-detail-title">Select a memory to view details</h3>
+                        <button class="close-btn" id="close-memory-detail"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="memory-detail-content" id="memory-detail-content">
+                        <p class="memory-select-prompt">Click on a node in the visualization to view its details.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section" id="section-memories">
+                <h2>Memory Explorer</h2>
+                <div class="memory-explorer">
+                    <div class="memory-list" id="memory-list">
+                        <!-- Memory list will be populated dynamically -->
+                        <div class="loading-indicator">Loading memories...</div>
+                    </div>
+                    <div class="memory-preview" id="memory-preview">
+                        <div class="memory-preview-placeholder">
+                            <i class="fas fa-brain"></i>
+                            <p>Select a memory to preview</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section" id="section-reasoning">
+                <h2>Reasoning Engine</h2>
+                <div class="reasoning-container">
+                    <div class="reasoning-input">
+                        <h3>Ask a Question</h3>
+                        <textarea id="reasoning-question" placeholder="What would you like to know?"></textarea>
+                        <button id="submit-question" class="btn btn-primary">Submit</button>
+                    </div>
+                    <div class="reasoning-output" id="reasoning-output">
+                        <div class="reasoning-output-placeholder">
+                            <i class="fas fa-lightbulb"></i>
+                            <p>Ask a question to see reasoning results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- New Integrations Section -->
+            <div class="section" id="section-integrations">
+                <h2>External Integrations</h2>
+                
+                <div class="tabs">
+                    <div class="tab active" data-tab="composio">Composio OpenAPI</div>
+                    <div class="tab" data-tab="github">GitHub</div>
+                    <div class="tab" data-tab="other">Other Integrations</div>
+                </div>
+                
+                <!-- Composio OpenAPI Tab -->
+                <div class="tab-content active" id="tab-composio">
+                    <div class="composio-status-container">
+                        <div class="status-indicator" id="composio-status">
+                            <span class="status-icon"></span>
+                            <span class="status-text" id="composio-status-text">Checking connection...</span>
+                        </div>
+                        <button id="refresh-composio-status" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    
+                    <div class="tabs">
+                        <div class="tab active" data-tab="openapi">OpenAPI Tools</div>
+                        <div class="tab" data-tab="models">Models</div>
+                        <div class="tab" data-tab="generate">Generate</div>
+                        <div class="tab" data-tab="usage">Usage</div>
+                    </div>
+                    
+                    <!-- OpenAPI Tools Tab -->
+                    <div class="tab-content active" id="tab-openapi">
+                        <div class="integration-section">
+                            <h3>Import OpenAPI Specification</h3>
+                            <p>Upload an OpenAPI specification to integrate external APIs with the VOT1 system.</p>
+                            
+                            <form id="openapi-upload-form" enctype="multipart/form-data">
+                                <div class="form-group">
+                                    <label for="spec-file">OpenAPI Specification (YAML/JSON)</label>
+                                    <div class="file-input-container">
+                                        <input type="file" id="spec-file" name="spec_file" accept=".yaml,.yml,.json">
+                                        <label for="spec-file" class="file-label">Choose file</label>
+                                        <span class="file-name" id="spec-file-name">No file chosen</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="auth-file">Authentication Configuration (optional)</label>
+                                    <div class="file-input-container">
+                                        <input type="file" id="auth-file" name="auth_file" accept=".yaml,.yml,.json">
+                                        <label for="auth-file" class="file-label">Choose file</label>
+                                        <span class="file-name" id="auth-file-name">No file chosen</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="tool-name">Tool Name (optional)</label>
+                                    <input type="text" id="tool-name" name="tool_name" placeholder="Custom name for the tool">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="tool-description">Description (optional)</label>
+                                    <textarea id="tool-description" name="description" placeholder="Brief description of what this API does"></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="tool-tags">Tags (comma-separated, optional)</label>
+                                    <input type="text" id="tool-tags" name="tags" placeholder="e.g., weather, forecast, api">
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary" id="import-openapi">Import OpenAPI Spec</button>
+                            </form>
+                        </div>
+                        
+                        <div class="integration-section">
+                            <h3>Imported OpenAPI Tools</h3>
+                            <p>Manage your imported tools and execute actions.</p>
+                            
+                            <div class="tools-container" id="imported-tools-container">
+                                <div class="loading-indicator">Loading imported tools...</div>
+                            </div>
+                            
+                            <template id="tool-card-template">
+                                <div class="tool-card">
+                                    <div class="tool-header">
+                                        <h4 class="tool-name"></h4>
+                                        <div class="tool-actions">
+                                            <button class="btn-icon view-tool" title="View Details"><i class="fas fa-eye"></i></button>
+                                            <button class="btn-icon delete-tool" title="Delete Tool"><i class="fas fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="tool-description"></div>
+                                    <div class="tool-info">
+                                        <span class="tool-id"></span>
+                                        <span class="tool-version"></span>
+                                    </div>
+                                    <div class="tool-actions-list"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    <!-- Models Tab -->
+                    <div class="tab-content" id="tab-models">
+                        <div class="integration-section">
+                            <h3>Available Models</h3>
+                            <p>View and explore available models in Composio.</p>
+                            
+                            <div class="models-container" id="composio-models-container">
+                                <div class="loading-indicator">Loading models...</div>
+                            </div>
+                            
+                            <template id="model-card-template">
+                                <div class="model-card">
+                                    <div class="model-header">
+                                        <h4 class="model-name"></h4>
+                                    </div>
+                                    <div class="model-info">
+                                        <div class="model-type"></div>
+                                        <div class="model-context"></div>
+                                    </div>
+                                    <div class="model-description"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    <!-- Generate Tab -->
+                    <div class="tab-content" id="tab-generate">
+                        <div class="integration-section">
+                            <h3>Text Generation</h3>
+                            <p>Generate text using Composio models.</p>
+                            
+                            <form id="generate-form">
+                                <div class="form-group">
+                                    <label for="generate-model">Model</label>
+                                    <select id="generate-model" name="model">
+                                        <option value="">Loading models...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="generate-prompt">Prompt</label>
+                                    <textarea id="generate-prompt" name="prompt" placeholder="Enter your prompt here..." rows="5"></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="generate-max-tokens">Max Tokens</label>
+                                    <input type="number" id="generate-max-tokens" name="max_tokens" value="1000" min="1" max="4096">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="generate-temperature">Temperature</label>
+                                    <input type="range" id="generate-temperature" name="temperature" min="0" max="1" step="0.1" value="0.7">
+                                    <span id="temperature-value">0.7</span>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary" id="generate-text">Generate</button>
+                            </form>
+                            
+                            <div class="result-container" id="generate-result-container">
+                                <h4>Generated Text</h4>
+                                <div class="result-content" id="generate-result"></div>
+                                <div class="result-metadata" id="generate-metadata"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="integration-section">
+                            <h3>Text Embedding</h3>
+                            <p>Create embeddings for text using Composio models.</p>
+                            
+                            <form id="embedding-form">
+                                <div class="form-group">
+                                    <label for="embedding-model">Model</label>
+                                    <select id="embedding-model" name="model">
+                                        <option value="">Loading models...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="embedding-text">Text</label>
+                                    <textarea id="embedding-text" name="text" placeholder="Enter text to embed..." rows="3"></textarea>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary" id="create-embedding">Create Embedding</button>
+                            </form>
+                            
+                            <div class="result-container" id="embedding-result-container">
+                                <h4>Embedding Result</h4>
+                                <div class="result-content" id="embedding-result"></div>
+                                <div class="result-metadata" id="embedding-metadata"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Usage Tab -->
+                    <div class="tab-content" id="tab-usage">
+                        <div class="integration-section">
+                            <h3>Composio Usage</h3>
+                            <p>View your Composio usage statistics.</p>
+                            
+                            <div class="usage-container" id="composio-usage-container">
+                                <div class="loading-indicator">Loading usage data...</div>
+                            </div>
+                            
+                            <button class="btn btn-secondary" id="refresh-usage"><i class="fas fa-sync-alt"></i> Refresh Usage</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tool Detail Modal -->
+                <div class="modal" id="tool-detail-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="modal-tool-name">Tool Details</h3>
+                            <button class="close-modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="tool-detail-content">
+                                <div class="detail-section">
+                                    <h4>Description</h4>
+                                    <p id="modal-tool-description"></p>
+                                </div>
+                                <div class="detail-section">
+                                    <h4>Tool Information</h4>
+                                    <table class="detail-table">
+                                        <tr>
+                                            <td>ID:</td>
+                                            <td id="modal-tool-id"></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Version:</td>
+                                            <td id="modal-tool-version"></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Created:</td>
+                                            <td id="modal-tool-created"></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="detail-section">
+                                    <h4>Available Actions</h4>
+                                    <div id="modal-tool-actions"></div>
+                                </div>
+                            </div>
+                            <div class="action-execution-panel" id="action-execution-panel">
+                                <h4>Execute Action</h4>
+                                <div class="form-group">
+                                    <label for="action-select">Select Action</label>
+                                    <select id="action-select"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="action-parameters">Parameters (JSON)</label>
+                                    <textarea id="action-parameters" placeholder='{"param1": "value1", "param2": "value2"}'></textarea>
+                                </div>
+                                <button id="execute-action" class="btn btn-primary">Execute</button>
+                                <div id="action-result" class="action-result"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- GitHub Tab -->
+                <div class="tab-content" id="tab-github">
+                    <div class="github-status-container">
+                        <div class="status-indicator" id="github-status">
+                            <span class="status-icon"></span>
+                            <span class="status-text" id="github-status-text">Checking connection...</span>
+                        </div>
+                        <button id="refresh-github-status" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                    
+                    <div class="integration-section">
+                        <h3>Repository Analysis</h3>
+                        <p>Analyze GitHub repositories to understand code quality, structure, and potential improvements.</p>
+                        
+                        <form id="github-analysis-form">
+                            <div class="form-group">
+                                <label for="repo-owner">Repository Owner/Organization</label>
+                                <input type="text" id="repo-owner" name="owner" placeholder="e.g., villageofthousands">
+                            </div>
+                            <div class="form-group">
+                                <label for="repo-name">Repository Name</label>
+                                <input type="text" id="repo-name" name="repo" placeholder="e.g., vot1">
+                            </div>
+                            <div class="form-group">
+                                <label for="analysis-type">Analysis Type</label>
+                                <select id="analysis-type" name="analysis_type">
+                                    <option value="standard">Standard Analysis</option>
+                                    <option value="deep">Deep Analysis</option>
+                                    <option value="code_quality">Code Quality Focus</option>
+                                    <option value="security">Security Focus</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="analyze-repo">Analyze Repository</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Repository Update Automation Section with Enhanced UI -->
+                    <div class="integration-section">
+                        <h3><i class="fas fa-robot"></i> Repository Update Automation</h3>
+                        <p>Create automated updates and improvements for GitHub repositories using AI-driven analysis.</p>
+                        
+                        <form id="github-update-form">
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="update-owner-input">Repository Owner/Organization</label>
+                                    <input type="text" id="update-owner-input" name="owner" placeholder="e.g., villageofthousands">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="update-repo-input">Repository Name</label>
+                                    <input type="text" id="update-repo-input" name="repo" placeholder="e.g., vot1">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Update Areas</label>
+                                <div class="checkbox-group update-areas">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="update-documentation" checked>
+                                        <label for="update-documentation"><i class="fas fa-book"></i> Documentation</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="update-workflows" checked>
+                                        <label for="update-workflows"><i class="fas fa-cogs"></i> Workflows</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="update-dependencies" checked>
+                                        <label for="update-dependencies"><i class="fas fa-link"></i> Dependencies</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="update-code-quality" checked>
+                                        <label for="update-code-quality"><i class="fas fa-code"></i> Code Quality</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="max-updates">Maximum Updates to Create</label>
+                                    <input type="range" id="max-updates" name="max_updates" value="3" min="1" max="10" class="custom-range">
+                                    <div class="range-value"><span id="max-updates-value">3</span> updates</div>
+                                </div>
+                                
+                                <div class="form-group col-md-6">
+                                    <div class="option-toggles">
+                                        <div class="toggle-switch">
+                                            <input type="checkbox" id="update-deep-analysis">
+                                            <label for="update-deep-analysis"></label>
+                                            <span class="toggle-label">Deep Analysis</span>
+                                        </div>
+                                        <div class="toggle-switch">
+                                            <input type="checkbox" id="auto-approve-prs">
+                                            <label for="auto-approve-prs"></label>
+                                            <span class="toggle-label">Auto-Approve PRs</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="button-group">
+                                <button type="button" class="btn btn-primary" id="update-repo-btn">
+                                    <i class="fas fa-magic"></i> Create Updates
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="check-updates-btn">
+                                    <i class="fas fa-history"></i> Check Update Status
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- Results visualization with 3D rendering -->
+                        <div class="results-visualization">
+                            <div class="tabs">
+                                <div class="tab active" data-results-tab="standard">Standard View</div>
+                                <div class="tab" data-results-tab="3d">3D Visualization</div>
+                            </div>
+                            
+                            <div id="update-results-container" class="results-tab-content active" data-results-content="standard">
+                                <h4><i class="fas fa-check-circle"></i> Update Results</h4>
+                                <div id="update-results" class="results-container"></div>
+                            </div>
+                            
+                            <div id="3d-visualization-container" class="results-tab-content" data-results-content="3d">
+                                <h4><i class="fas fa-cube"></i> 3D Code Relationship View</h4>
+                                <div id="updates-3d-view" class="three-js-container"></div>
+                                <div class="visualization-controls">
+                                    <button class="btn btn-sm btn-secondary" id="reset-3d-view"><i class="fas fa-undo"></i> Reset View</button>
+                                    <button class="btn btn-sm btn-secondary" id="toggle-rotation"><i class="fas fa-sync"></i> Toggle Rotation</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="update-history-container">
+                            <h4><i class="fas fa-history"></i> Update History</h4>
+                            <div id="update-history" class="results-container"></div>
+                        </div>
+                        
+                        <!-- AI reasoning and memory integration -->
+                        <div class="reasoning-section">
+                            <h4><i class="fas fa-brain"></i> AI Reasoning</h4>
+                            <p>See how the AI reasoned about your repository to suggest improvements.</p>
+                            <div id="ai-reasoning-display" class="ai-reasoning-container">
+                                <p class="placeholder-text">Run an analysis to see AI reasoning</p>
+                            </div>
+                            
+                            <div class="memory-integration">
+                                <h5><i class="fas fa-memory"></i> Memory Integration</h5>
+                                <p>Related memories from past analyses:</p>
+                                <div id="related-memories" class="memory-container">
+                                    <p class="placeholder-text">No related memories found</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="integration-section">
+                        <h3>Recent Analyses</h3>
+                        <div id="recent-analyses-container">
+                            <p>No recent analyses found.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Other Integrations Tab -->
+                <div class="tab-content" id="tab-other">
+                    <div class="integration-section">
+                        <h3>Available Integrations</h3>
+                        <p>Connect VOT1 with other systems and services.</p>
+                        
+                        <div class="integration-cards-container">
+                            <div class="integration-card">
+                                <div class="integration-icon"><i class="fas fa-cloud"></i></div>
+                                <h4>Cloud Storage</h4>
+                                <p>Connect to cloud storage services</p>
+                                <button class="btn btn-secondary">Configure</button>
+                            </div>
+                            <div class="integration-card">
+                                <div class="integration-icon"><i class="fas fa-database"></i></div>
+                                <h4>Databases</h4>
+                                <p>Connect to external databases</p>
+                                <button class="btn btn-secondary">Configure</button>
+                            </div>
+                            <div class="integration-card">
+                                <div class="integration-icon"><i class="fas fa-envelope"></i></div>
+                                <h4>Email</h4>
+                                <p>Email notification integration</p>
+                                <button class="btn btn-secondary">Configure</button>
+                            </div>
+                            <div class="integration-card">
+                                <div class="integration-icon"><i class="fas fa-globe"></i></div>
+                                <h4>Web Services</h4>
+                                <p>Connect to web services and APIs</p>
+                                <button class="btn btn-secondary">Configure</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section" id="section-settings">
+                <h2>System Settings</h2>
+                <div class="settings-container">
+                    <div class="settings-group">
+                        <h3>Visualization Settings</h3>
+                        <div class="setting-item">
+                            <label for="node-size">Node Size</label>
+                            <input type="range" id="node-size" min="1" max="10" value="5">
+                        </div>
+                        <div class="setting-item">
+                            <label for="link-width">Link Width</label>
+                            <input type="range" id="link-width" min="0.5" max="5" value="1" step="0.5">
+                        </div>
+                        <div class="setting-item">
+                            <label for="force-strength">Force Strength</label>
+                            <input type="range" id="force-strength" min="0.1" max="2" value="1" step="0.1">
+                        </div>
+                        <div class="setting-item checkbox">
+                            <input type="checkbox" id="show-labels" checked>
+                            <label for="show-labels">Show Node Labels</label>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <h3>Memory Settings</h3>
+                        <div class="setting-item">
+                            <label for="retention-threshold">Retention Threshold</label>
+                            <input type="range" id="retention-threshold" min="0" max="1" value="0.3" step="0.05">
+                        </div>
+                        <div class="setting-item">
+                            <label for="connection-threshold">Connection Threshold</label>
+                            <input type="range" id="connection-threshold" min="0.1" max="0.9" value="0.7" step="0.05">
+                        </div>
+                        <div class="setting-item checkbox">
+                            <input type="checkbox" id="auto-prune" checked>
+                            <label for="auto-prune">Auto-Prune Memories</label>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <h3>Chat Settings</h3>
+                        <div class="setting-item">
+                            <label for="visualization-mode">Visualization Command Mode</label>
+                            <select id="visualization-mode">
+                                <option value="auto">Auto (Apply Immediately)</option>
+                                <option value="manual">Manual (Confirm First)</option>
+                                <option value="disabled">Disabled</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="memory-context-level">Memory Context Level</label>
+                            <select id="memory-context-level">
+                                <option value="high">High (10 memories)</option>
+                                <option value="medium" selected>Medium (5 memories)</option>
+                                <option value="low">Low (3 memories)</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="model-select">AI Model</label>
+                            <select id="model-select">
+                                <option value="anthropic/claude-3-7-sonnet-20240620">Claude 3.7 Sonnet (Default)</option>
+                                <option value="deepseek/deepseek-r1-preview">DeepSeek R1 (Newest)</option>
+                            </select>
+                        </div>
+                        <div class="setting-item checkbox">
+                            <input type="checkbox" id="composio-toggle" checked>
+                            <label for="composio-toggle">Enable Composio Integration</label>
+                        </div>
+                    </div>
+                    <button id="save-settings" class="btn btn-primary">Save Settings</button>
+                    <button id="reset-defaults" class="btn btn-secondary">Reset to Defaults</button>
+                </div>
+            </div>
+
+            <div class="dashboard-section" id="composio-section">
+                <h2>Composio Integration</h2>
+                <div id="composio-status">
+                    <p>Status: <span id="composio-connection-status">Checking...</span></p>
+                </div>
+                <div id="composio-controls" style="display: none;">
+                    <button id="composio-models-btn" class="btn">View Available Models</button>
+                    <div id="composio-models-list" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- New MCP Hybrid Automation Section -->
+            <div class="dashboard-section" id="mcp-hybrid-section">
+                <h2>MCP Hybrid Automation</h2>
+                <div id="mcp-hybrid-status">
+                    <p>Status: <span id="mcp-hybrid-status-indicator">Checking...</span></p>
+                </div>
+                <div id="mcp-hybrid-config" style="display: none;">
+                    <p>Primary Model: <span id="mcp-hybrid-primary-model">-</span></p>
+                    <p>Secondary Model: <span id="mcp-hybrid-secondary-model">-</span></p>
+                    <p>Extended Thinking: <span id="mcp-hybrid-extended-thinking">-</span></p>
+                </div>
+                <div id="mcp-hybrid-controls" style="display: none;">
+                    <h3>Test MCP Hybrid Automation</h3>
+                    <div class="form-group">
+                        <label for="mcp-hybrid-prompt">Prompt:</label>
+                        <textarea id="mcp-hybrid-prompt" class="form-control" rows="4" placeholder="Enter your prompt here..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="mcp-hybrid-system">System Instructions (optional):</label>
+                        <textarea id="mcp-hybrid-system" class="form-control" rows="2" placeholder="Enter system instructions (optional)"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="mcp-hybrid-complexity">Task Complexity:</label>
+                        <select id="mcp-hybrid-complexity" class="form-control">
+                            <option value="auto" selected>Auto-detect</option>
+                            <option value="simple">Simple</option>
+                            <option value="medium">Medium</option>
+                            <option value="complex">Complex</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="mcp-hybrid-temperature">Temperature:</label>
+                        <input type="range" id="mcp-hybrid-temperature" min="0" max="1" step="0.1" value="0.7" class="form-control">
+                        <span id="mcp-hybrid-temperature-value">0.7</span>
+                    </div>
+                    <button id="mcp-hybrid-submit" class="btn btn-primary">Submit</button>
+                    <div id="mcp-hybrid-result" style="display: none;">
+                        <h4>Result</h4>
+                        <div id="mcp-hybrid-result-content" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Chat Panel -->
+    <button id="chat-toggle" class="chat-toggle-btn" title="Open Chat">
+        <i class="fas fa-comment"></i>
+    </button>
+    
+    <div id="chat-panel" class="chat-panel chat-panel-hidden">
+        <div class="chat-header">
+            <h3 class="chat-title">VOT1 Assistant</h3>
+            <div class="chat-controls">
+                <button id="expanded-view-toggle" class="chat-control-btn" title="Toggle Expanded View">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+                <button id="chat-options-toggle" class="chat-control-btn" title="Chat Options">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button id="chat-clear" class="chat-control-btn" title="Clear Chat">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div id="chat-options" class="chat-options">
+            <div class="chat-option-item">
+                <label for="visualization-mode-select">Visualization Commands:</label>
+                <select id="visualization-mode-select">
+                    <option value="auto">Auto (Apply Immediately)</option>
+                    <option value="manual">Manual (Confirm First)</option>
+                    <option value="disabled">Disabled</option>
+                </select>
+            </div>
+            <div class="chat-option-item">
+                <label for="model-select-chat">AI Model:</label>
+                <select id="model-select-chat">
+                    <option value="anthropic/claude-3-7-sonnet-20240620">Claude 3.7 Sonnet</option>
+                    <option value="deepseek/deepseek-r1-preview">DeepSeek R1</option>
+                </select>
+            </div>
+            <div class="chat-option-item checkbox">
+                <input type="checkbox" id="composio-toggle-chat" checked>
+                <label for="composio-toggle-chat">Enable Composio Tools</label>
+            </div>
+            <div class="composio-status" id="composio-status-chat">
+                <span class="status-indicator"></span>
+                <span class="status-text" id="composio-status-text-chat">Connected</span>
+            </div>
+        </div>
+        
+        <div id="chat-messages" class="chat-messages">
+            <!-- Messages will be added here dynamically -->
+            <div class="chat-message system-message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    Hello! I'm VOT1 Assistant. I can help you explore your memory system and control the visualization. What would you like to know?
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <textarea id="chat-input" placeholder="Type your message here..."></textarea>
+            <button id="chat-send" class="btn-primary">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Add JavaScript for the Integrations tab -->
+    <script src="{{ url_for('static', filename='js/integrations.js') }}"></script>
+</body>
+</html> 

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="200" fill="#f9f9fb" rx="10" ry="10"/>
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#2d2d2d">VOT1 Color Palette</text>
+  
+  <!-- Color Swatches -->
+  <g transform="translate(100, 80)">
+    <!-- Primary Color -->
+    <rect x="0" y="0" width="100" height="80" rx="5" ry="5" fill="#3c1f3c"/>
+    <text x="50" y="100" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#2d2d2d">Primary</text>
+    <text x="50" y="120" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2d2d2d">#3c1f3c</text>
+    
+    <!-- Secondary Color -->
+    <rect x="120" y="0" width="100" height="80" rx="5" ry="5" fill="#1f3c3c"/>
+    <text x="170" y="100" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#2d2d2d">Secondary</text>
+    <text x="170" y="120" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2d2d2d">#1f3c3c</text>
+    
+    <!-- Accent Color -->
+    <rect x="240" y="0" width="100" height="80" rx="5" ry="5" fill="#6c4f9c"/>
+    <text x="290" y="100" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#2d2d2d">Accent</text>
+    <text x="290" y="120" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2d2d2d">#6c4f9c</text>
+    
+    <!-- Light Accent Color -->
+    <rect x="360" y="0" width="100" height="80" rx="5" ry="5" fill="#5c3f5c"/>
+    <text x="410" y="100" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#2d2d2d">Light Accent</text>
+    <text x="410" y="120" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2d2d2d">#5c3f5c</text>
+    
+    <!-- Background Color -->
+    <rect x="480" y="0" width="100" height="80" rx="5" ry="5" fill="#f9f9fb" stroke="#e0e0e0"/>
+    <text x="530" y="100" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#2d2d2d">Background</text>
+    <text x="530" y="120" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#2d2d2d">#f9f9fb</text>
+  </g>
+  
+  <!-- Footer -->
+  <text x="400" y="180" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#5c3f5c">Village of Thousands • VOT1 Autonomous Intelligence System</text>
+</svg> 
