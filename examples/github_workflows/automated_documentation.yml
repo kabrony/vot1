@@ -1,0 +1,122 @@
+name: VOT1 Automated Documentation Generation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'docs/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      regenerate_all:
+        description: 'Regenerate all documentation'
+        required: false
+        type: boolean
+        default: false
+      scope:
+        description: 'Documentation scope (all, api, user-guide, examples)'
+        required: false
+        type: string
+        default: 'all'
+
+jobs:
+  doc-generation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          
+      - name: Setup VOT1 Environment
+        run: |
+          mkdir -p logs memory
+          echo "Setting up VOT1 environment"
+          if [ -f .env.example ]; then
+            cp .env.example .env
+            echo "Created .env file from example"
+          fi
+          
+      - name: Determine documentation scope
+        id: scope
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Using user-specified scope: ${{ github.event.inputs.scope }}"
+            echo "SCOPE=${{ github.event.inputs.scope }}" >> $GITHUB_ENV
+            echo "REGENERATE_ALL=${{ github.event.inputs.regenerate_all }}" >> $GITHUB_ENV
+          else
+            # Determine scope based on changed files
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} || echo "")
+            if [[ "$CHANGED_FILES" == *"src/"* ]]; then
+              echo "Changes detected in src folder, updating API docs"
+              echo "SCOPE=api" >> $GITHUB_ENV
+            elif [[ "$CHANGED_FILES" == *"docs/"* ]]; then
+              echo "Changes detected in docs folder, updating user guide"
+              echo "SCOPE=user-guide" >> $GITHUB_ENV
+            elif [[ "$CHANGED_FILES" == *"examples/"* ]]; then
+              echo "Changes detected in examples folder, updating examples docs"
+              echo "SCOPE=examples" >> $GITHUB_ENV
+            else
+              echo "No relevant changes detected, updating all docs"
+              echo "SCOPE=all" >> $GITHUB_ENV
+            fi
+            echo "REGENERATE_ALL=false" >> $GITHUB_ENV
+          fi
+      
+      - name: Generate API Documentation
+        if: env.SCOPE == 'api' || env.SCOPE == 'all'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VOT_MODEL_KEY: ${{ secrets.VOT_MODEL_KEY }}
+        run: |
+          echo "Generating API documentation"
+          python -m scripts.generate_api_docs --output-dir docs/api $(if [[ "$REGENERATE_ALL" == "true" ]]; then echo "--regenerate-all"; fi)
+      
+      - name: Generate User Guide
+        if: env.SCOPE == 'user-guide' || env.SCOPE == 'all'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VOT_MODEL_KEY: ${{ secrets.VOT_MODEL_KEY }}
+        run: |
+          echo "Generating user guide documentation"
+          python -m scripts.generate_user_docs --output-dir docs/guides $(if [[ "$REGENERATE_ALL" == "true" ]]; then echo "--regenerate-all"; fi)
+      
+      - name: Generate Example Documentation
+        if: env.SCOPE == 'examples' || env.SCOPE == 'all'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VOT_MODEL_KEY: ${{ secrets.VOT_MODEL_KEY }}
+        run: |
+          echo "Generating example documentation"
+          python -m scripts.generate_example_docs --output-dir docs/examples $(if [[ "$REGENERATE_ALL" == "true" ]]; then echo "--regenerate-all"; fi)
+      
+      - name: Update Documentation Index
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Updating documentation index"
+          python -m scripts.update_doc_index
+      
+      - name: Commit and push if there are changes
+        run: |
+          git config --local user.email "vot1-automation@example.com"
+          git config --local user.name "VOT1 Documentation Bot"
+          git add docs/
+          git diff --staged --quiet || (git commit -m "Update documentation [automated]" && git push) 
