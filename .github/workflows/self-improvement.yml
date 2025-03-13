@@ -1,0 +1,108 @@
+name: VOT1 Self-Improvement
+
+on:
+  schedule:
+    # Run weekly on Sunday at 2:00 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target component to improve'
+        required: true
+        default: 'three-js'
+        type: choice
+        options:
+          - 'three-js'
+          - 'memory'
+          - 'owl-reasoning'
+          - 'dashboard'
+      mode:
+        description: 'Improvement mode'
+        required: true
+        default: 'agent'
+        type: choice
+        options:
+          - 'agent'
+          - 'workflow'
+          - 'analysis'
+      max_thinking_tokens:
+        description: 'Maximum thinking tokens'
+        required: false
+        default: '8192'
+        type: string
+      max_iterations:
+        description: 'Maximum iterations'
+        required: false
+        default: '1'
+        type: string
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  REPO: ${{ github.repository }}
+  OWNER: ${{ github.repository_owner }}
+  API_KEY: ${{ secrets.VOT1_API_KEY }}
+
+jobs:
+  self-improve:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        
+    - name: Configure Git
+      run: |
+        git config --global user.name "VOT1 Improvement Bot"
+        git config --global user.email "bot@vot1.ai"
+        
+    - name: Run self-improvement on schedule
+      if: github.event_name == 'schedule'
+      run: |
+        python -m scripts.run_self_improvement \
+          --target three-js \
+          --thinking-tokens 8192 \
+          --mode agent \
+          --iterations 1
+          
+    - name: Run self-improvement on manual dispatch
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        python -m scripts.run_self_improvement \
+          --target ${{ github.event.inputs.target }} \
+          --thinking-tokens ${{ github.event.inputs.max_thinking_tokens }} \
+          --mode ${{ github.event.inputs.mode }} \
+          --iterations ${{ github.event.inputs.max_iterations }}
+          
+    - name: Create improvement summary
+      run: |
+        echo "# Self-Improvement Results" > improvement-summary.md
+        echo "Target: ${TARGET:-three-js}" >> improvement-summary.md
+        echo "Mode: ${MODE:-agent}" >> improvement-summary.md
+        echo "Date: $(date)" >> improvement-summary.md
+        echo "" >> improvement-summary.md
+        echo "## Changes made" >> improvement-summary.md
+        git diff --name-status HEAD~1 HEAD >> improvement-summary.md
+        echo "" >> improvement-summary.md
+        echo "## Detailed diff" >> improvement-summary.md
+        git diff HEAD~1 HEAD >> improvement-summary.md
+      env:
+        TARGET: ${{ github.event.inputs.target }}
+        MODE: ${{ github.event.inputs.mode }}
+          
+    - name: Upload improvement results
+      uses: actions/upload-artifact@v3
+      with:
+        name: improvement-results
+        path: improvement-summary.md 
