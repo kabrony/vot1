@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font: bold 24px sans-serif; fill: #333; }
+    .subtitle { font: bold 18px sans-serif; fill: #555; }
+    .box { stroke: #333; stroke-width: 2; rx: 10; ry: 10; }
+    .label { font: 14px sans-serif; fill: #333; text-anchor: middle; }
+    .arrow { stroke: #555; stroke-width: 2; marker-end: url(#arrowhead); }
+    .github { fill: #24292e; }
+    .vot1 { fill: #6e5494; }
+    .memory { fill: #2b7489; }
+    .analysis { fill: #e34c26; }
+    .action { fill: #563d7c; }
+    .api { fill: #f1e05a; }
+    .text-light { fill: white; }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="600" y="40" class="title" text-anchor="middle">VOT1 GitHub Integration Architecture</text>
+  <text x="600" y="70" class="subtitle" text-anchor="middle">Real API Implementation with Memory Integration</text>
+  
+  <!-- VOT1 System -->
+  <rect x="50" y="120" width="200" height="100" class="box vot1" />
+  <text x="150" y="175" class="label text-light">VOT1 System</text>
+  
+  <!-- GitHub Integration Layer -->
+  <rect x="350" y="120" width="200" height="100" class="box github" />
+  <text x="450" y="175" class="label text-light">GitHub Integration Layer</text>
+  
+  <!-- GitHub API -->
+  <rect x="950" y="120" width="200" height="100" class="box api" />
+  <text x="1050" y="175" class="label">GitHub API</text>
+  
+  <!-- Memory Manager -->
+  <rect x="350" y="300" width="200" height="100" class="box memory" />
+  <text x="450" y="355" class="label text-light">Memory Manager</text>
+  
+  <!-- Vector Store -->
+  <rect x="150" y="450" width="150" height="80" class="box memory" opacity="0.8" />
+  <text x="225" y="495" class="label text-light">Vector Store</text>
+  
+  <!-- Conversation History -->
+  <rect x="350" y="450" width="150" height="80" class="box memory" opacity="0.8" />
+  <text x="425" y="495" class="label text-light">Conversation History</text>
+  
+  <!-- Analysis Engine -->
+  <rect x="650" y="300" width="200" height="100" class="box analysis" />
+  <text x="750" y="355" class="label text-light">Analysis Engine</text>
+  
+  <!-- Repository Analyzer -->
+  <rect x="550" y="450" width="150" height="80" class="box analysis" opacity="0.8" />
+  <text x="625" y="495" class="label text-light">Repository Analyzer</text>
+  
+  <!-- Code Quality Analyzer -->
+  <rect x="750" y="450" width="150" height="80" class="box analysis" opacity="0.8" />
+  <text x="825" y="495" class="label text-light">Code Quality Analyzer</text>
+  
+  <!-- Documentation Analyzer -->
+  <rect x="550" y="550" width="150" height="80" class="box analysis" opacity="0.8" />
+  <text x="625" y="595" class="label text-light">Documentation Analyzer</text>
+  
+  <!-- Workflow Analyzer -->
+  <rect x="750" y="550" width="150" height="80" class="box analysis" opacity="0.8" />
+  <text x="825" y="595" class="label text-light">Workflow Analyzer</text>
+  
+  <!-- Action Engine -->
+  <rect x="950" y="300" width="200" height="100" class="box action" />
+  <text x="1050" y="355" class="label text-light">Action Engine</text>
+  
+  <!-- PR Creator -->
+  <rect x="900" y="450" width="150" height="80" class="box action" opacity="0.8" />
+  <text x="975" y="495" class="label text-light">PR Creator</text>
+  
+  <!-- Webhook Manager -->
+  <rect x="1050" y="450" width="150" height="80" class="box action" opacity="0.8" />
+  <text x="1125" y="495" class="label text-light">Webhook Manager</text>
+  
+  <!-- Workflow Manager -->
+  <rect x="975" y="550" width="150" height="80" class="box action" opacity="0.8" />
+  <text x="1050" y="595" class="label text-light">Workflow Manager</text>
+  
+  <!-- Dashboard -->
+  <rect x="350" y="650" width="500" height="100" class="box github" opacity="0.9" />
+  <text x="600" y="705" class="label text-light">Real-time GitHub Operations Dashboard</text>
+  
+  <!-- Connections -->
+  <!-- VOT1 to GitHub Integration -->
+  <line x1="250" y1="170" x2="350" y2="170" class="arrow" />
+  
+  <!-- GitHub Integration to Memory Manager -->
+  <line x1="450" y1="220" x2="450" y2="300" class="arrow" />
+  
+  <!-- GitHub Integration to Analysis Engine -->
+  <line x1="550" y1="170" x2="650" y2="170" stroke-dasharray="5,5" class="arrow" />
+  <line x1="750" y1="170" x2="750" y2="300" class="arrow" />
+  
+  <!-- GitHub Integration to Action Engine -->
+  <line x1="550" y1="170" x2="950" y2="170" stroke-dasharray="5,5" class="arrow" />
+  <line x1="1050" y1="170" x2="1050" y2="300" class="arrow" />
+  
+  <!-- GitHub Integration to API -->
+  <line x1="550" y1="170" x2="950" y2="170" class="arrow" />
+  
+  <!-- Memory Manager to Vector Store -->
+  <line x1="400" y1="400" x2="225" y2="450" class="arrow" />
+  
+  <!-- Memory Manager to Conversation History -->
+  <line x1="450" y1="400" x2="425" y2="450" class="arrow" />
+  
+  <!-- Analysis Engine to Analyzers -->
+  <line x1="700" y1="400" x2="625" y2="450" class="arrow" />
+  <line x1="750" y1="400" x2="825" y2="450" class="arrow" />
+  <line x1="675" y1="400" x2="625" y2="550" class="arrow" />
+  <line x1="775" y1="400" x2="825" y2="550" class="arrow" />
+  
+  <!-- Action Engine to Action Components -->
+  <line x1="1000" y1="400" x2="975" y2="450" class="arrow" />
+  <line x1="1050" y1="400" x2="1125" y2="450" class="arrow" />
+  <line x1="1025" y1="400" x2="1050" y2="550" class="arrow" />
+  
+  <!-- Components to Dashboard -->
+  <line x1="450" y1="400" x2="450" y2="650" class="arrow" />
+  <line x1="750" y1="400" x2="600" y2="650" class="arrow" />
+  <line x1="1050" y1="400" x2="750" y2="650" class="arrow" />
+  
+  <!-- Data Flow Labels -->
+  <text x="300" y="150" font-size="12" fill="#333">Commands</text>
+  <text x="850" y="150" font-size="12" fill="#333">API Requests</text>
+  <text x="400" y="260" font-size="12" fill="#333">Store/Retrieve</text>
+  <text x="700" y="260" font-size="12" fill="#333">Analyze</text>
+  <text x="1000" y="260" font-size="12" fill="#333">Execute</text>
+  <text x="500" y="600" font-size="12" fill="#333">Status Updates</text>
+</svg> 
