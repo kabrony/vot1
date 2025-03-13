@@ -1,14 +1,108 @@
 # VOT1 Dashboard
 
-A modern web dashboard with Three.js visualization for the VOT1 project, providing an interactive interface to interact with the Claude API, manage memory, and configure system settings.
+The VOT1 Dashboard provides a web-based interface for interacting with the VOT1 memory system, visualization tools, and integrations. This document covers setup, configuration, and usage of the dashboard.
 
 ## Features
 
-- **3D Memory Visualization**: Interactive Three.js visualization of memory nodes
-- **Chat Interface**: Send messages to Claude with optional memory and web search enhancement
-- **Memory Management**: Search, browse, and add knowledge to semantic memory
-- **System Configuration**: Configure API keys, model selection, and integration settings
-- **Real-time Updates**: Monitor system status and memory statistics
+- Memory visualization and exploration
+- Memory search and filtering
+- Reasoning engine interface
+- GitHub ecosystem analysis and automation
+- OpenAPI integration management
+- Chat interface with visualization controls
+- System settings and configuration
+
+## GitHub Integration
+
+The dashboard includes powerful GitHub integration through the Integrations tab:
+
+### GitHub Repository Analysis
+
+1. Navigate to the **Integrations** tab
+2. Select the **GitHub** tab
+3. Enter repository owner/organization and name
+4. Select analysis type (Standard, Deep, Code Quality Focus, Security Focus)
+5. Click "Analyze Repository"
+
+Analysis results include:
+- Code quality metrics
+- Architecture overview
+- Potential improvements
+- Security considerations
+
+### GitHub Update Automation
+
+The dashboard provides a visual interface for creating automated updates to GitHub repositories:
+
+1. In the GitHub tab, scroll to the "Repository Update Automation" section
+2. Enter repository owner/organization and name
+3. Select update areas (Documentation, Workflows, Dependencies, Code Quality)
+4. Configure options:
+   - Maximum updates to create
+   - Deep analysis toggle
+   - Auto-approve PRs toggle
+5. Click "Create Updates"
+
+#### Visualization Options
+
+The update results can be viewed in two formats:
+
+1. **Standard View**: Card-based view of all updates with details
+2. **3D Visualization**: Interactive THREE.js visualization showing:
+   - Updates as 3D nodes with shapes representing update types
+   - Connections between related updates
+   - Color coding based on update category
+   - Hover information for each update
+
+The 3D visualization provides intuitive understanding of how updates relate to each other and affect different parts of the repository.
+
+#### AI Reasoning Display
+
+The dashboard shows how the AI reasoned about repository improvements:
+- Analysis approach
+- Key observations
+- Decision factors for updates
+
+This transparency helps understand why specific updates were suggested and the AI's thought process.
+
+#### Memory Integration
+
+The system connects updates with related memories from previous analyses:
+- Similar repositories
+- Common patterns
+- Historical context
+
+This integration improves update quality through learned patterns and repository-specific knowledge.
+
+## Configuration
+
+The GitHub integration can be configured in a few ways:
+
+1. **Environment Variables**:
+   ```
+   GITHUB_TOKEN=your_token_here
+   VOT1_PRIMARY_MODEL=anthropic/claude-3-7-sonnet-20240620
+   VOT1_SECONDARY_MODEL=anthropic/claude-3-5-sonnet-20240620
+   VOT1_MAX_THINKING_TOKENS=10000
+   ```
+
+2. **Settings Panel**:
+   - Navigate to the Settings tab in the dashboard
+   - Scroll to "GitHub Integration Settings"
+   - Configure API tokens, models, and default behavior
+
+## Running with Maximum Thinking
+
+To run the GitHub analyzer with maximum thinking capacity:
+
+1. In the "Repository Update Automation" section, check the "Deep Analysis" toggle
+2. This activates extended reasoning capabilities
+3. Results will include more comprehensive analysis but take longer to generate
+
+You can also run with maximum thinking via the CLI:
+```bash
+python -m scripts.run_github_automation update --owner username --repo repository --deep-analysis --max-thinking 10000
+```
 
 ## Getting Started
 

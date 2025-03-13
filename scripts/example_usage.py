@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Example usage of the EnhancedClaudeClient with Claude 3.7 Sonnet.
+Example usage of the VOT1Client with Claude 3.7 Sonnet.
 
-This script demonstrates how to use the EnhancedClaudeClient to interact with
+This script demonstrates how to use the VOT1Client to interact with
 Claude 3.7 Sonnet, including both synchronous and asynchronous calls, GitHub integration,
 and Perplexity search enhancement.
 """
@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 # Add the parent directory to the path so we can import the package
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Import the EnhancedClaudeClient
-from src.vot1 import EnhancedClaudeClient
+# Import the VOT1Client
+from src.vot1 import VOT1Client
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 async def main():
-    """Main function demonstrating the capabilities of EnhancedClaudeClient."""
+    """Main function demonstrating the capabilities of VOT1Client."""
     try:
         # Initialize the client
-        client = EnhancedClaudeClient(
+        client = VOT1Client(
             # API key will be loaded from ANTHROPIC_API_KEY environment variable
             # Perplexity API key will be loaded from PERPLEXITY_API_KEY environment variable if available
         )
@@ -95,8 +95,8 @@ async def main():
                 
                 logger.info("GitHub integration enabled, creating test issue")
                 issue_response = client.create_github_issue(
-                    title="Test Issue from EnhancedClaudeClient",
-                    body="This is a test issue created by the EnhancedClaudeClient example script.",
+                    title="Test Issue from VOT1Client",
+                    body="This is a test issue created by the VOT1Client example script.",
                     labels=["test", "documentation"]
                 )
                 logger.info(f"Created issue: {issue_response['url']}")

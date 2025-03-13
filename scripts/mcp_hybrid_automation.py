@@ -14,11 +14,13 @@ import argparse
 import logging
 import json
 from typing import Dict, Any, Optional, List, Union
+import time
 
 # Add the src directory to the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.vot1.vot_mcp import VotModelControlProtocol
+from src.vot1.memory import MemoryManager
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -69,7 +71,19 @@ class McpHybridAutomation:
         self.secondary_model = secondary_model
         self.use_extended_thinking = use_extended_thinking
         self.max_thinking_tokens = max_thinking_tokens if use_extended_thinking else 0
+        
+        # Set up memory manager
         self.memory_manager = memory_manager
+        if self.memory_manager is None:
+            try:
+                memory_path = os.environ.get('VOT1_MEMORY_PATH', os.path.join(os.getcwd(), 'memory'))
+                # Create memory directory if it doesn't exist
+                os.makedirs(memory_path, exist_ok=True)
+                self.memory_manager = MemoryManager(memory_path=memory_path)
+                logger.info(f"Created memory manager at {memory_path}")
+            except Exception as e:
+                logger.warning(f"Failed to create memory manager: {e}")
+                self.memory_manager = None
         
         # Setup MCP client
         self.mcp = self._setup_mcp()
@@ -99,127 +113,136 @@ class McpHybridAutomation:
         
         return mcp
     
+    def get_memory_context(self, prompt: str, max_memories: int = 5) -> List[Dict[str, Any]]:
+        """
+        Retrieve relevant memories for the given prompt.
+        
+        Args:
+            prompt: The prompt to retrieve context for
+            max_memories: Maximum number of memories to retrieve
+            
+        Returns:
+            List of relevant memories with their metadata
+        """
+        if not self.memory_manager:
+            return []
+        
+        try:
+            memories = self.memory_manager.search(prompt, limit=max_memories)
+            if not memories:
+                return []
+            
+            context = []
+            for memory in memories:
+                context.append({
+                    "id": memory.get("id", "unknown"),
+                    "content": memory.get("content", ""),
+                    "metadata": memory.get("metadata", {})
+                })
+            
+            return context
+        except Exception as e:
+            logger.error(f"Error retrieving memory context: {e}")
+            return []
+    
     def process_with_optimal_model(
         self,
         prompt: str,
         task_complexity: str = "auto",
         system: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
         max_tokens: Optional[int] = None,
-        temperature: float = 0.7
-    ) -> Dict[str, Any]:
+        temperature: float = 0.7,
+        use_memory: bool = True
+    ) -> Union[str, Dict[str, Any]]:
         """
-        Process a request with the optimal model based on task complexity.
+        Process a request using the optimal model based on task complexity.
         
         Args:
-            prompt: The prompt to process
-            task_complexity: The complexity of the task ('low', 'high', or 'auto')
+            prompt: The input prompt to process
+            task_complexity: Complexity level ("simple", "medium", "complex", or "auto")
             system: Optional system prompt
-            context: Optional additional context
-            max_tokens: Maximum tokens to generate (defaults based on complexity)
+            max_tokens: Maximum tokens to generate
             temperature: Sampling temperature
+            use_memory: Whether to retrieve and use memory context
             
         Returns:
-            Response data from the model
+            Response from the model
         """
-        # Determine if this is a complex task requiring the primary model
-        is_complex = task_complexity == "high"
-        
-        # If auto, make a determination based on prompt length and complexity
+        # Determine which model to use based on task complexity
         if task_complexity == "auto":
-            is_complex = (
-                len(prompt) > 500 or 
-                any(term in prompt.lower() for term in 
-                    ["analyze", "improve", "optimize", "debug", "complex", 
-                     "architecture", "design", "evaluate"])
-            )
+            # TODO: Implement automatic complexity detection
+            model = self.secondary_model
+        elif task_complexity == "simple" or task_complexity == "medium":
+            model = self.secondary_model
+            logger.info(f"Using secondary model ({self.secondary_model}) for {task_complexity} task")
+        else:  # "complex" or unknown
+            model = self.primary_model
+            logger.info(f"Using primary model ({self.primary_model}) for {task_complexity} task")
         
-        # Set default max tokens based on complexity
-        if max_tokens is None:
-            max_tokens = 4096 if is_complex else 1024
+        # Retrieve relevant context from memory if available
+        memory_context = []
+        context = None
+        if use_memory and self.memory_manager:
+            memory_context = self.get_memory_context(prompt)
+            if memory_context:
+                logger.info(f"Retrieved {len(memory_context)} relevant memories")
+                # Create context dictionary for the MCP
+                context = {
+                    "memories": memory_context
+                }
         
-        # Use the appropriate model
-        if is_complex:
-            logger.info(f"Using primary model ({self.primary_model}) for complex task")
-            return self.mcp.process_request(
+        # Prepare system prompt with memory context if available
+        enhanced_system = system
+        if memory_context and system:
+            memory_content = "\n\nHere are some relevant memories that may be helpful:\n\n"
+            for i, memory in enumerate(memory_context):
+                memory_content += f"Memory #{i+1}:\n{memory['content']}\n\n"
+            enhanced_system = system + memory_content
+        elif memory_context:
+            memory_content = "Here are some relevant memories that may be helpful:\n\n"
+            for i, memory in enumerate(memory_context):
+                memory_content += f"Memory #{i+1}:\n{memory['content']}\n\n"
+            enhanced_system = memory_content
+        
+        # Process with MCP
+        try:
+            # Process request with appropriate model
+            response = self.mcp.process_request(
                 prompt=prompt,
-                system=system,
-                context=context,
-                max_tokens=max_tokens,
-                temperature=temperature
+                system=enhanced_system,
+                temperature=temperature,
+                max_tokens=max_tokens or 1024,
+                context=context
             )
-        else:
-            logger.info(f"Using secondary model ({self.secondary_model}) for simple task")
-            # In a real implementation, you would route to the secondary model here
-            # For this implementation, we're using the same MCP instance but would configure
-            # it to use the secondary model for this request
-            return self.mcp.process_request(
-                prompt=prompt,
-                system=system,
-                context=context,
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
-    
-    async def process_with_optimal_model_async(
-        self,
-        prompt: str,
-        task_complexity: str = "auto",
-        system: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-        max_tokens: Optional[int] = None,
-        temperature: float = 0.7
-    ) -> Dict[str, Any]:
-        """
-        Process a request asynchronously with the optimal model based on task complexity.
-        
-        Args:
-            prompt: The prompt to process
-            task_complexity: The complexity of the task ('low', 'high', or 'auto')
-            system: Optional system prompt
-            context: Optional additional context
-            max_tokens: Maximum tokens to generate (defaults based on complexity)
-            temperature: Sampling temperature
             
-        Returns:
-            Response data from the model
-        """
-        # Determine if this is a complex task requiring the primary model
-        is_complex = task_complexity == "high"
-        
-        # If auto, make a determination based on prompt length and complexity
-        if task_complexity == "auto":
-            is_complex = (
-                len(prompt) > 500 or 
-                any(term in prompt.lower() for term in 
-                    ["analyze", "improve", "optimize", "debug", "complex", 
-                     "architecture", "design", "evaluate"])
-            )
-        
-        # Set default max tokens based on complexity
-        if max_tokens is None:
-            max_tokens = 4096 if is_complex else 1024
-        
-        # Use the appropriate model
-        if is_complex:
-            logger.info(f"Using primary model ({self.primary_model}) for complex task")
-            return await self.mcp.process_request_async(
-                prompt=prompt,
-                system=system,
-                context=context,
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
-        else:
-            logger.info(f"Using secondary model ({self.secondary_model}) for simple task")
-            # In a real implementation, you would route to the secondary model here
-            return await self.mcp.process_request_async(
-                prompt=prompt,
-                system=system,
-                context=context,
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
+            # Store the interaction in memory if memory manager is available
+            if self.memory_manager:
+                try:
+                    # Store user prompt
+                    self.memory_manager.add_conversation_memory(
+                        role="user",
+                        content=prompt,
+                        metadata={"timestamp": time.time()}
+                    )
+                    
+                    # Store assistant response
+                    response_content = response.get("content", "") if isinstance(response, dict) else response
+                    self.memory_manager.add_conversation_memory(
+                        role="assistant",
+                        content=response_content,
+                        metadata={
+                            "timestamp": time.time(),
+                            "model": model,
+                            "complexity": task_complexity
+                        }
+                    )
+                except Exception as e:
+                    logger.error(f"Error storing conversation in memory: {e}")
+            
+            return response
+        except Exception as e:
+            logger.error(f"Error processing request: {e}")
+            return {"content": f"Error: {str(e)}"}
     
     def batch_process(
         self,
@@ -259,7 +282,6 @@ class McpHybridAutomation:
                 prompt=prompt,
                 task_complexity=task_complexity,
                 system=system,
-                context=context,
                 max_tokens=max_tokens,
                 temperature=temperature
             )
