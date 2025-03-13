@@ -29,6 +29,7 @@ from vot1.vot_mcp import VotModelControlProtocol
 from vot1.memory import MemoryManager
 from vot1.owl_reasoning import OWLReasoningEngine
 from vot1.self_improvement_workflow import SelfImprovementWorkflow
+from vot1.code_analyzer import CodeAnalyzer, create_analyzer
 
 # Configure logging
 logging.basicConfig(
@@ -60,45 +61,44 @@ class SelfImprovementAgent:
         Initialize the self-improvement agent.
         
         Args:
-            workflow: Existing workflow or None to create a new one
-            max_thinking_tokens: Maximum tokens for thinking stream
-            max_iterations: Maximum improvement iterations to attempt
-            improvement_threshold: Minimum improvement required to accept a change
-            safety_checks: Whether to enable safety checks for changes
-            workspace_dir: Directory containing the codebase
+            workflow: Self-improvement workflow for baseline functionality
+            max_thinking_tokens: Maximum tokens for Claude thinking steps
+            max_iterations: Maximum number of improvement iterations
+            improvement_threshold: Minimum score for improvements to be accepted
+            safety_checks: Whether to perform safety checks on code changes
+            workspace_dir: Root directory of the workspace
         """
-        # Set up workspace directory
-        self.workspace_dir = Path(workspace_dir or os.getcwd())
+        self.workflow = workflow or SelfImprovementWorkflow(
+            workspace_dir=workspace_dir
+        )
         
-        # Create or use workflow
-        if workflow is None:
-            self.workflow = SelfImprovementWorkflow(
-                max_thinking_tokens=max_thinking_tokens,
-                workspace_dir=str(self.workspace_dir)
-            )
-        else:
-            self.workflow = workflow
-        
-        # Store configuration
+        self.max_thinking_tokens = max_thinking_tokens
         self.max_iterations = max_iterations
         self.improvement_threshold = improvement_threshold
         self.safety_checks = safety_checks
-        self.max_thinking_tokens = max_thinking_tokens
+        self.workspace_dir = Path(workspace_dir or os.getcwd())
         
-        # Initialize state
-        self.improvement_history = []
+        # Initialize statistics tracking
         self.improvement_stats = {
             "attempts": 0,
             "successful": 0,
             "failed": 0,
-            "safety_rejected": 0
+            "safety_rejected": 0,
+            "quality_rejected": 0,
         }
         
-        # Initialize safety verifier
-        self._init_safety_verifier()
+        # Initialize code analyzer
+        self.code_analyzer = create_analyzer(
+            mcp=self.workflow.mcp,
+            owl_engine=self.workflow.owl_engine,
+            workspace_dir=self.workspace_dir
+        )
         
-        logger.info(f"Initialized SelfImprovementAgent with max_iterations={max_iterations}, "
-                   f"safety_checks={safety_checks}")
+        # Initialize safety verifier
+        if safety_checks:
+            self._init_safety_verifier()
+        
+        logger.info(f"Initialized SelfImprovementAgent with max_iterations={max_iterations}, improvement_threshold={improvement_threshold}")
     
     def _init_safety_verifier(self):
         """Initialize the safety verification system."""
@@ -140,132 +140,172 @@ class SelfImprovementAgent:
         # Create a unique ID for this improvement
         improvement_id = str(uuid.uuid4())
         
-        # Step 1: Analyze current code
-        analysis = await self._analyze_component(component_path)
-        
-        # Step 2: Generate improvement plan
-        improvement_plan = await self._create_improvement_plan(
-            component_path, 
-            improvement_type, 
-            analysis,
-            custom_instructions
-        )
-        
-        # Step 3: Generate code changes
-        code_changes = await self._generate_code_changes(
-            component_path,
-            improvement_plan
-        )
-        
-        # Step 4: Safety verification if enabled
-        if self.safety_checks:
-            safety_result = await self._verify_safety(component_path, code_changes)
-            if not safety_result["safe"]:
-                logger.warning(f"Safety check failed: {safety_result['reason']}")
-                self.improvement_stats["safety_rejected"] += 1
+        try:
+            # Step 1: Analyze current code
+            analysis = await self._analyze_component(component_path)
+            
+            # Check if analysis failed
+            if "error" in analysis and not analysis.get("success", True):
+                logger.error(f"Analysis failed for {component_path}: {analysis['error']}")
+                self.improvement_stats["failed"] += 1
+                return {
+                    "success": False,
+                    "improvement_id": improvement_id,
+                    "component": component_path,
+                    "improvement_type": improvement_type,
+                    "error": f"Analysis failed: {analysis.get('error', 'Unknown error')}",
+                    "timestamp": time.time()
+                }
+            
+            # Step 2: Generate improvement plan
+            improvement_plan = await self._create_improvement_plan(
+                component_path, 
+                improvement_type, 
+                analysis,
+                custom_instructions
+            )
+            
+            # Step 3: Generate code changes
+            code_changes = await self._generate_code_changes(
+                component_path,
+                improvement_plan
+            )
+            
+            # Step 4: Safety verification if enabled
+            if self.safety_checks:
+                safety_result = await self._verify_safety(component_path, code_changes)
+                if not safety_result["safe"]:
+                    logger.warning(f"Safety check failed: {safety_result['reason']}")
+                    self.improvement_stats["safety_rejected"] += 1
+                    
+                    return {
+                        "success": False,
+                        "improvement_id": improvement_id,
+                        "component": component_path,
+                        "improvement_type": improvement_type,
+                        "error": f"Safety check failed: {safety_result['reason']}",
+                        "improvement_plan": improvement_plan,
+                        "code_changes": code_changes,
+                        "timestamp": time.time()
+                    }
+            
+            # Step 5: Apply code changes
+            application_result = await self._apply_code_changes(component_path, code_changes)
+            
+            if not application_result["success"]:
+                logger.error(f"Failed to apply code changes: {application_result.get('error', 'Unknown error')}")
+                self.improvement_stats["failed"] += 1
                 
                 return {
                     "success": False,
                     "improvement_id": improvement_id,
                     "component": component_path,
-                    "type": improvement_type,
-                    "stage": "safety_verification",
-                    "reason": safety_result["reason"],
-                    "safety_score": safety_result["score"]
+                    "improvement_type": improvement_type,
+                    "error": f"Failed to apply code changes: {application_result.get('error', 'Unknown error')}",
+                    "improvement_plan": improvement_plan,
+                    "code_changes": code_changes,
+                    "timestamp": time.time()
                 }
-        
-        # Step 5: Apply changes
-        modification_result = await self._apply_code_changes(
-            component_path,
-            code_changes
-        )
-        
-        if not modification_result["success"]:
-            self.improvement_stats["failed"] += 1
+            
+            # Step 6: Test the changes
+            test_result = await self._test_changes(component_path)
+            
+            if not test_result["success"]:
+                logger.warning(f"Tests failed after changes: {test_result.get('error', 'Unknown error')}")
+                
+                # Revert changes if tests fail
+                await self._revert_changes(component_path)
+                
+                self.improvement_stats["failed"] += 1
+                
+                return {
+                    "success": False,
+                    "improvement_id": improvement_id,
+                    "component": component_path,
+                    "improvement_type": improvement_type,
+                    "error": f"Tests failed after changes: {test_result.get('error', 'Unknown error')}",
+                    "improvement_plan": improvement_plan,
+                    "code_changes": code_changes,
+                    "timestamp": time.time()
+                }
+            
+            # Step 7: Evaluate the improvement
+            evaluation = await self._evaluate_improvement(
+                component_path, 
+                improvement_type,
+                test_result
+            )
+            
+            # Check if improvement meets threshold
+            if evaluation["score"] < self.improvement_threshold:
+                logger.warning(f"Improvement score {evaluation['score']:.2f} below threshold {self.improvement_threshold}")
+                
+                # Revert changes if score is below threshold
+                await self._revert_changes(component_path)
+                
+                self.improvement_stats["quality_rejected"] += 1
+                
+                return {
+                    "success": False,
+                    "improvement_id": improvement_id,
+                    "component": component_path,
+                    "improvement_type": improvement_type,
+                    "score": evaluation["score"],
+                    "threshold": self.improvement_threshold,
+                    "error": f"Improvement score {evaluation['score']:.2f} below threshold {self.improvement_threshold}",
+                    "evaluation": evaluation,
+                    "improvement_plan": improvement_plan,
+                    "code_changes": code_changes,
+                    "timestamp": time.time()
+                }
+            
+            # Step 8: Document the improvement
+            documentation = await self._document_improvement(
+                component_path,
+                improvement_type,
+                improvement_plan,
+                evaluation
+            )
+            
+            # Store improvement in memory
+            self._store_improvement_in_memory(
+                improvement_id,
+                component_path,
+                improvement_type,
+                code_changes,
+                evaluation,
+                documentation
+            )
+            
+            # Increment success counter
+            self.improvement_stats["successful"] += 1
+            
+            logger.info(f"Successfully improved {component_path}, score: {evaluation['score']:.2f}")
+            
             return {
-                "success": False,
+                "success": True,
                 "improvement_id": improvement_id,
                 "component": component_path,
-                "type": improvement_type,
-                "stage": "code_modification",
-                "reason": modification_result["error"]
+                "improvement_type": improvement_type,
+                "score": evaluation["score"],
+                "evaluation": evaluation,
+                "documentation": documentation,
+                "improvement_plan": improvement_plan,
+                "timestamp": time.time()
             }
-        
-        # Step 6: Test changes
-        test_result = await self._test_changes(component_path)
-        
-        if not test_result["success"]:
-            # Revert changes if tests fail
-            await self._revert_changes(component_path)
+            
+        except Exception as e:
+            logger.error(f"Error during improvement of {component_path}: {e}", exc_info=True)
             self.improvement_stats["failed"] += 1
             
             return {
                 "success": False,
                 "improvement_id": improvement_id,
                 "component": component_path,
-                "type": improvement_type,
-                "stage": "testing",
-                "reason": test_result["error"]
+                "improvement_type": improvement_type,
+                "error": str(e),
+                "timestamp": time.time()
             }
-        
-        # Step 7: Evaluate improvement
-        evaluation = await self._evaluate_improvement(
-            component_path,
-            improvement_type,
-            test_result
-        )
-        
-        # If improvement below threshold, revert changes
-        if evaluation["score"] < self.improvement_threshold:
-            await self._revert_changes(component_path)
-            self.improvement_stats["failed"] += 1
-            
-            return {
-                "success": False,
-                "improvement_id": improvement_id,
-                "component": component_path,
-                "type": improvement_type,
-                "stage": "evaluation",
-                "reason": f"Improvement score {evaluation['score']} below threshold {self.improvement_threshold}",
-                "score": evaluation["score"]
-            }
-        
-        # Step 8: Document improvement
-        documentation = await self._document_improvement(
-            component_path,
-            improvement_type,
-            improvement_plan,
-            evaluation
-        )
-        
-        # Step 9: Store improvement in memory
-        self._store_improvement_in_memory(
-            improvement_id,
-            component_path,
-            improvement_type,
-            code_changes,
-            evaluation,
-            documentation
-        )
-        
-        # Record successful improvement
-        self.improvement_stats["successful"] += 1
-        self.improvement_history.append({
-            "id": improvement_id,
-            "component": component_path,
-            "type": improvement_type,
-            "timestamp": time.time(),
-            "score": evaluation["score"]
-        })
-        
-        return {
-            "success": True,
-            "improvement_id": improvement_id,
-            "component": component_path,
-            "type": improvement_type,
-            "score": evaluation["score"],
-            "documentation": documentation["summary"]
-        }
     
     async def _analyze_component(self, component_path: str) -> Dict[str, Any]:
         """Analyze a component to understand its structure and functionality."""
@@ -275,46 +315,64 @@ class SelfImprovementAgent:
         if not full_path.exists():
             raise FileNotFoundError(f"Component not found: {component_path}")
         
-        # Read the file
-        with open(full_path, 'r') as f:
-            content = f.read()
-        
-        # Use OWL reasoning to analyze the component
-        reasoning_result = self.workflow.owl_engine.reason(
-            query=f"Analyze this code file to understand its structure, purpose, and functionality",
-            context=[content]
-        )
-        
-        # Use MCP to get a more detailed analysis
-        analysis_prompt = f"""
-        Analyze the following code component in detail:
-        
-        File path: {component_path}
-        
-        Please provide:
-        1. A summary of the component's purpose and functionality
-        2. Key classes, functions, and their relationships
-        3. Main design patterns and architectural approaches used
-        4. Potential areas for improvement
-        5. Dependencies and integration points with other components
-        """
-        
-        analysis_response = await self.workflow.mcp.process_request_async(
-            prompt=analysis_prompt,
-            system="You are an expert code analyzer with deep understanding of software architecture, design patterns, and best practices.",
-            context={
-                "code": content,
-                "reasoning": reasoning_result
-            },
-            max_tokens=2048
-        )
-        
-        return {
-            "path": component_path,
-            "reasoning": reasoning_result,
-            "analysis": analysis_response.get("content", ""),
-            "lines_of_code": len(content.splitlines())
-        }
+        try:
+            # Use code analyzer for comprehensive analysis
+            code_analysis = await self.code_analyzer.analyze_code(component_path)
+            
+            # Read the file for backward compatibility
+            with open(full_path, 'r') as f:
+                content = f.read()
+            
+            # Use OWL reasoning to analyze the component (from existing code)
+            reasoning_result = self.workflow.owl_engine.reason(
+                query=f"Analyze this code file to understand its structure, purpose, and functionality",
+                context=[content]
+            )
+            
+            # Use MCP to get a more detailed analysis (from existing code)
+            analysis_prompt = f"""
+            Analyze the following code component in detail:
+            
+            File path: {component_path}
+            
+            Please provide:
+            1. A summary of the component's purpose and functionality
+            2. Key classes, functions, and their relationships
+            3. Main design patterns and architectural approaches used
+            4. Potential areas for improvement
+            5. Dependencies and integration points with other components
+            """
+            
+            analysis_response = await self.workflow.mcp.process_request_async(
+                prompt=analysis_prompt,
+                system="You are an expert code analyzer with deep understanding of software architecture, design patterns, and best practices.",
+                context={
+                    "code": content,
+                    "reasoning": reasoning_result,
+                    "code_analysis": code_analysis  # Add the code analysis results
+                },
+                max_tokens=2048
+            )
+            
+            # Calculate quality score
+            quality_score = self.code_analyzer.calculate_quality_score(code_analysis)
+            
+            return {
+                "path": component_path,
+                "reasoning": reasoning_result,
+                "analysis": analysis_response.get("content", ""),
+                "code_analysis": code_analysis,
+                "quality_score": quality_score,
+                "lines_of_code": len(content.splitlines()),
+                "total_issues": code_analysis.get("total_issues", 0)
+            }
+        except Exception as e:
+            logger.error(f"Error analyzing component {component_path}: {e}")
+            return {
+                "path": component_path,
+                "error": str(e),
+                "success": False
+            }
     
     async def _create_improvement_plan(self, 
                                 component_path: str, 
@@ -624,67 +682,139 @@ class SelfImprovementAgent:
         """Evaluate the quality and impact of the improvement."""
         full_path = self.workspace_dir / component_path
         
-        # Read the modified code
-        with open(full_path, 'r') as f:
-            modified_code = f.read()
-        
-        # Read the backup (original) code
-        backup_path = f"{full_path}.bak"
-        with open(backup_path, 'r') as f:
-            original_code = f.read()
-        
-        # Use MCP to evaluate improvement
-        eval_prompt = f"""
-        Evaluate the improvement made to component: {component_path}
-        Improvement type: {improvement_type}
-        
-        Compare the original and modified code to assess the quality and impact of the improvements.
-        
-        Rate the improvement on a scale of 0.0 to 1.0, where:
-        - 0.0: No improvement or regression
-        - 0.5: Moderate improvement
-        - 1.0: Exceptional improvement that transforms the component
-        
-        Provide your rating and a detailed analysis of:
-        1. How well the changes address the improvement type ({improvement_type})
-        2. Code quality improvements
-        3. Potential impact on the overall system
-        4. Any concerns or limitations
-        """
-        
-        eval_response = await self.workflow.mcp.process_request_async(
-            prompt=eval_prompt,
-            system="You are an expert code reviewer with deep experience evaluating software improvements. You provide balanced, objective assessments of code changes based on best practices, performance, security, and maintainability.",
-            context={
+        try:
+            # Read the modified code
+            with open(full_path, 'r') as f:
+                modified_code = f.read()
+            
+            # Read the backup (original) code
+            backup_path = f"{full_path}.bak"
+            with open(backup_path, 'r') as f:
+                original_code = f.read()
+            
+            # Use code analyzer to evaluate the improvement
+            original_analysis = None
+            modified_analysis = None
+            
+            try:
+                # Create a temporary backup of the current modified code
+                temp_backup_path = f"{full_path}.temp"
+                with open(temp_backup_path, 'w') as f:
+                    f.write(modified_code)
+                
+                # Restore original code to analyze it
+                with open(full_path, 'w') as f:
+                    f.write(original_code)
+                
+                # Analyze original code
+                original_analysis = await self.code_analyzer.analyze_code(component_path)
+                original_score = self.code_analyzer.calculate_quality_score(original_analysis)
+                
+                # Restore modified code
+                with open(full_path, 'w') as f:
+                    f.write(modified_code)
+                
+                # Analyze modified code
+                modified_analysis = await self.code_analyzer.analyze_code(component_path)
+                modified_score = self.code_analyzer.calculate_quality_score(modified_analysis)
+                
+                # Remove temporary backup
+                if os.path.exists(temp_backup_path):
+                    os.remove(temp_backup_path)
+                
+            except Exception as e:
+                logger.warning(f"Failed to perform comparative code analysis: {e}")
+                # Ensure we restore the modified code if anything fails
+                with open(full_path, 'w') as f:
+                    f.write(modified_code)
+            
+            # Use MCP to evaluate improvement
+            eval_prompt = f"""
+            Evaluate the improvement made to component: {component_path}
+            Improvement type: {improvement_type}
+            
+            Compare the original and modified code to assess the quality and impact of the improvements.
+            
+            Rate the improvement on a scale of 0.0 to 1.0, where:
+            - 0.0: No improvement or regression
+            - 0.5: Moderate improvement
+            - 1.0: Exceptional improvement that transforms the component
+            
+            Provide your rating and a detailed analysis of:
+            1. How well the changes address the improvement type ({improvement_type})
+            2. Code quality improvements
+            3. Potential impact on the overall system
+            4. Any concerns or limitations
+            """
+            
+            # Add code analysis results to context if available
+            context = {
                 "original_code": original_code,
                 "modified_code": modified_code,
                 "improvement_type": improvement_type,
-                "component_path": component_path
-            },
-            max_tokens=2048
-        )
-        
-        # Extract evaluation score using regex
-        import re
-        score_pattern = r"(\d+\.\d+|\d+)"
-        eval_content = eval_response.get("content", "")
-        score_matches = re.findall(score_pattern, eval_content)
-        
-        eval_score = 0.0
-        if score_matches:
-            try:
-                eval_score = float(score_matches[0])
-                # Ensure score is between 0 and 1
-                eval_score = max(0.0, min(1.0, eval_score))
-            except ValueError:
-                eval_score = 0.0
-        
-        return {
-            "score": eval_score,
-            "analysis": eval_content,
-            "component_path": component_path,
-            "improvement_type": improvement_type
-        }
+                "component_path": component_path,
+                "test_result": test_result
+            }
+            
+            if original_analysis and modified_analysis:
+                context["original_analysis"] = original_analysis
+                context["modified_analysis"] = modified_analysis
+                context["original_score"] = original_score
+                context["modified_score"] = modified_score
+            
+            eval_response = await self.workflow.mcp.process_request_async(
+                prompt=eval_prompt,
+                system="You are an expert code reviewer with deep experience evaluating software improvements. You provide balanced, objective assessments of code changes based on best practices, performance, security, and maintainability.",
+                context=context,
+                max_tokens=2048
+            )
+            
+            # Extract evaluation score using regex
+            import re
+            score_pattern = r"(\d+\.\d+|\d+)"
+            eval_content = eval_response.get("content", "")
+            
+            matches = re.findall(score_pattern, eval_content)
+            score = 0.0
+            
+            if matches:
+                # Look for scores between 0 and 1
+                for match in matches:
+                    try:
+                        value = float(match)
+                        if 0.0 <= value <= 1.0:
+                            score = value
+                            break
+                    except ValueError:
+                        continue
+            
+            # If we have both analyses, use the score difference as a factor
+            analysis_score_diff = 0.0
+            if original_analysis and modified_analysis:
+                analysis_score_diff = modified_score - original_score
+                
+                # Factor in the analysis score difference (give it 40% weight)
+                combined_score = (score * 0.6) + (max(0, analysis_score_diff) * 0.4)
+                
+                # Cap at 1.0
+                score = min(1.0, max(0.0, combined_score))
+            
+            return {
+                "score": score,
+                "analysis": eval_content,
+                "original_analysis": original_analysis,
+                "modified_analysis": modified_analysis,
+                "original_score": original_score if original_analysis else None,
+                "modified_score": modified_score if modified_analysis else None,
+                "score_improvement": analysis_score_diff if original_analysis and modified_analysis else None
+            }
+        except Exception as e:
+            logger.error(f"Error evaluating improvement: {e}")
+            return {
+                "score": 0.0,
+                "error": str(e),
+                "analysis": f"Failed to evaluate improvement: {str(e)}"
+            }
     
     async def _revert_changes(self, component_path: str) -> Dict[str, Any]:
         """Revert changes if they don't pass tests or evaluation."""
@@ -836,16 +966,23 @@ class SelfImprovementAgent:
             await asyncio.sleep(1)
         
         # Generate cycle summary
+        successful_count = sum(1 for r in results if r.get("success", False))
+        failed_count = len(results) - successful_count
+        
         summary = {
             "total_targets": len(targets),
             "completed": len(results),
-            "successful": sum(1 for r in results if r["success"]),
-            "failed": sum(1 for r in results if not r["success"]),
+            "successful": successful_count,
+            "failed": failed_count,
             "stats": self.improvement_stats,
-            "results": results
+            "results": results,
+            "success": successful_count > 0 and failed_count == 0  # Only true if all succeeded
         }
         
-        logger.info(f"Improvement cycle completed: {summary['successful']}/{summary['completed']} successful")
+        if successful_count > 0:
+            logger.info(f"Improvement cycle completed: {successful_count}/{len(results)} successful")
+        else:
+            logger.warning(f"Improvement cycle completed with no successful improvements")
         
         return summary
     

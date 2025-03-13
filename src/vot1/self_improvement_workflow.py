@@ -25,6 +25,7 @@ import argparse
 import sys
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Union, Tuple, Set
+import uuid
 
 from dotenv import load_dotenv
 
@@ -44,6 +45,8 @@ try:
     from vot1.memory import MemoryManager, VectorStore
     from vot1.owl_reasoning import OWLReasoningEngine
     from vot1.perplexity_client import PerplexityClient
+    from vot1.code_analyzer import CodeAnalyzer, create_analyzer
+    from vot1.development_feedback_bridge import DevelopmentFeedbackBridge
 except ImportError as e:
     logger.error(f"Failed to import VOT1 modules: {e}")
     logger.error("Please ensure VOT1 is properly installed")
@@ -61,93 +64,81 @@ class SelfImprovementWorkflow:
     
     def __init__(
         self,
+        mcp: Optional[VotModelControlProtocol] = None,
         memory_manager: Optional[MemoryManager] = None,
         owl_engine: Optional[OWLReasoningEngine] = None,
+        code_analyzer: Optional[CodeAnalyzer] = None,
+        feedback_bridge: Optional[DevelopmentFeedbackBridge] = None,
+        workspace_dir: Optional[str] = None,
+        secondary_model: Optional[str] = None,
         github_token: Optional[str] = None,
         github_repo: Optional[str] = None,
-        github_owner: Optional[str] = None,
-        vector_model: str = "sentence-transformers/all-mpnet-base-v2",
-        max_thinking_tokens: int = 4096,
-        use_perplexity: bool = True,
-        workspace_dir: Optional[str] = None
+        github_owner: Optional[str] = None
     ):
         """
         Initialize the self-improvement workflow.
         
         Args:
+            mcp: VOT Model Control Protocol instance or None to create a new one
             memory_manager: Memory manager instance or None to create a new one
             owl_engine: OWL reasoning engine or None to create a new one
-            github_token: GitHub API token for repository integration
+            code_analyzer: Code analyzer or None to create a new one
+            feedback_bridge: Development feedback bridge or None to create a new one
+            workspace_dir: Root directory of the workspace
+            secondary_model: Optional secondary model for hybrid reasoning
+            github_token: GitHub personal access token for integration
             github_repo: GitHub repository name
             github_owner: GitHub repository owner
-            vector_model: Model name for vector embeddings
-            max_thinking_tokens: Maximum tokens to use for thinking stream
-            use_perplexity: Whether to use Perplexity for web searches
-            workspace_dir: Directory containing the codebase
         """
-        # Set up workspace directory
+        # Set workspace directory
         self.workspace_dir = Path(workspace_dir or os.getcwd())
-        logger.info(f"Using workspace directory: {self.workspace_dir}")
+        logger.info(f"Self-improvement workspace directory: {self.workspace_dir}")
         
-        # Initialize memory management
-        if memory_manager is None:
-            vector_store = VectorStore(
-                model_name=vector_model,
-                storage_path=str(self.workspace_dir / "memory" / "vector_store.db")
-            )
-            self.memory_manager = MemoryManager(
-                vector_store=vector_store,
-                memory_path=str(self.workspace_dir / "memory")
-            )
-            logger.info("Initialized new memory manager")
-        else:
-            self.memory_manager = memory_manager
-            logger.info("Using provided memory manager")
+        # Initialize MCP
+        self.mcp = mcp or VotModelControlProtocol(
+            secondary_model=secondary_model
+        )
+        
+        # Initialize memory manager
+        self.memory_manager = memory_manager or MemoryManager(
+            storage_dir=os.path.join(self.workspace_dir, "memory")
+        )
         
         # Initialize OWL reasoning engine
-        if owl_engine is None:
-            ontology_path = str(self.workspace_dir / "owl" / "vot1_ontology.owl")
-            self.owl_engine = OWLReasoningEngine(
-                ontology_path=ontology_path,
-                memory_manager=self.memory_manager,
-                embedding_model=vector_model
-            )
-            logger.info(f"Initialized new OWL reasoning engine with ontology: {ontology_path}")
-        else:
-            self.owl_engine = owl_engine
-            logger.info("Using provided OWL reasoning engine")
+        self.owl_engine = owl_engine or OWLReasoningEngine(
+            ontology_path=os.path.join(self.workspace_dir, "owl", "vot1_ontology.owl"),
+            memory_manager=self.memory_manager
+        )
         
-        # Set up GitHub integration
-        self.github_token = github_token or os.environ.get("GITHUB_TOKEN")
-        self.github_repo = github_repo or os.environ.get("GITHUB_REPO")
-        self.github_owner = github_owner or os.environ.get("GITHUB_OWNER")
-        self.github_enabled = bool(self.github_token and self.github_repo and self.github_owner)
+        # Initialize code analyzer
+        self.code_analyzer = code_analyzer or create_analyzer(
+            mcp=self.mcp,
+            owl_engine=self.owl_engine,
+            workspace_dir=self.workspace_dir
+        )
         
-        if self.github_enabled:
-            logger.info(f"GitHub integration enabled for {self.github_owner}/{self.github_repo}")
-        else:
+        # Initialize development feedback bridge
+        self.feedback_bridge = feedback_bridge or DevelopmentFeedbackBridge(
+            mcp=self.mcp,
+            code_analyzer=self.code_analyzer,
+            memory_manager=self.memory_manager,
+            owl_engine=self.owl_engine,
+            workspace_dir=self.workspace_dir
+        )
+        
+        # GitHub integration
+        self.github_token = github_token
+        self.github_repo = github_repo
+        self.github_owner = github_owner
+        self.github_enabled = all([github_token, github_repo, github_owner])
+        
+        if not self.github_enabled:
             logger.warning("GitHub integration not configured or missing credentials")
         
-        # Initialize MCP for multiple AI models
-        tools = self._create_tool_definitions()
-        self.mcp = VotModelControlProtocol(
-            primary_provider=VotModelControlProtocol.PROVIDER_ANTHROPIC,
-            primary_model="claude-3-7-sonnet-20240620",  # Latest Sonnet model
-            secondary_provider=VotModelControlProtocol.PROVIDER_PERPLEXITY,
-            secondary_model="pplx-70b-online",  # Latest Perplexity model
-            tools=tools,
-            memory_manager=self.memory_manager,
-            execution_mode=VotModelControlProtocol.MODE_STREAMING,
-            config={
-                "max_thinking_tokens": max_thinking_tokens,
-                "use_hybrid_approach": True,
-                "enable_web_search": use_perplexity
-            }
-        )
-        logger.info(f"Initialized VotModelControlProtocol with max thinking tokens: {max_thinking_tokens}")
+        # Register tools
+        self._register_tools()
         
-        # Register tool handlers
-        self._register_tool_handlers()
+        logger.info("Initialized self-improvement workflow")
     
     def _create_tool_definitions(self) -> List[Dict[str, Any]]:
         """Create tool definitions for the MCP."""
@@ -713,6 +704,272 @@ class SelfImprovementWorkflow:
             results["success"] = False
             results["error"] = str(e)
             return results
+
+    def _analyze_code(self, file_path: str) -> Dict[str, Any]:
+        """
+        Analyze code for improvement opportunities.
+        
+        Args:
+            file_path: Path to the file to analyze
+            
+        Returns:
+            Analysis results
+        """
+        try:
+            # Use the development feedback bridge for more comprehensive analysis
+            loop = asyncio.get_event_loop()
+            analysis_result = loop.run_until_complete(
+                self.feedback_bridge.analyze_file_on_save(file_path)
+            )
+            
+            # Extract the code quality score
+            quality_score = analysis_result.get("quality_score", 0.0)
+            
+            # Get feedback and improvement suggestions if available
+            feedback = analysis_result.get("feedback")
+            suggestions = analysis_result.get("improvement_suggestions", [])
+            
+            return {
+                "file_path": file_path,
+                "quality_score": quality_score,
+                "feedback": feedback,
+                "suggestions": suggestions,
+                "analysis": analysis_result.get("analysis", {}),
+                "success": True
+            }
+        except Exception as e:
+            logger.error(f"Error analyzing code: {e}")
+            return {
+                "file_path": file_path,
+                "error": str(e),
+                "success": False
+            }
+    
+    def _evaluate_improvement(self, file_path: str, original_score: float) -> Dict[str, Any]:
+        """
+        Evaluate the improvement made to a file.
+        
+        Args:
+            file_path: Path to the improved file
+            original_score: Original quality score before improvement
+            
+        Returns:
+            Evaluation results
+        """
+        try:
+            # Analyze the improved code
+            new_analysis = self._analyze_code(file_path)
+            
+            if not new_analysis.get("success", False):
+                return {
+                    "file_path": file_path,
+                    "success": False,
+                    "error": new_analysis.get("error", "Unknown error during analysis")
+                }
+            
+            # Extract the new quality score
+            new_score = new_analysis.get("quality_score", 0.0)
+            
+            # Calculate improvement
+            improvement = new_score - original_score
+            
+            # Get feedback on the improved code
+            feedback = new_analysis.get("feedback")
+            
+            # Generate evaluation summary using the MCP
+            evaluation_prompt = f"""
+            Evaluate the improvement made to the file: {file_path}
+            
+            Original quality score: {original_score:.2f}
+            New quality score: {new_score:.2f}
+            Improvement: {improvement:.2f} ({improvement * 100:.1f}%)
+            
+            Feedback on the improved code:
+            {feedback if feedback else "No feedback available."}
+            
+            Provide a detailed evaluation of the improvement, including:
+            1. Whether the improvement is significant
+            2. What aspects were most improved
+            3. Whether there are any remaining issues to address
+            4. Overall assessment of the quality after improvement
+            """
+            
+            evaluation_response = self.mcp.process_request(
+                prompt=evaluation_prompt,
+                system="You are an expert code reviewer evaluating improvements made to a codebase. Provide balanced, objective feedback that acknowledges both strengths and areas for further improvement.",
+                max_tokens=1024
+            )
+            
+            return {
+                "file_path": file_path,
+                "original_score": original_score,
+                "new_score": new_score,
+                "improvement": improvement,
+                "percentage_improvement": improvement * 100,
+                "evaluation": evaluation_response.get("content", ""),
+                "success": True
+            }
+        except Exception as e:
+            logger.error(f"Error evaluating improvement: {e}")
+            return {
+                "file_path": file_path,
+                "success": False,
+                "error": str(e)
+            }
+    
+    def improve_component_thinking(self, component_path: str, improvement_type: str, max_tokens: int = 4096) -> Dict[str, Any]:
+        """
+        Improve a component with a thinking-based approach.
+        
+        This approach demonstrates step-by-step reasoning for the improvement.
+        
+        Args:
+            component_path: Path to the component to improve
+            improvement_type: Type of improvement (performance, security, architecture, etc.)
+            max_tokens: Maximum tokens for thinking
+            
+        Returns:
+            Results of the improvement
+        """
+        full_path = os.path.join(self.workspace_dir, component_path)
+        
+        if not os.path.exists(full_path):
+            return {
+                "success": False,
+                "error": f"Component not found: {component_path}"
+            }
+        
+        # Step 1: Analyze the component using our feedback bridge
+        logger.info(f"Analyzing component: {component_path}")
+        analysis = self._analyze_code(component_path)
+        
+        if not analysis.get("success", False):
+            return {
+                "success": False,
+                "error": f"Analysis failed: {analysis.get('error', 'Unknown error')}"
+            }
+        
+        # Store original quality score
+        original_score = analysis.get("quality_score", 0.0)
+        
+        # Read the file
+        with open(full_path, 'r') as f:
+            original_code = f.read()
+        
+        # Step 2: Generate improvement with thinking process
+        logger.info(f"Generating improvement with thinking process for {component_path}")
+        improvement_prompt = f"""
+        You are improving the following component: {component_path}
+        Improvement type: {improvement_type}
+        
+        Current quality score: {original_score:.2f}
+        
+        Code analysis feedback:
+        {analysis.get('feedback', 'No feedback available.')}
+        
+        Improvement suggestions:
+        {json.dumps(analysis.get('suggestions', []), indent=2)}
+        
+        Your task is to improve this code based on the analysis and suggestions.
+        Think step by step, explaining your reasoning, and then provide the improved code.
+        
+        Original code:
+        ```
+        {original_code}
+        ```
+        
+        First, analyze the code in detail (understanding structure, purpose, functionality).
+        Then, identify specific areas for improvement based on the improvement type and feedback.
+        Consider multiple approaches for improvement and reason about the best ones.
+        Finally, implement the improvements to create better code.
+        
+        After your step-by-step thinking, provide the complete improved code.
+        """
+        
+        thinking_response = self.mcp.process_request(
+            prompt=improvement_prompt,
+            system="You are an expert software engineer focused on improving code quality. Think step by step, explaining your reasoning clearly, and provide significantly improved code based on analysis and feedback.",
+            thinking=True,
+            max_thinking_tokens=max_tokens,
+            max_tokens=4096
+        )
+        
+        thinking = thinking_response.get("thinking", "")
+        content = thinking_response.get("content", "")
+        
+        # Extract code from content
+        import re
+        code_pattern = r"```(?:\w+)?\s*([\s\S]+?)```"
+        code_matches = re.findall(code_pattern, content)
+        
+        if not code_matches:
+            return {
+                "success": False,
+                "error": "No improved code found in the response",
+                "thinking": thinking,
+                "content": content
+            }
+        
+        improved_code = code_matches[-1]  # Take the last code block as the final version
+        
+        # Step 3: Create backup of original file
+        backup_path = f"{full_path}.bak"
+        with open(backup_path, 'w') as f:
+            f.write(original_code)
+        
+        # Step 4: Apply the improvement
+        logger.info(f"Applying improvement to {component_path}")
+        with open(full_path, 'w') as f:
+            f.write(improved_code)
+        
+        # Step 5: Evaluate the improvement
+        logger.info(f"Evaluating improvement for {component_path}")
+        evaluation = self._evaluate_improvement(component_path, original_score)
+        
+        # Step 6: Store improvement in memory
+        improvement_id = str(uuid.uuid4())
+        memory_content = f"""
+        Improvement for component: {component_path}
+        Improvement type: {improvement_type}
+        
+        Original quality score: {original_score:.2f}
+        New quality score: {evaluation.get('new_score', 0.0):.2f}
+        Improvement: {evaluation.get('improvement', 0.0):.2f}
+        
+        Thinking process:
+        {thinking}
+        
+        Evaluation:
+        {evaluation.get('evaluation', 'No evaluation available.')}
+        """
+        
+        metadata = {
+            "type": "improvement",
+            "component": component_path,
+            "improvement_type": improvement_type,
+            "improvement_id": improvement_id,
+            "original_score": original_score,
+            "new_score": evaluation.get('new_score', 0.0),
+            "improvement": evaluation.get('improvement', 0.0),
+            "timestamp": time.time()
+        }
+        
+        self.memory_manager.add_semantic_memory(
+            content=memory_content,
+            metadata=metadata
+        )
+        
+        return {
+            "success": True,
+            "improvement_id": improvement_id,
+            "component": component_path,
+            "original_score": original_score,
+            "new_score": evaluation.get('new_score', 0.0),
+            "improvement": evaluation.get('improvement', 0.0),
+            "thinking": thinking,
+            "evaluation": evaluation.get('evaluation', ''),
+            "backup_path": backup_path
+        }
 
 
 async def main():

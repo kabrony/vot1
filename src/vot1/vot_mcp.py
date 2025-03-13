@@ -13,9 +13,9 @@ import time
 import uuid
 import asyncio
 from typing import Dict, List, Any, Optional, Union, Callable
+from pathlib import Path
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class VotModelControlProtocol:
@@ -38,13 +38,13 @@ class VotModelControlProtocol:
     
     def __init__(
         self,
-        primary_provider: str = PROVIDER_ANTHROPIC,
-        primary_model: str = "claude-3-opus-20240229",
+        primary_provider: str = "anthropic",
+        primary_model: str = "claude-3-7-sonnet-20240620",
         secondary_provider: Optional[str] = None,
         secondary_model: Optional[str] = None,
         tools: Optional[List[Dict[str, Any]]] = None,
         memory_manager = None,
-        execution_mode: str = MODE_SYNC,
+        execution_mode: str = "sync",
         config: Optional[Dict[str, Any]] = None
     ):
         """
@@ -69,17 +69,31 @@ class VotModelControlProtocol:
         self.execution_mode = execution_mode
         self.config = config or {}
         
-        # Tool handlers
-        self.tool_handlers = {}
+        # Initialize logger
+        self.logger = logging.getLogger(__name__)
         
-        logger.info(f"Initialized VOT-MCP with {primary_provider}/{primary_model}")
+        # Log initialization
+        self.logger.info(f"Initialized VOT-MCP with {primary_provider}/{primary_model}")
         if secondary_provider and secondary_model:
-            logger.info(f"Secondary model: {secondary_provider}/{secondary_model}")
+            self.logger.info(f"Secondary model: {secondary_provider}/{secondary_model}")
         
         # Check for thinking tokens configuration
         self.max_thinking_tokens = self.config.get("max_thinking_tokens", 0)
         if self.max_thinking_tokens:
-            logger.info(f"Max thinking tokens: {self.max_thinking_tokens}")
+            self.logger.info(f"Max thinking tokens: {self.max_thinking_tokens}")
+        
+        # Provider constants
+        self.PROVIDER_ANTHROPIC = "anthropic"
+        self.PROVIDER_PERPLEXITY = "perplexity"
+        self.PROVIDER_CUSTOM = "custom"
+        
+        # Execution mode constants
+        self.MODE_SYNC = "sync"
+        self.MODE_ASYNC = "async"
+        self.MODE_STREAMING = "streaming"
+        
+        # Tool handlers
+        self.tool_handlers = {}
     
     def register_tool(self, tool_name: str, handler: Callable) -> None:
         """
@@ -90,14 +104,14 @@ class VotModelControlProtocol:
             handler: Function to handle tool requests
         """
         self.tool_handlers[tool_name] = handler
-        logger.info(f"Registered handler for tool: {tool_name}")
+        self.logger.info(f"Registered handler for tool: {tool_name}")
     
     def process_request(
         self,
-        prompt: str,
-        system: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 1024,
+                       prompt: str, 
+                       system: Optional[str] = None,
+                       temperature: float = 0.7,
+                       max_tokens: int = 1024,
         context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
@@ -114,13 +128,13 @@ class VotModelControlProtocol:
             Response data
         """
         # Log the request
-        logger.info(f"Processing request (sync) with {self.primary_provider}/{self.primary_model}")
-        logger.debug(f"Prompt: {prompt[:100]}...")
+        self.logger.info(f"Processing request (sync) with {self.primary_provider}/{self.primary_model}")
+        self.logger.debug(f"Prompt: {prompt[:100]}...")
         
         # Simulate thinking with max tokens
         if self.max_thinking_tokens:
             thinking = self._generate_mock_thinking(prompt, context)
-            logger.debug(f"Generated thinking stream with {len(thinking)} characters")
+            self.logger.debug(f"Generated thinking stream with {len(thinking)} characters")
         
         # Generate mock response
         response = self._generate_mock_response(prompt, system, context)
@@ -140,10 +154,10 @@ class VotModelControlProtocol:
     
     async def process_request_async(
         self,
-        prompt: str,
-        system: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 1024,
+                                  prompt: str, 
+                                  system: Optional[str] = None,
+                                  temperature: float = 0.7,
+                                  max_tokens: int = 1024,
         context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
@@ -160,13 +174,13 @@ class VotModelControlProtocol:
             Response data
         """
         # Log the request
-        logger.info(f"Processing request (async) with {self.primary_provider}/{self.primary_model}")
-        logger.debug(f"Prompt: {prompt[:100]}...")
+        self.logger.info(f"Processing request (async) with {self.primary_provider}/{self.primary_model}")
+        self.logger.debug(f"Prompt: {prompt[:100]}...")
         
         # Simulate thinking with max tokens
         if self.max_thinking_tokens:
             thinking = self._generate_mock_thinking(prompt, context)
-            logger.debug(f"Generated thinking stream with {len(thinking)} characters")
+            self.logger.debug(f"Generated thinking stream with {len(thinking)} characters")
         
         # Simulate some delay
         await asyncio.sleep(0.5)
@@ -235,7 +249,7 @@ class VotModelControlProtocol:
     
     def _generate_mock_response(
         self, 
-        prompt: str, 
+                           prompt: str, 
         system: Optional[str] = None,
         context: Optional[Dict[str, Any]] = None
     ) -> str:
@@ -681,7 +695,7 @@ class VotModelControlProtocol:
             Tool execution results
         """
         if tool_name not in self.tool_handlers:
-            logger.warning(f"No handler registered for tool: {tool_name}")
+            self.logger.warning(f"No handler registered for tool: {tool_name}")
             return {
                 "error": f"Tool not found: {tool_name}",
                 "success": False
@@ -690,10 +704,10 @@ class VotModelControlProtocol:
         try:
             handler = self.tool_handlers[tool_name]
             result = handler(**tool_args)
-            logger.info(f"Executed tool: {tool_name}")
+            self.logger.info(f"Executed tool: {tool_name}")
             return result
         except Exception as e:
-            logger.error(f"Error executing tool {tool_name}: {e}")
+            self.logger.error(f"Error executing tool {tool_name}: {e}")
             return {
                 "error": str(e),
                 "success": False
@@ -715,7 +729,7 @@ class VotModelControlProtocol:
             Tool execution results
         """
         if tool_name not in self.tool_handlers:
-            logger.warning(f"No handler registered for tool: {tool_name}")
+            self.logger.warning(f"No handler registered for tool: {tool_name}")
             return {
                 "error": f"Tool not found: {tool_name}",
                 "success": False
@@ -731,11 +745,298 @@ class VotModelControlProtocol:
                 # Run synchronous function in executor
                 result = await asyncio.to_thread(handler, **tool_args)
             
-            logger.info(f"Executed tool async: {tool_name}")
+            self.logger.info(f"Executed tool async: {tool_name}")
             return result
         except Exception as e:
-            logger.error(f"Error executing tool {tool_name} async: {e}")
-            return {
+            self.logger.error(f"Error executing tool {tool_name} async: {e}")
+        return {
                 "error": str(e),
                 "success": False
-            } 
+        }
+    
+    async def process_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Process a tool request using the MCP.
+        
+        Args:
+            tool_name: Name of the tool to execute
+            parameters: Tool parameters
+            
+        Returns:
+            Tool execution results
+        """
+        try:
+            self.logger.info(f"Processing tool request: {tool_name}")
+            
+            # For GitHub tools, use our custom GitHub implementation
+            if "GITHUB" in tool_name:
+                return await self._process_github_tool(tool_name, parameters)
+            
+            # Default implementation uses the main model to handle the request
+            prompt = f"""
+            Execute the following tool request:
+            
+            Tool: {tool_name}
+            Parameters: {json.dumps(parameters, indent=2)}
+            
+            Return the results in a structured JSON format.
+            """
+            
+            # Process with the main model
+            result = await self.process(
+                prompt=prompt,
+                system="You are a tool execution assistant. Execute the tool request using the parameters provided and return the results in JSON format.",
+                max_tokens=1024,
+                temperature=0.2
+            )
+            
+            return {
+                "status": "success",
+                "content": result,
+                "tool": tool_name
+            }
+        except Exception as e:
+            self.logger.error(f"Error processing tool request {tool_name}: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "tool": tool_name
+            }
+    
+    async def process_github_request(self, endpoint: str, method: str = "GET", params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Process a GitHub API request.
+        
+        Args:
+            endpoint: GitHub API endpoint
+            method: HTTP method
+            params: Request parameters
+            
+        Returns:
+            GitHub API response
+        """
+        try:
+            self.logger.info(f"Processing GitHub request: {method} {endpoint}")
+            
+            # Simulate GitHub API request with our model
+            prompt = f"""
+            Execute the following GitHub API request:
+            
+            Method: {method}
+            Endpoint: {endpoint}
+            Parameters: {json.dumps(params or {}, indent=2)}
+            
+            Return the expected GitHub API response in JSON format.
+            """
+            
+            # Process with the main model
+            result = await self.process(
+                prompt=prompt,
+                system="You are a GitHub API simulation assistant. Generate a realistic response for the GitHub API request.",
+                max_tokens=1024,
+                temperature=0.2
+            )
+            
+            # Try to parse JSON response
+            try:
+                if isinstance(result, str):
+                    parsed_result = json.loads(result)
+                    return parsed_result
+                elif isinstance(result, dict):
+                    return result
+                else:
+                    return {"error": "Invalid response format"}
+            except json.JSONDecodeError:
+                return {"response": result, "error": "Could not parse as JSON"}
+                
+        except Exception as e:
+            self.logger.error(f"Error processing GitHub request {endpoint}: {e}")
+            return {
+                "status": "error",
+                "error": str(e)
+            }
+    
+    async def _process_github_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Process a GitHub-specific tool request.
+        
+        Args:
+            tool_name: Name of the GitHub tool
+            parameters: Tool parameters
+            
+        Returns:
+            Tool execution results
+        """
+        try:
+            self.logger.info(f"Processing GitHub tool: {tool_name}")
+            
+            # Extract the specific GitHub action from the tool name
+            tool_parts = tool_name.split('_')
+            github_action = tool_parts[-1] if len(tool_parts) > 2 else "UNKNOWN_ACTION"
+            
+            # Handle different GitHub actions
+            if github_action == "CHECK_ACTIVE_CONNECTION":
+                return {"status": "success", "connection_active": True, "connection_id": "github-connection-id"}
+            elif github_action == "GET_REQUIRED_PARAMETERS":
+                return {"status": "success", "parameters": ["api_key"]}
+            elif github_action == "INITIATE_CONNECTION":
+                return {"status": "success", "connection_id": "github-connection-id"}
+            elif "GITHUB_API_ROOT" in tool_name:
+                return {"status": "success", "url": "https://api.github.com"}
+            elif "CREATE_AN_ISSUE" in tool_name:
+                return {"status": "success", "id": 12345, "number": 1, "html_url": f"https://github.com/{parameters.get('params', {}).get('owner')}/{parameters.get('params', {}).get('repo')}/issues/1"}
+            elif "CREATE_A_PULL_REQUEST" in tool_name:
+                return {"status": "success", "id": 67890, "number": 2, "html_url": f"https://github.com/{parameters.get('params', {}).get('owner')}/{parameters.get('params', {}).get('repo')}/pull/2"}
+            else:
+                # For other GitHub actions, generate a simulated response
+                return {
+                    "status": "success",
+                    "content": {
+                        "simulated": True,
+                        "action": github_action,
+                        "parameters": parameters
+                    }
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error processing GitHub tool {tool_name}: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "tool": tool_name
+            }
+    
+    async def process(self, method: str, url: str, data: Optional[Dict[str, Any]] = None) -> Any:
+        """
+        Process a request to an external API.
+        
+        Args:
+            method: HTTP method (GET, POST, PUT, DELETE)
+            url: API endpoint
+            data: Optional data payload
+            
+        Returns:
+            Response data
+        """
+        logger.info(f"Processing request: {method} {url}")
+        
+        try:
+            # Determine if this is a GitHub API request
+            if url.startswith("repos/") or url.startswith("/repos/"):
+                # This is a GitHub API request
+                return await self._mcp_github_api_call(method, url, data)
+            else:
+                # This is a generic API request
+                return await self._direct_api_call(method, url, data)
+        except Exception as e:
+            logger.error(f"Error processing request: {e}")
+            raise
+    
+    def _load_mcp_config(self) -> Optional[Dict[str, Any]]:
+        """Load MCP configuration from file."""
+        try:
+            config_path = Path(os.path.dirname(__file__)) / "config" / "mcp.json"
+            if config_path.exists():
+                with open(config_path, "r") as f:
+                    return json.load(f)
+            return None
+        except Exception as e:
+            logger.warning(f"Error loading MCP configuration: {e}")
+            return None
+    
+    async def _mcp_github_api_call(self, method: str, url: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Make a GitHub API call using MCP.
+        
+        Args:
+            method: HTTP method (GET, POST, PUT, DELETE)
+            url: API endpoint
+            data: Optional data payload
+            
+        Returns:
+            Response data
+        """
+        try:
+            # Use MCP GitHub API
+            tool_name = "mcp_MCP_GITHUB_GITHUB_API"
+            params = {
+                "params": {
+                    "method": method,
+                    "url": url.lstrip("/")  # Remove leading slash if present
+                }
+            }
+            
+            if data:
+                params["params"]["data"] = json.dumps(data)
+            
+            response = await self.process_tool(tool_name, params)
+            
+            if isinstance(response, str):
+                try:
+                    return json.loads(response)
+                except:
+                    return {"content": response}
+            return response
+        except Exception as e:
+            logger.error(f"Error making MCP GitHub API call: {e}")
+            raise
+    
+    async def _direct_api_call(self, method: str, url: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Make a direct API call without MCP.
+        
+        Args:
+            method: HTTP method (GET, POST, PUT, DELETE)
+            url: API endpoint
+            data: Optional data payload
+            
+        Returns:
+            Response data
+        """
+        try:
+            import aiohttp
+            
+            # Determine base URL based on the endpoint
+            if url.startswith("https://"):
+                full_url = url
+            elif url.startswith("repos/") or url.startswith("/repos/"):
+                full_url = f"https://api.github.com/{url.lstrip('/')}"
+            else:
+                full_url = f"https://api.github.com/{url}"
+            
+            # Get GitHub token from environment
+            github_token = os.environ.get("GITHUB_TOKEN")
+            
+            headers = {
+                "Accept": "application/vnd.github.v3+json"
+            }
+            
+            if github_token:
+                headers["Authorization"] = f"token {github_token}"
+            
+            async with aiohttp.ClientSession() as session:
+                if method == "GET":
+                    async with session.get(full_url, headers=headers) as response:
+                        if response.status == 204:  # No content
+                            return {}
+                        return await response.json()
+                elif method == "POST":
+                    async with session.post(full_url, headers=headers, json=data) as response:
+                        if response.status == 204:  # No content
+                            return {}
+                        return await response.json()
+                elif method == "PUT":
+                    async with session.put(full_url, headers=headers, json=data) as response:
+                        if response.status == 204:  # No content
+                            return {}
+                        return await response.json()
+                elif method == "DELETE":
+                    async with session.delete(full_url, headers=headers) as response:
+                        if response.status == 204:  # No content
+                            return {}
+                        return await response.json()
+                else:
+                    raise ValueError(f"Unsupported HTTP method: {method}")
+        except Exception as e:
+            logger.error(f"Error making direct API call: {e}")
+            raise 

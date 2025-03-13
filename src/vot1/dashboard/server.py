@@ -52,7 +52,16 @@ def init_vot1_components(args):
     # Set up memory manager
     memory_path = args.memory_path or os.environ.get('VOT1_MEMORY_PATH', os.path.join(os.getcwd(), 'memory'))
     logger.info(f"Initializing memory manager with path: {memory_path}")
-    memory_manager = MemoryManager(storage_dir=memory_path)
+    
+    # Initialize memory manager if not provided
+    if not memory_manager and not args.no_memory:
+        try:
+            memory_path = memory_path or os.path.join(os.getcwd(), ".vot1", "memory")
+            memory_manager = MemoryManager(memory_path=memory_path)
+            logger.info(f"Memory manager initialized at {memory_manager.storage_dir}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize memory manager: {e}")
+            memory_manager = None
     
     # Create enhanced client
     client = EnhancedClaudeClient(
@@ -120,6 +129,8 @@ def parse_args():
                         help='Primary Claude model to use')
     parser.add_argument('--no-hybrid', action='store_true',
                         help='Disable hybrid model mode')
+    parser.add_argument('--no-memory', action='store_true',
+                        help='Disable memory manager')
     return parser.parse_args()
 
 def main():
