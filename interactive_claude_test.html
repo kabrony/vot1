@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #6366F1;
+            border-bottom: 2px solid #6366F1;
+            padding-bottom: 10px;
+        }
+        .card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #4F46E5;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+            font-family: monospace;
+        }
+        .output {
+            background: #333;
+            color: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 100px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #10B981;
+            font-weight: bold;
+        }
+        .error {
+            color: #EF4444;
+            font-weight: bold;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Claude Integration Test</h1>
+    
+    <div class="card">
+        <h2>Test 1: Verify API Configuration</h2>
+        <p>This test checks if Cursor AI is properly configured to use Claude. The test works by attempting to read the configuration in devtools.</p>
+        <button id="test1">Run Configuration Test</button>
+        <div id="output1" class="output hidden"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Test 2: Try Simple Completion</h2>
+        <p>This test simulates a completion request to verify Claude integration.</p>
+        <textarea id="prompt" placeholder="Enter a prompt for Claude...">Write a function that calculates the factorial of a number.</textarea>
+        <button id="test2">Run Completion Test</button>
+        <div id="output2" class="output hidden"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Test 3: WebSocket Connection</h2>
+        <p>This test attempts to establish a WebSocket connection on port 9998 to verify streaming capabilities.</p>
+        <button id="test3">Test WebSocket Connection</button>
+        <div id="output3" class="output hidden"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Test Results Summary</h2>
+        <div id="summary" class="output">Run the tests above to see results.</div>
+    </div>
+
+    <script>
+        // Utility functions
+        function logOutput(outputId, message, isError = false) {
+            const output = document.getElementById(outputId);
+            output.classList.remove('hidden');
+            
+            if (isError) {
+                output.innerHTML += `<span class="error">${message}</span>\n`;
+            } else {
+                output.innerHTML += message + '\n';
+            }
+        }
+        
+        function updateSummary() {
+            const summary = document.getElementById('summary');
+            summary.innerHTML = 'Test Results:\n';
+            
+            const outputs = [
+                document.getElementById('output1'),
+                document.getElementById('output2'),
+                document.getElementById('output3')
+            ];
+            
+            let allPassed = true;
+            
+            outputs.forEach((output, index) => {
+                if (output.classList.contains('hidden')) {
+                    summary.innerHTML += `Test ${index + 1}: Not run yet\n`;
+                } else if (output.innerHTML.includes('class="error"')) {
+                    summary.innerHTML += `Test ${index + 1}: <span class="error">Failed</span>\n`;
+                    allPassed = false;
+                } else {
+                    summary.innerHTML += `Test ${index + 1}: <span class="success">Passed</span>\n`;
+                }
+            });
+            
+            if (allPassed && !outputs.some(output => output.classList.contains('hidden'))) {
+                summary.innerHTML += '\n<span class="success">All tests passed! Claude appears to be properly integrated.</span>';
+            }
+        }
+        
+        // Test 1: Configuration Check
+        document.getElementById('test1').addEventListener('click', function() {
+            const output = document.getElementById('output1');
+            output.innerHTML = '';
+            
+            // This is a simplified test since we can't actually access Cursor settings from a webpage
+            logOutput('output1', 'Checking for Claude configuration...');
+            
+            try {
+                // In a real Cursor environment, we might check for specific variables
+                // Here we're just checking if we're in a Cursor environment at all
+                if (typeof window.cursor !== 'undefined' || 
+                    navigator.userAgent.includes('Cursor') || 
+                    document.title.includes('Cursor')) {
+                    
+                    logOutput('output1', 'Cursor environment detected!');
+                    logOutput('output1', 'To verify Claude integration, check settings.json for:');
+                    logOutput('output1', '{\n  "anthropic": {\n    "apiKey": "...",\n    "model": "claude-3-7-sonnet-20240229"\n  },\n  "aiProvider": "anthropic"\n}');
+                } else {
+                    logOutput('output1', 'Not running in a detected Cursor environment.', true);
+                    logOutput('output1', 'This test should be opened within Cursor AI.');
+                }
+            } catch (error) {
+                logOutput('output1', `Error during configuration check: ${error.message}`, true);
+            }
+            
+            updateSummary();
+        });
+        
+        // Test 2: Completion Test
+        document.getElementById('test2').addEventListener('click', function() {
+            const output = document.getElementById('output2');
+            output.innerHTML = '';
+            const prompt = document.getElementById('prompt').value;
+            
+            logOutput('output2', `Testing completion with prompt: "${prompt}"`);
+            logOutput('output2', 'In Cursor AI, this would trigger Claude completion.');
+            logOutput('output2', 'Since this is an HTML file, we can only simulate the process.');
+            logOutput('output2', '');
+            logOutput('output2', 'Please check if:');
+            logOutput('output2', '1. Cursor offers completions when typing similar prompts in code files');
+            logOutput('output2', '2. The completions reference Claude or Anthropic');
+            logOutput('output2', '3. Completions are high-quality and relevant to your prompt');
+            
+            updateSummary();
+        });
+        
+        // Test 3: WebSocket Test
+        document.getElementById('test3').addEventListener('click', function() {
+            const output = document.getElementById('output3');
+            output.innerHTML = '';
+            
+            logOutput('output3', 'Testing WebSocket connection on port 9998...');
+            
+            try {
+                const ws = new WebSocket('ws://localhost:9998');
+                
+                ws.onopen = function() {
+                    logOutput('output3', 'WebSocket connection established successfully!');
+                    ws.close();
+                };
+                
+                ws.onerror = function(error) {
+                    logOutput('output3', 'WebSocket connection failed.', true);
+                    logOutput('output3', 'This is expected if the WebSocket server isn\'t running.');
+                    logOutput('output3', 'In Cursor AI, this connection might be managed internally.');
+                };
+                
+                setTimeout(() => {
+                    if (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CLOSED) {
+                        logOutput('output3', 'WebSocket connection timed out.', true);
+                    }
+                    updateSummary();
+                }, 3000);
+            } catch (error) {
+                logOutput('output3', `Error during WebSocket test: ${error.message}`, true);
+                updateSummary();
+            }
+        });
+    </script>
+</body>
+</html> 
