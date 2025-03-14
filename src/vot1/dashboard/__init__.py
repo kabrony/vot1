@@ -13,9 +13,28 @@ from typing import Optional, Union
 from pathlib import Path
 from flask import Flask
 from flask_socketio import SocketIO
-from .routes import init_routes
-from .api.mcp_handler import init_mcp_api  # Import MCP API initializer
-from .api.dev_assistant_api import init_dev_assistant_api  # Import Development Assistant API initializer
+
+# Import routes and API handlers conditionally to handle potential import errors
+try:
+    from .routes import init_routes
+except ImportError as e:
+    logging.warning(f"Could not import routes: {e}")
+    def init_routes(app):
+        logging.error("Routes initialization not available")
+
+try:
+    from .api.mcp_handler import init_mcp_api  # Import MCP API initializer
+except ImportError as e:
+    logging.warning(f"Could not import MCP API handler: {e}")
+    def init_mcp_api(app):
+        logging.error("MCP API initialization not available")
+
+try:
+    from .api.dev_assistant_api import init_dev_assistant_api  # Import Development Assistant API initializer
+except ImportError as e:
+    logging.warning(f"Could not import Development Assistant API initializer: {e}")
+    def init_dev_assistant_api(app):
+        logging.error("Development Assistant API initialization not available")
 
 # Import the server implementation
 try:
@@ -77,10 +96,34 @@ else:
 __all__ = ["create_dashboard", "DashboardServer"]
 
 # Import API and routes
-from .api import api_bp, init_api
-from .mcp_hybrid_api import mcp_hybrid_bp
-from .github_ecosystem_api import github_ecosystem_bp
-from ..memory import MemoryManager
+try:
+    from .api import api_bp, init_api
+except ImportError as e:
+    logging.warning(f"Could not import API blueprint: {e}")
+    api_bp = None
+    def init_api(*args, **kwargs):
+        logging.error("API initialization not available")
+
+try:
+    from .mcp_hybrid_api import mcp_hybrid_bp
+except ImportError as e:
+    logging.warning(f"Could not import MCP hybrid blueprint: {e}")
+    mcp_hybrid_bp = None
+
+try:
+    from .github_ecosystem_api import github_ecosystem_bp
+except ImportError as e:
+    logging.warning(f"Could not import GitHub ecosystem blueprint: {e}")
+    github_ecosystem_bp = None
+
+try:
+    from ..memory import MemoryManager
+except ImportError as e:
+    logging.warning(f"Could not import MemoryManager: {e}")
+    class MemoryManager:
+        def __init__(self, *args, **kwargs):
+            self.storage_dir = kwargs.get('memory_path', 'memory')
+            logging.error("MemoryManager not available, using placeholder")
 
 # Configure logging
 logging.basicConfig(
@@ -157,29 +200,84 @@ def create_app(client=None, memory_path=None, no_memory=False, mcp_hybrid_option
     # Store memory manager in app config for access by views
     app.config['memory_manager'] = memory_manager
     
-    # Register API blueprint
-    app.register_blueprint(api_bp)
-    
-    # Register MCP hybrid blueprint
-    app.register_blueprint(mcp_hybrid_bp)
-    
-    # Register GitHub ecosystem analyzer blueprint
-    app.register_blueprint(github_ecosystem_bp)
-    
-    # Initialize API with components
+    # Initialize API with components - using new modular API system
     with app.app_context():
-        init_api(socketio, client, memory_manager)
+        try:
+            # Initialize the main API with its components
+            main_api = init_api(socketio, client, memory_manager)
+            
+            # Register the API blueprint directly (endpoint registration is handled internally)
+            if api_bp:
+                # Use the new modular API system
+                try:
+                    from .api.endpoints import register_endpoints
+                    register_endpoints(app)
+                    logger.info("Registered API endpoints using modular system")
+                except ImportError:
+                    # Fallback to direct blueprint registration
+                    app.register_blueprint(api_bp)
+                    logger.info("Registered API blueprint directly")
+            
+            # Set up research and development assistant
+            perplexity_api_key = os.environ.get('PERPLEXITY_API_KEY')
+            
+            dev_assistant_options = {
+                "project_root": os.path.abspath(os.getcwd()),
+                "perplexity_api_key": perplexity_api_key,
+                "redis_url": os.environ.get('REDIS_URL'),
+                "max_thinking_tokens": 20000,  # Smart token limit for development assistant
+                "smart_token_management": True  # Enable intelligent token allocation
+            }
+            
+            app.config['DEV_ASSISTANT'] = DevelopmentAssistant(**dev_assistant_options)
+            logger.info("Development Assistant initialized")
+            
+            # Set up hybrid thinking system
+            hybrid_thinking_options = {
+                "perplexity_api_key": perplexity_api_key,
+                "redis_url": os.environ.get('REDIS_URL'),
+                "max_thinking_tokens": 20000,  # Smart token limit for hybrid thinking
+                "max_research_tokens": 8000,
+                "smart_token_management": True  # Enable intelligent token allocation
+            }
+            
+            app.config['HYBRID_THINKING'] = HybridThinkingSystem(**hybrid_thinking_options)
+            logger.info("Hybrid Thinking System initialized")
+            
+        except Exception as e:
+            logger.warning(f"Failed to initialize API: {e}")
+    
+    # Register MCP hybrid blueprint if available
+    if mcp_hybrid_bp:
+        app.register_blueprint(mcp_hybrid_bp)
+        logger.info("Registered MCP hybrid blueprint")
+    
+    # Register GitHub ecosystem analyzer blueprint if available
+    if github_ecosystem_bp:
+        app.register_blueprint(github_ecosystem_bp)
+        logger.info("Registered GitHub ecosystem blueprint")
     
     # Initialize UI routes
-    init_routes(app)
+    try:
+        init_routes(app)
+        logger.info("Initialized UI routes")
+    except Exception as e:
+        logger.warning(f"Failed to initialize routes: {e}")
     
     # Initialize MCP API
-    init_mcp_api(app)
+    try:
+        init_mcp_api(app)
+        logger.info("Initialized MCP API")
+    except Exception as e:
+        logger.warning(f"Failed to initialize MCP API: {e}")
     
     # Initialize Development Assistant API if enabled
     if app.config['DEV_ASSISTANT_OPTIONS']['enabled']:
-        init_dev_assistant_api(app)
-        logger.info("Development Assistant API initialized")
+        try:
+            init_dev_assistant_api(app)
+            logger.info("Development Assistant API initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Development Assistant API: {e}")
     
     logger.info("VOT1 Dashboard initialized successfully with MCP and Development Assistant integration")
     

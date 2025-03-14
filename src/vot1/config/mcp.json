@@ -3,6 +3,9 @@
     "MCP": {
       "url": "https://mcp.composio.dev/github/victorious-damaged-branch-0ojHhf"
     },
+    "GITHUB": {
+      "url": "https://api.github.com"
+    },
     "PERPLEXITY": {
       "url": "https://mcp.composio.dev/perplexityai/plump-colossal-account-RTix4q"
     },

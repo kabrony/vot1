@@ -21,11 +21,17 @@ from werkzeug.utils import secure_filename
 
 from flask import Blueprint, request, jsonify, current_app, g, stream_with_context, Response
 from flask.views import MethodView
-from src.vot1.vot_mcp import VotModelControlProtocol
-from src.vot1.memory import MemoryManager
-from src.vot1.integrations.composio.openapi import OpenAPIComposioIntegration
+from ..vot_mcp import VotModelControlProtocol
+from ..memory import MemoryManager
+try:
+    from ..integrations.composio.openapi import OpenAPIComposioIntegration
+except ImportError:
+    OpenAPIComposioIntegration = None
 import asyncio
-from src.vot1.integrations.perplexity import PerplexitySearch
+try:
+    from ..integrations.perplexity import PerplexitySearch
+except ImportError:
+    PerplexitySearch = None
 
 # Import MCP hybrid API
 from .mcp_hybrid_api import init_mcp_hybrid_api
@@ -93,7 +99,7 @@ def init_api(socketio, client, memory_manager):
     # Initialize OpenAPI integration if API key is available
     if COMPOSIO_API_KEY:
         try:
-            from src.vot1.integrations.composio.openapi import OpenAPIComposioIntegration
+            from ..integrations.composio.openapi import OpenAPIComposioIntegration
             _openapi_integration = OpenAPIComposioIntegration(api_key=COMPOSIO_API_KEY)
             logger.info("OpenAPI integration initialized successfully")
         except Exception as e:
@@ -456,7 +462,7 @@ class OpenAPIIntegrationAPI(MethodView):
         
         if not _openapi_integration and COMPOSIO_API_KEY:
             try:
-                from src.vot1.integrations.composio.openapi import create_openapi_integration
+                from ..integrations.composio.openapi import create_openapi_integration
                 _openapi_integration = await create_openapi_integration(COMPOSIO_API_KEY)
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAPI integration: {e}")
@@ -565,7 +571,7 @@ class OpenAPIToolAPI(MethodView):
         
         if not _openapi_integration and COMPOSIO_API_KEY:
             try:
-                from src.vot1.integrations.composio.openapi import create_openapi_integration
+                from ..integrations.composio.openapi import create_openapi_integration
                 _openapi_integration = await create_openapi_integration(COMPOSIO_API_KEY)
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAPI integration: {e}")
@@ -670,7 +676,7 @@ class ComposioStatusAPI(MethodView):
         
         if not _openapi_integration and COMPOSIO_API_KEY:
             try:
-                from src.vot1.integrations.composio.openapi import create_openapi_integration
+                from ..integrations.composio.openapi import create_openapi_integration
                 _openapi_integration = await create_openapi_integration(COMPOSIO_API_KEY)
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAPI integration: {e}")
@@ -707,7 +713,7 @@ class RepositoryUsageAPI(MethodView):
         
         if not _openapi_integration and COMPOSIO_API_KEY:
             try:
-                from src.vot1.integrations.composio.openapi import create_openapi_integration
+                from ..integrations.composio.openapi import create_openapi_integration
                 _openapi_integration = await create_openapi_integration(COMPOSIO_API_KEY)
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAPI integration: {e}")
@@ -1265,7 +1271,7 @@ class ComposioModelsAPI(MethodView):
     def _get_composio_client(self):
         """Get or initialize the Composio client"""
         try:
-            from src.vot1.integrations.composio import ComposioClient
+            from ..integrations.composio import ComposioClient
             return ComposioClient()
         except Exception as e:
             logger.error(f"Failed to initialize Composio client: {e}")
@@ -1293,7 +1299,7 @@ class ComposioGenerateAPI(MethodView):
     def _get_composio_client(self):
         """Get or initialize the Composio client"""
         try:
-            from src.vot1.integrations.composio import ComposioClient
+            from ..integrations.composio import ComposioClient
             return ComposioClient()
         except Exception as e:
             logger.error(f"Failed to initialize Composio client: {e}")
@@ -1345,7 +1351,7 @@ class ComposioEmbeddingAPI(MethodView):
     def _get_composio_client(self):
         """Get or initialize the Composio client"""
         try:
-            from src.vot1.integrations.composio import ComposioClient
+            from ..integrations.composio import ComposioClient
             return ComposioClient()
         except Exception as e:
             logger.error(f"Failed to initialize Composio client: {e}")
@@ -1391,7 +1397,7 @@ class ComposioStatusAPI(MethodView):
     def _get_composio_client(self):
         """Get or initialize the Composio client"""
         try:
-            from src.vot1.integrations.composio import ComposioClient
+            from ..integrations.composio import ComposioClient
             return ComposioClient()
         except Exception as e:
             logger.error(f"Failed to initialize Composio client: {e}")
@@ -1426,7 +1432,7 @@ class ComposioUsageAPI(MethodView):
     def _get_composio_client(self):
         """Get or initialize the Composio client"""
         try:
-            from src.vot1.integrations.composio import ComposioClient
+            from ..integrations.composio import ComposioClient
             return ComposioClient()
         except Exception as e:
             logger.error(f"Failed to initialize Composio client: {e}")

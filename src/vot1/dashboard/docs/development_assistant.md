@@ -311,6 +311,48 @@ script = dev_assistant.generate_script(
 )
 ```
 
+## Smart Token Management
+
+The Development Assistant now includes an intelligent token management system that optimizes token usage based on task complexity and type. Rather than using a fixed token limit of 120,000 tokens, the system now:
+
+1. Uses a default maximum of 20,000 tokens
+2. Dynamically allocates tokens based on task type (research, analysis, generation, etc.)
+3. Adjusts allocation based on task complexity (low, medium, high)
+4. Tracks token usage and automatically resets when needed
+5. Can truncate output to fit within token limits
+
+### Token Allocation by Task Type
+
+Different types of tasks receive different token allocations based on their typical requirements:
+
+| Task Type | Low Complexity | Medium Complexity | High Complexity |
+|-----------|----------------|-------------------|-----------------|
+| Research | 3,000 | 6,000 | 10,000 |
+| Analysis | 5,000 | 8,000 | 12,000 |
+| Generation | 4,000 | 7,000 | 10,000 |
+| Troubleshooting | 5,000 | 8,000 | 12,000 |
+
+### Configuration Options
+
+The smart token management system can be configured with these parameters:
+
+```python
+assistant = DevelopmentAssistant(
+    memory_path="/path/to/memory",
+    project_root="/path/to/project",
+    perplexity_api_key="your-api-key",
+    max_thinking_tokens=20000,  # Maximum tokens for complex tasks
+    smart_token_management=True  # Enable intelligent token allocation
+)
+```
+
+### Environment Variables
+
+| Variable | Description | Default Value |
+|----------|-------------|---------------|
+| `VOT1_MAX_THINKING_TOKENS` | Maximum tokens for thinking | `20000` |
+| `VOT1_SMART_TOKEN_MANAGEMENT` | Enable smart token management | `True` |
+
 ## API Reference
 
 ### DevelopmentAssistant Class
@@ -782,6 +824,7 @@ The Development Assistant can be configured using the following environment vari
 |----------|-------------|---------|
 | `VOT1_PROJECT_ROOT` | Root directory of the project | Current working directory |
 | `VOT1_MEMORY_PATH` | Path to memory storage | `./memory` |
-| `VOT1_MAX_THINKING_TOKENS` | Maximum tokens for thinking | `60000` |
+| `VOT1_MAX_THINKING_TOKENS` | Maximum tokens for thinking | `20000` |
 | `PERPLEXITY_API_KEY` | API key for Perplexity AI | `None` |
-| `VOT1_DEFAULT_RESEARCH_DEPTH` | Default research depth | `medium` | 
+| `VOT1_DEFAULT_RESEARCH_DEPTH` | Default research depth | `medium` |
+| `VOT1_SMART_TOKEN_MANAGEMENT` | Enable smart token management | `True` | 

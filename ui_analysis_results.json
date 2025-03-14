@@ -1,0 +1,587 @@
+{
+  "summary": {
+    "timestamp": "2025-03-13T16:59:48.961478",
+    "html_files": 11,
+    "css_files": 8,
+    "js_files": 19
+  },
+  "ui_structure": {
+    "templates": [
+      {
+        "path": "src/vot1/dashboard/templates/index.html",
+        "type": "page",
+        "theme": "standard",
+        "responsive_elements": 31,
+        "accessibility_score": 3,
+        "form_elements": 138
+      },
+      {
+        "path": "src/vot1/dashboard/templates/cyberpunk-chat.html",
+        "type": "page",
+        "theme": "cyberpunk",
+        "responsive_elements": 5,
+        "accessibility_score": 0,
+        "form_elements": 65
+      },
+      {
+        "path": "src/vot1/dashboard/templates/dashboard_cyberpunk.html",
+        "type": "page",
+        "theme": "cyberpunk",
+        "responsive_elements": 7,
+        "accessibility_score": 0,
+        "form_elements": 11
+      },
+      {
+        "path": "src/vot1/dashboard/templates/base_cyberpunk.html",
+        "type": "base",
+        "theme": "cyberpunk",
+        "responsive_elements": 2,
+        "accessibility_score": 4,
+        "form_elements": 4
+      },
+      {
+        "path": "src/vot1/dashboard/templates/dashboard.html",
+        "type": "page",
+        "theme": "standard",
+        "responsive_elements": 2,
+        "accessibility_score": 5,
+        "form_elements": 7
+      },
+      {
+        "path": "src/vot1/dashboard/templates/500.html",
+        "type": "page",
+        "theme": "standard",
+        "responsive_elements": 1,
+        "accessibility_score": 0,
+        "form_elements": 0
+      },
+      {
+        "path": "src/vot1/dashboard/templates/404.html",
+        "type": "page",
+        "theme": "standard",
+        "responsive_elements": 1,
+        "accessibility_score": 0,
+        "form_elements": 0
+      },
+      {
+        "path": "src/vot1/dashboard/templates/wallet.html",
+        "type": "page",
+        "theme": "standard",
+        "responsive_elements": 1,
+        "accessibility_score": 0,
+        "form_elements": 0
+      }
+    ],
+    "responsive_elements_count": 57,
+    "accessibility": {
+      "alt_tags_count": 0,
+      "aria_attributes_count": 0,
+      "semantic_elements_count": 23
+    },
+    "form_elements_count": 261,
+    "themes": [
+      "standard",
+      "cyberpunk"
+    ],
+    "navigation_types": [
+      "standard-nav",
+      "unknown"
+    ],
+    "summary": {
+      "total_templates": 8,
+      "responsive_score": 7.125,
+      "accessibility_score": 2.875,
+      "themes_count": 2,
+      "navigation_types_count": 2
+    }
+  },
+  "css_styling": {
+    "color_variables": [
+      {
+        "name": "",
+        "value": "#00ffd9"
+      },
+      {
+        "name": "",
+        "value": "#ff00e5"
+      },
+      {
+        "name": "",
+        "value": "#fcee09"
+      },
+      {
+        "name": "",
+        "value": "#ff2a6d"
+      },
+      {
+        "name": "",
+        "value": "rgba(5, 10, 20, 0.9)"
+      },
+      {
+        "name": "",
+        "value": "rgba(3, 7, 15, 0.95)"
+      },
+      {
+        "name": "",
+        "value": "rgba(10, 20, 35, 0.9)"
+      },
+      {
+        "name": "",
+        "value": "#d6e2ff"
+      },
+      {
+        "name": "",
+        "value": "#8c9eff"
+      },
+      {
+        "name": "",
+        "value": "#1a2e4a"
+      },
+      {
+        "name": "",
+        "value": "rgba(0, 100, 150, 0.25)"
+      },
+      {
+        "name": "",
+        "value": "rgba(150, 0, 100, 0.25)"
+      },
+      {
+        "name": "",
+        "value": "rgba(80, 40, 0, 0.35)"
+      },
+      {
+        "name": "",
+        "value": "rgba(150, 20, 20, 0.4)"
+      },
+      {
+        "name": "",
+        "value": "rgba(0, 50, 70, 0.3)"
+      },
+      {
+        "name": "",
+        "value": "#ff2a6d"
+      },
+      {
+        "name": "",
+        "value": "#cc2257"
+      },
+      {
+        "name": "",
+        "value": "#ff5b8d"
+      },
+      {
+        "name": "",
+        "value": "#05d9e8"
+      },
+      {
+        "name": "",
+        "value": "#0496a5"
+      },
+      {
+        "name": "",
+        "value": "#65ffff"
+      },
+      {
+        "name": "",
+        "value": "#01c853"
+      },
+      {
+        "name": "",
+        "value": "#01a644"
+      },
+      {
+        "name": "",
+        "value": "#60f688"
+      },
+      {
+        "name": "",
+        "value": "#d300c5"
+      },
+      {
+        "name": "",
+        "value": "#fee800"
+      },
+      {
+        "name": "",
+        "value": "#ff7f00"
+      },
+      {
+        "name": "",
+        "value": "#0a0a16"
+      },
+      {
+        "name": "",
+        "value": "#121225"
+      },
+      {
+        "name": "",
+        "value": "#23234a"
+      },
+      {
+        "name": "",
+        "value": "#1a1a35"
+      },
+      {
+        "name": "",
+        "value": "#ffffff"
+      },
+      {
+        "name": "",
+        "value": "#d7d7d9"
+      },
+      {
+        "name": "",
+        "value": "#a0a0a6"
+      },
+      {
+        "name": "",
+        "value": "#6e6e78"
+      },
+      {
+        "name": "",
+        "value": "#ff2a6d80"
+      },
+      {
+        "name": "",
+        "value": "#2d2d50"
+      },
+      {
+        "name": "",
+        "value": "#01c853"
+      },
+      {
+        "name": "",
+        "value": "#01a644"
+      },
+      {
+        "name": "",
+        "value": "#60f688"
+      },
+      {
+        "name": "",
+        "value": "#01ff70"
+      },
+      {
+        "name": "",
+        "value": "#00cc5a"
+      },
+      {
+        "name": "",
+        "value": "#7fffd4"
+      },
+      {
+        "name": "",
+        "value": "#3ddc97"
+      },
+      {
+        "name": "",
+        "value": "#2ca672"
+      },
+      {
+        "name": "",
+        "value": "#a8e4bc"
+      },
+      {
+        "name": "",
+        "value": "#fee800"
+      },
+      {
+        "name": "",
+        "value": "#ff7f00"
+      },
+      {
+        "name": "",
+        "value": "#05d9e8"
+      },
+      {
+        "name": "",
+        "value": "#01c85380"
+      },
+      {
+        "name": "",
+        "value": "#7928ca"
+      },
+      {
+        "name": "",
+        "value": "#ff0080"
+      },
+      {
+        "name": "",
+        "value": "#0070f3"
+      },
+      {
+        "name": "",
+        "value": "#0f1114"
+      },
+      {
+        "name": "",
+        "value": "#1a1d21"
+      },
+      {
+        "name": "",
+        "value": "#e2e8f0"
+      },
+      {
+        "name": "",
+        "value": "#a0aec0"
+      },
+      {
+        "name": "",
+        "value": "#2d3748"
+      },
+      {
+        "name": "",
+        "value": "#f8f9fa"
+      },
+      {
+        "name": "",
+        "value": "#38b2ac"
+      },
+      {
+        "name": "",
+        "value": "#4fd1c5"
+      },
+      {
+        "name": "",
+        "value": "#2d3748"
+      },
+      {
+        "name": "",
+        "value": "rgba(121, 40, 202, 0.5)"
+      },
+      {
+        "name": "",
+        "value": "#00eeff"
+      },
+      {
+        "name": "",
+        "value": "#ff00e5"
+      },
+      {
+        "name": "",
+        "value": "rgba(10, 15, 25, 0.85)"
+      },
+      {
+        "name": "",
+        "value": "#e0e0e0"
+      },
+      {
+        "name": "",
+        "value": "#2a3644"
+      },
+      {
+        "name": "",
+        "value": "rgba(0, 100, 150, 0.3)"
+      },
+      {
+        "name": "",
+        "value": "rgba(150, 0, 100, 0.3)"
+      },
+      {
+        "name": "",
+        "value": "rgba(100, 40, 0, 0.5)"
+      },
+      {
+        "name": "",
+        "value": "#00ffd9"
+      },
+      {
+        "name": "",
+        "value": "#ff00e5"
+      },
+      {
+        "name": "",
+        "value": "#fcee09"
+      },
+      {
+        "name": "",
+        "value": "#050a15"
+      },
+      {
+        "name": "",
+        "value": "#030711"
+      },
+      {
+        "name": "",
+        "value": "#0a1124"
+      },
+      {
+        "name": "",
+        "value": "#0e1932"
+      },
+      {
+        "name": "",
+        "value": "#ffffff"
+      },
+      {
+        "name": "",
+        "value": "#d6e2ff"
+      },
+      {
+        "name": "",
+        "value": "#8c9eff"
+      },
+      {
+        "name": "",
+        "value": "#4e5c8c"
+      },
+      {
+        "name": "",
+        "value": "#ff2a6d"
+      },
+      {
+        "name": "",
+        "value": "#05d9e8"
+      },
+      {
+        "name": "",
+        "value": "#9700cc"
+      },
+      {
+        "name": "",
+        "value": "#01ffc3"
+      },
+      {
+        "name": "",
+        "value": "rgba(0, 255, 217, 0.15)"
+      },
+      {
+        "name": "",
+        "value": "rgba(5, 10, 20, 0.8)"
+      },
+      {
+        "name": "",
+        "value": "#0a0a0a"
+      },
+      {
+        "name": "",
+        "value": "#e0e0e0"
+      },
+      {
+        "name": "",
+        "value": "#3366cc"
+      },
+      {
+        "name": "",
+        "value": "#33cc33"
+      },
+      {
+        "name": "",
+        "value": "#cc3366"
+      },
+      {
+        "name": "",
+        "value": "#111111"
+      },
+      {
+        "name": "",
+        "value": "#111111"
+      },
+      {
+        "name": "",
+        "value": "#333333"
+      },
+      {
+        "name": "",
+        "value": "#3366cc"
+      },
+      {
+        "name": "",
+        "value": "#33cc33"
+      },
+      {
+        "name": "",
+        "value": "#cc9933"
+      },
+      {
+        "name": "",
+        "value": "#cc3366"
+      }
+    ],
+    "media_queries_count": 11,
+    "responsive_techniques": {
+      "flexbox_count": 148,
+      "grid_count": 55
+    },
+    "animations_count": 160,
+    "themes": [
+      "cyberpunk",
+      "standard"
+    ],
+    "summary": {
+      "total_css_files": 8,
+      "color_variables_count": 100,
+      "responsive_score": 1.375,
+      "modern_layout_score": 25.375,
+      "animation_score": 20.0,
+      "themes_count": 2
+    }
+  },
+  "js_functionality": {
+    "event_listeners": [
+      "input",
+      "click",
+      "resize",
+      "keydown",
+      "change",
+      "DOMContentLoaded",
+      "beforeunload",
+      "mouseenter",
+      "submit"
+    ],
+    "fetch_api_count": 50,
+    "async_await_count": 103,
+    "dom_manipulation_count": 654,
+    "module_usage_count": 1,
+    "features": [
+      "unknown",
+      "chat",
+      "visualization",
+      "dashboard"
+    ],
+    "summary": {
+      "total_js_files": 10,
+      "event_listeners_count": 9,
+      "modern_js_score": 15.4,
+      "interactivity_score": 66.3,
+      "features_count": 4
+    }
+  },
+  "recommendations": [
+    {
+      "category": "Design Consistency",
+      "title": "Consolidate UI Themes",
+      "description": "The application uses both standard and cyberpunk themes. Consider consolidating to a single theme or implementing a proper theme switching mechanism.",
+      "impact": "high",
+      "effort": "medium"
+    },
+    {
+      "category": "Accessibility",
+      "title": "Improve Accessibility",
+      "description": "Add more accessibility features such as ARIA attributes, alt tags, and semantic HTML elements to make the application more accessible.",
+      "impact": "high",
+      "effort": "medium"
+    },
+    {
+      "category": "User Experience",
+      "title": "Implement Dark Mode",
+      "description": "Add a proper dark mode option that users can toggle. This improves user experience in low-light environments and is a popular feature.",
+      "impact": "medium",
+      "effort": "medium"
+    },
+    {
+      "category": "Design System",
+      "title": "Implement Design System",
+      "description": "Develop a comprehensive design system with component library, style guide, and usage documentation to ensure consistency across the application.",
+      "impact": "high",
+      "effort": "high"
+    },
+    {
+      "category": "Mobile Experience",
+      "title": "Optimize for Mobile Devices",
+      "description": "Enhance the mobile experience with touch-friendly controls, appropriate sizing, and possibly a Progressive Web App (PWA) implementation.",
+      "impact": "high",
+      "effort": "medium"
+    }
+  ]
+}

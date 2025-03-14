@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}GitHub Integration{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- GitHub Status Column -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                GitHub Status
+            </div>
+            <div class="card-body">
+                <div class="status-summary mb-4">
+                    {% if github_status.status == "active" %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i> GitHub integration is active
+                    </div>
+                    <p>Connected to: {{ github_status.connection_url }}</p>
+                    {% elif github_status.status == "inactive" %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> GitHub integration is inactive
+                    </div>
+                    <p>The GitHub integration is configured but not active.</p>
+                    {% elif github_status.status == "error" %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i> GitHub integration has an error
+                    </div>
+                    <p>Error: {{ github_status.error }}</p>
+                    {% else %}
+                    <div class="alert alert-secondary">
+                        <i class="bi bi-question-circle"></i> GitHub integration status unknown
+                    </div>
+                    <p>The GitHub integration status is unknown or not configured.</p>
+                    {% endif %}
+                </div>
+                
+                {% if github_status.status == "active" %}
+                <div class="mb-3">
+                    <h5>Available Methods</h5>
+                    <ul class="list-group">
+                        {% for method in github_status.available_methods %}
+                        <li class="list-group-item">{{ method }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="initializeGitHubConnection()">
+                        <i class="bi bi-github"></i> Initialize Connection
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="checkGitHubStatus()">
+                        <i class="bi bi-arrow-repeat"></i> Check Status
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Auto-Sync Configuration -->
+        <div class="card mt-4">
+            <div class="card-header">
+                Auto-Sync Configuration
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="auto-sync-toggle" class="form-label">Auto-Sync</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="auto-sync-toggle" {% if auto_sync_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="auto-sync-toggle">Enable automatic synchronization</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="sync-interval" class="form-label">Sync Interval (seconds)</label>
+                    <input type="number" class="form-control" id="sync-interval" value="{{ auto_sync_interval|default(3600) }}" min="300" max="86400">
+                    <div class="form-text">Minimum: 5 minutes (300 seconds)</div>
+                </div>
+                <div class="d-grid">
+                    <button class="btn btn-primary" onclick="saveAutoSyncConfig()">
+                        <i class="bi bi-save"></i> Save Configuration
+                    </button>
+                </div>
+                {% if auto_sync_enabled %}
+                <div class="mt-3">
+                    <small>Next sync: {{ auto_sync_next|default('Not scheduled') }}</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Repository Status Column -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                Repository: kabrony/vot1
+                <button class="btn btn-sm btn-outline-primary" onclick="syncGitHubRepo()">
+                    <i class="bi bi-arrow-repeat"></i> Sync
+                </button>
+            </div>
+            <div class="card-body">
+                {% if github_status.status == "active" and github_status.repo_kabrony_vot1.success %}
+                <div class="repo-details">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>{{ github_status.repo_kabrony_vot1.repository.name }}</h5>
+                            <p>{{ github_status.repo_kabrony_vot1.repository.description }}</p>
+                            <div class="repo-stats">
+                                <span class="badge bg-primary me-2">
+                                    <i class="bi bi-star"></i> {{ github_status.repo_kabrony_vot1.repository.stargazers_count|default(0) }}
+                                </span>
+                                <span class="badge bg-secondary me-2">
+                                    <i class="bi bi-diagram-2"></i> {{ github_status.repo_kabrony_vot1.repository.forks_count|default(0) }}
+                                </span>
+                                <span class="badge bg-info me-2">
+                                    <i class="bi bi-eye"></i> {{ github_status.repo_kabrony_vot1.repository.watchers_count|default(0) }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6>Quick Stats</h6>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Open Issues:</span>
+                                        <span class="badge bg-danger">{{ github_status.repo_kabrony_vot1.open_issues_count }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Open PRs:</span>
+                                        <span class="badge bg-primary">{{ github_status.repo_kabrony_vot1.open_pulls_count }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Last Updated:</span>
+                                        <small>{{ github_status.repo_kabrony_vot1.repository.updated_at }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Repository Analysis -->
+                    {% if github_status.repo_kabrony_vot1.analysis %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            Repository Analysis
+                        </div>
+                        <div class="card-body">
+                            {% if github_status.repo_kabrony_vot1.analysis.summary %}
+                            <p>{{ github_status.repo_kabrony_vot1.analysis.summary }}</p>
+                            {% endif %}
+                            
+                            {% if github_status.repo_kabrony_vot1.analysis.recommendations %}
+                            <h6>Recommendations</h6>
+                            <ul>
+                                {% for rec in github_status.repo_kabrony_vot1.analysis.recommendations %}
+                                <li>{{ rec }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Open Issues -->
+                    {% if github_status.repo_kabrony_vot1.open_issues %}
+                    <div class="mb-4">
+                        <h5>Open Issues ({{ github_status.repo_kabrony_vot1.open_issues_count }})</h5>
+                        <div class="issues-list">
+                            {% for issue in github_status.repo_kabrony_vot1.open_issues %}
+                            <div class="card issue-card">
+                                <div class="card-body">
+                                    <div class="issue-title">{{ issue.title }}</div>
+                                    <div class="issue-info">
+                                        #{{ issue.number }} opened on {{ issue.created_at }} by {{ issue.user.login }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-sm btn-success" onclick="createGitHubIssue()">
+                                <i class="bi bi-plus-circle"></i> Create Issue
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Open Pull Requests -->
+                    {% if github_status.repo_kabrony_vot1.open_pulls %}
+                    <div>
+                        <h5>Open Pull Requests ({{ github_status.repo_kabrony_vot1.open_pulls_count }})</h5>
+                        <div class="prs-list">
+                            {% for pr in github_status.repo_kabrony_vot1.open_pulls %}
+                            <div class="card pr-card">
+                                <div class="card-body">
+                                    <div class="pr-title">{{ pr.title }}</div>
+                                    <div class="pr-info">
+                                        #{{ pr.number }} opened on {{ pr.created_at }} by {{ pr.user.login }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% elif github_status.status == "active" %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Repository information not available
+                </div>
+                <p>Click the Sync button to get repository information.</p>
+                <div class="text-center">
+                    <button class="btn btn-primary" onclick="syncGitHubRepo()">
+                        <i class="bi bi-arrow-repeat"></i> Sync Repository
+                    </button>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> GitHub integration not active
+                </div>
+                <p>The GitHub integration is not active. Please initialize the connection.</p>
+                <div class="text-center">
+                    <button class="btn btn-primary" onclick="initializeGitHubConnection()">
+                        <i class="bi bi-github"></i> Initialize Connection
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+function initializeGitHubConnection() {
+    const initBtn = document.querySelector('button[onclick="initializeGitHubConnection()"]');
+    initBtn.disabled = true;
+    initBtn.innerHTML = '<i class="bi bi-github"></i> Initializing...';
+    
+    fetch('/api/github/initialize', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('GitHub connection initialized successfully!');
+            window.location.reload();
+        } else {
+            alert('Failed to initialize GitHub connection: ' + (data.error || 'Unknown error'));
+            initBtn.disabled = false;
+            initBtn.innerHTML = '<i class="bi bi-github"></i> Initialize Connection';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error initializing GitHub connection: ' + error);
+        initBtn.disabled = false;
+        initBtn.innerHTML = '<i class="bi bi-github"></i> Initialize Connection';
+    });
+}
+
+function checkGitHubStatus() {
+    const statusBtn = document.querySelector('button[onclick="checkGitHubStatus()"]');
+    statusBtn.disabled = true;
+    statusBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Checking...';
+    
+    fetch('/api/github/status', {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        statusBtn.disabled = false;
+        statusBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Check Status';
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error checking GitHub status: ' + error);
+        statusBtn.disabled = false;
+        statusBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Check Status';
+    });
+}
+
+function syncGitHubRepo() {
+    const syncBtn = document.querySelector('button[onclick="syncGitHubRepo()"]');
+    syncBtn.disabled = true;
+    syncBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Syncing...';
+    
+    fetch('/api/github/sync_repository', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            owner: 'kabrony',
+            repo: 'vot1'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Failed to sync repository: ' + (data.error || 'Unknown error'));
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Sync';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error syncing repository: ' + error);
+        syncBtn.disabled = false;
+        syncBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Sync';
+    });
+}
+
+function createGitHubIssue() {
+    const title = prompt('Enter issue title:');
+    if (!title) return;
+    
+    const body = prompt('Enter issue description:');
+    if (!body) return;
+    
+    fetch('/api/github/create_issue', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            owner: 'kabrony',
+            repo: 'vot1',
+            title: title,
+            body: body,
+            labels: ['dashboard-created']
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Issue created successfully!');
+            window.location.reload();
+        } else {
+            alert('Failed to create issue: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating issue: ' + error);
+    });
+}
+
+function saveAutoSyncConfig() {
+    const enabled = document.getElementById('auto-sync-toggle').checked;
+    const interval = parseInt(document.getElementById('sync-interval').value);
+    
+    if (interval < 300) {
+        alert('Minimum interval is 300 seconds (5 minutes)');
+        return;
+    }
+    
+    fetch('/api/github/auto_sync', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            enabled: enabled,
+            interval: interval
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Auto-sync configuration saved successfully!');
+            window.location.reload();
+        } else {
+            alert('Failed to save auto-sync configuration: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving auto-sync configuration: ' + error);
+    });
+}
+{% endblock %} 

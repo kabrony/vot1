@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOTai GitHub Integration Status</title>
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .status-card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .status-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .github-logo {
+            max-width: 100px;
+            margin-bottom: 15px;
+        }
+        
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        .status-good {
+            background-color: #28a745;
+        }
+        
+        .status-warning {
+            background-color: #ffc107;
+        }
+        
+        .status-error {
+            background-color: #dc3545;
+        }
+        
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .votai-ascii {
+            font-family: monospace;
+            white-space: pre;
+            font-size: 10px;
+            margin-bottom: 20px;
+            color: #4a4a4a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row mb-4">
+            <div class="col-md-12 text-center">
+                <pre class="votai-ascii" id="votai-ascii"></pre>
+                <h1 class="display-4">VOTai GitHub Integration Status</h1>
+                <p class="lead">A New Dawn of a Holistic Paradigm</p>
+                <hr>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card status-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Connection Status</h5>
+                        <div id="connection-status">
+                            <div class="d-flex align-items-center">
+                                <div class="status-indicator status-warning" id="connection-indicator"></div>
+                                <span id="connection-text">Checking connection...</span>
+                            </div>
+                        </div>
+                        <ul class="list-group mt-3" id="status-details">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Configured
+                                <span class="badge bg-secondary rounded-pill" id="configured-badge">...</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Connection Active
+                                <span class="badge bg-secondary rounded-pill" id="connection-badge">...</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                API Available
+                                <span class="badge bg-secondary rounded-pill" id="api-badge">...</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card status-card">
+                    <div class="card-body">
+                        <h5 class="card-title">GitHub Configuration</h5>
+                        <div id="config-details">
+                            <p>Loading configuration details...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card status-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Raw Status Response</h5>
+                        <pre id="raw-status">Loading status data...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-12 text-center">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary" onclick="refreshStatus()">Refresh Status</button>
+                    <button type="button" class="btn btn-warning" onclick="clearCache()">Clear Cache</button>
+                    <button type="button" class="btn btn-info" onclick="window.location.href='/'">Back to Home</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const VOTAI_ASCII = `
+█████████████████████████████████
+█▄─▄▄─█─▄▄─█─▄─▄─██▀▄─██▄─▄█
+██─▄█▀█─██─███─████─▀─███─██
+▀▄▄▄▄▄▀▄▄▄▄▀▀▄▄▄▀▀▄▄▀▄▄▀▄▄▄▀
+A New Dawn of a Holistic Paradigm
+        `;
+        
+        document.getElementById('votai-ascii').textContent = VOTAI_ASCII;
+        
+        // Function to fetch GitHub status
+        async function fetchGitHubStatus() {
+            try {
+                const response = await fetch('/api/github/status');
+                const data = await response.json();
+                updateStatusUI(data);
+            } catch (error) {
+                console.error('Error fetching GitHub status:', error);
+                document.getElementById('connection-text').textContent = 'Error fetching status';
+                document.getElementById('connection-indicator').className = 'status-indicator status-error';
+            }
+        }
+        
+        // Function to update UI with status data
+        function updateStatusUI(data) {
+            console.log('Status data:', data);
+            
+            // Update raw status JSON
+            document.getElementById('raw-status').textContent = JSON.stringify(data, null, 2);
+            
+            if (!data || !data.status) {
+                document.getElementById('connection-text').textContent = 'Invalid status data received';
+                document.getElementById('connection-indicator').className = 'status-indicator status-error';
+                return;
+            }
+            
+            const status = data.status;
+            
+            // Update connection status
+            const connectionIndicator = document.getElementById('connection-indicator');
+            const connectionText = document.getElementById('connection-text');
+            
+            if (status.connection_active && status.api_available) {
+                connectionIndicator.className = 'status-indicator status-good';
+                connectionText.textContent = 'GitHub Integration is fully operational';
+            } else if (status.connection_active) {
+                connectionIndicator.className = 'status-indicator status-warning';
+                connectionText.textContent = 'Connected but API issues detected';
+            } else {
+                connectionIndicator.className = 'status-indicator status-error';
+                connectionText.textContent = 'GitHub Integration is disconnected';
+            }
+            
+            // Update status details
+            document.getElementById('configured-badge').textContent = status.configured ? 'Yes' : 'No';
+            document.getElementById('configured-badge').className = status.configured ? 'badge bg-success rounded-pill' : 'badge bg-danger rounded-pill';
+            
+            document.getElementById('connection-badge').textContent = status.connection_active ? 'Yes' : 'No';
+            document.getElementById('connection-badge').className = status.connection_active ? 'badge bg-success rounded-pill' : 'badge bg-danger rounded-pill';
+            
+            if ('api_available' in status) {
+                document.getElementById('api-badge').textContent = status.api_available ? 'Yes' : 'No';
+                document.getElementById('api-badge').className = status.api_available ? 'badge bg-success rounded-pill' : 'badge bg-danger rounded-pill';
+            } else {
+                document.getElementById('api-badge').textContent = 'N/A';
+                document.getElementById('api-badge').className = 'badge bg-secondary rounded-pill';
+            }
+            
+            // Update configuration details
+            const configDetails = document.getElementById('config-details');
+            configDetails.innerHTML = '';
+            
+            const configTable = document.createElement('table');
+            configTable.className = 'table table-striped table-sm';
+            
+            const tableBody = document.createElement('tbody');
+            
+            // Add URL
+            if (status.url) {
+                const urlRow = document.createElement('tr');
+                urlRow.innerHTML = `
+                    <td><strong>Service URL</strong></td>
+                    <td>${status.url}</td>
+                `;
+                tableBody.appendChild(urlRow);
+            }
+            
+            // Add timestamp
+            if (status.timestamp) {
+                const date = new Date(status.timestamp * 1000);
+                const timestampRow = document.createElement('tr');
+                timestampRow.innerHTML = `
+                    <td><strong>Last Updated</strong></td>
+                    <td>${date.toLocaleString()}</td>
+                `;
+                tableBody.appendChild(timestampRow);
+            }
+            
+            // Add error if exists
+            if (status.error) {
+                const errorRow = document.createElement('tr');
+                errorRow.innerHTML = `
+                    <td><strong>Error</strong></td>
+                    <td class="text-danger">${status.error}</td>
+                `;
+                tableBody.appendChild(errorRow);
+            }
+            
+            configTable.appendChild(tableBody);
+            configDetails.appendChild(configTable);
+        }
+        
+        // Function to refresh status
+        function refreshStatus() {
+            document.getElementById('connection-text').textContent = 'Refreshing status...';
+            document.getElementById('connection-indicator').className = 'status-indicator status-warning';
+            document.getElementById('raw-status').textContent = 'Loading status data...';
+            
+            fetchGitHubStatus();
+        }
+        
+        // Function to clear cache
+        async function clearCache() {
+            try {
+                const response = await fetch('/api/caches/clear', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                alert(`Cache cleared successfully. ${data.stats.entries_before} entries removed.`);
+                refreshStatus();
+            } catch (error) {
+                console.error('Error clearing cache:', error);
+                alert('Error clearing cache. See console for details.');
+            }
+        }
+        
+        // Initial fetch
+        document.addEventListener('DOMContentLoaded', fetchGitHubStatus);
+    </script>
+</body>
+</html> 

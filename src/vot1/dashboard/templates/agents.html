@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Agents Overview -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Agents Overview</span>
+                <button class="btn btn-sm btn-primary" onclick="refreshAgents()">
+                    <i class="bi bi-arrow-repeat"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                {% if agents|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Agent ID</th>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Last Activity</th>
+                                <th>Source</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for agent in agents %}
+                            <tr>
+                                <td>{{ agent.id }}</td>
+                                <td>{{ agent.name }}</td>
+                                <td>
+                                    <span class="status-indicator 
+                                        {% if agent.status == 'active' %}status-active
+                                        {% elif agent.status == 'inactive' %}status-inactive
+                                        {% elif agent.status == 'error' %}status-error
+                                        {% else %}status-unknown{% endif %}"></span>
+                                    {{ agent.status }}
+                                </td>
+                                <td>{{ agent.last_activity }}</td>
+                                <td>{{ agent.source }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewAgentDetails('{{ agent.id }}')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" onclick="sendMessage('{{ agent.id }}')">
+                                        <i class="bi bi-chat"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No agents are currently registered in the system
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Agent Tasks -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                Agent Tasks
+            </div>
+            <div class="card-body">
+                <div id="agent-tasks">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Select an agent to view its tasks
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Agent Knowledge -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                Agent Knowledge
+            </div>
+            <div class="card-body">
+                <div id="agent-knowledge">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Select an agent to view its knowledge
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agent Details Modal -->
+<div class="modal fade" id="agentDetailsModal" tabindex="-1" aria-labelledby="agentDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="agentDetailsModalLabel">Agent Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="agentDetailsContent">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send Message Modal -->
+<div class="modal fade" id="sendMessageModal" tabindex="-1" aria-labelledby="sendMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sendMessageModalLabel">Send Message to Agent</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="message-agent-id">
+                <div class="mb-3">
+                    <label for="message-type" class="form-label">Message Type</label>
+                    <select class="form-select" id="message-type">
+                        <option value="task">Task</option>
+                        <option value="command">Command</option>
+                        <option value="information">Information</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="message-content" class="form-label">Message Content</label>
+                    <textarea class="form-control" id="message-content" rows="5"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitMessage()">Send Message</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+function refreshAgents() {
+    window.location.reload();
+}
+
+function viewAgentDetails(agentId) {
+    const modal = new bootstrap.Modal(document.getElementById('agentDetailsModal'));
+    const modalContent = document.getElementById('agentDetailsContent');
+    
+    modalContent.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Loading agent details...</p></div>';
+    
+    fetch(`/api/agents/${agentId}`, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let html = `
+            <div class="agent-details">
+                <h4>${data.agent.name}</h4>
+                <div class="mb-3">
+                    <strong>ID:</strong> ${data.agent.id}<br>
+                    <strong>Status:</strong> ${data.agent.status}<br>
+                    <strong>Last Activity:</strong> ${data.agent.last_activity}<br>
+                </div>
+                
+                <h5>Capabilities</h5>
+                <ul>
+            `;
+            
+            if (data.agent.capabilities && data.agent.capabilities.length > 0) {
+                data.agent.capabilities.forEach(capability => {
+                    html += `<li>${capability}</li>`;
+                });
+            } else {
+                html += `<li>No capabilities reported</li>`;
+            }
+            
+            html += `
+                </ul>
+                
+                <h5>Performance Metrics</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            if (data.agent.metrics && Object.keys(data.agent.metrics).length > 0) {
+                for (const [key, value] of Object.entries(data.agent.metrics)) {
+                    html += `
+                    <tr>
+                        <td>${key}</td>
+                        <td>${value}</td>
+                    </tr>
+                    `;
+                }
+            } else {
+                html += `
+                <tr>
+                    <td colspan="2">No metrics available</td>
+                </tr>
+                `;
+            }
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h5>Recent Activity</h5>
+                <div class="list-group">
+            `;
+            
+            if (data.agent.recent_activity && data.agent.recent_activity.length > 0) {
+                data.agent.recent_activity.forEach(activity => {
+                    html += `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${activity.type}</h6>
+                            <small>${activity.timestamp}</small>
+                        </div>
+                        <p class="mb-1">${activity.description}</p>
+                    </div>
+                    `;
+                });
+            } else {
+                html += `
+                <div class="list-group-item">
+                    <p class="mb-0">No recent activity recorded</p>
+                </div>
+                `;
+            }
+            
+            html += `
+                </div>
+            </div>
+            `;
+            
+            modalContent.innerHTML = html;
+        } else {
+            modalContent.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Error: ${data.error || 'Failed to load agent details'}</div>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        modalContent.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Error: ${error}</div>`;
+    });
+    
+    // Also load tasks and knowledge
+    loadAgentTasks(agentId);
+    loadAgentKnowledge(agentId);
+    
+    modal.show();
+}
+
+function loadAgentTasks(agentId) {
+    const tasksDiv = document.getElementById('agent-tasks');
+    
+    tasksDiv.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Loading tasks...</p></div>';
+    
+    fetch(`/api/agents/${agentId}/tasks`, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.tasks.length > 0) {
+            let html = '<div class="list-group">';
+            
+            data.tasks.forEach(task => {
+                let statusClass = 'bg-secondary';
+                if (task.status === 'completed') statusClass = 'bg-success';
+                if (task.status === 'failed') statusClass = 'bg-danger';
+                if (task.status === 'in_progress') statusClass = 'bg-primary';
+                
+                html += `
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${task.type}</h6>
+                        <span class="badge ${statusClass}">${task.status}</span>
+                    </div>
+                    <p class="mb-1">${task.description}</p>
+                    <small>Started: ${task.start_time}, Duration: ${task.duration || 'N/A'}</small>
+                </div>
+                `;
+            });
+            
+            html += '</div>';
+            tasksDiv.innerHTML = html;
+        } else {
+            tasksDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> No tasks found for this agent</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        tasksDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Error loading tasks: ${error}</div>`;
+    });
+}
+
+function loadAgentKnowledge(agentId) {
+    const knowledgeDiv = document.getElementById('agent-knowledge');
+    
+    knowledgeDiv.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Loading knowledge...</p></div>';
+    
+    fetch(`/api/agents/${agentId}/knowledge`, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.knowledge.length > 0) {
+            let html = '<div class="list-group">';
+            
+            data.knowledge.forEach(item => {
+                html += `
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${item.title || 'Untitled'}</h6>
+                        <small>${item.created_at}</small>
+                    </div>
+                    <p class="mb-1">${item.content.substring(0, 150)}${item.content.length > 150 ? '...' : ''}</p>
+                    <div>
+                        ${item.tags.map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('')}
+                    </div>
+                </div>
+                `;
+            });
+            
+            html += '</div>';
+            knowledgeDiv.innerHTML = html;
+        } else {
+            knowledgeDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> No knowledge found for this agent</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        knowledgeDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Error loading knowledge: ${error}</div>`;
+    });
+}
+
+function sendMessage(agentId) {
+    // Set the agent ID in the modal
+    document.getElementById('message-agent-id').value = agentId;
+    
+    // Clear previous message
+    document.getElementById('message-content').value = '';
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('sendMessageModal'));
+    modal.show();
+}
+
+function submitMessage() {
+    const agentId = document.getElementById('message-agent-id').value;
+    const messageType = document.getElementById('message-type').value;
+    const messageContent = document.getElementById('message-content').value;
+    
+    if (!messageContent.trim()) {
+        alert('Please enter a message');
+        return;
+    }
+    
+    // Disable the submit button
+    const submitBtn = document.querySelector('button[onclick="submitMessage()"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Sending...';
+    
+    fetch('/api/agents/send-message', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            agent_id: agentId,
+            message_type: messageType,
+            content: messageContent
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Message sent successfully!');
+            // Hide the modal
+            bootstrap.Modal.getInstance(document.getElementById('sendMessageModal')).hide();
+        } else {
+            alert('Failed to send message: ' + (data.error || 'Unknown error'));
+        }
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Send Message';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error sending message: ' + error);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Send Message';
+    });
+}
+{% endblock %} 

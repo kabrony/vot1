@@ -1,860 +1,448 @@
 #!/usr/bin/env python3
 """
-VOT1 Memory Management System
+Memory Manager Module
 
-This module provides a memory management system for VOT1, including vector storage
-for semantic memory and conversation history management.
+This module provides a comprehensive memory management system for storing and
+retrieving structured data with optimized performance and organization.
 """
 
 import os
 import json
+import shutil
 import logging
-import sqlite3
-from typing import Dict, List, Any, Optional, Union
+import traceback
+from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
-import uuid
-import numpy as np
 from pathlib import Path
-import re
 
-# Configure logging
+# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class VectorStore:
+class MemoryError(Exception):
+    """Base exception for memory-related errors"""
+    pass
+
+class MemoryManager:
     """
-    Basic vector storage for semantic search capabilities.
-    
-    This is a simplified implementation for testing purposes.
+    A comprehensive memory management system for storing and retrieving structured data
+    with optimized performance and organization.
     """
     
     def __init__(
         self, 
-        model_name: str = "all-MiniLM-L6-v2",
-        dimension: int = 384,
-        storage_path: str = "memory/vector_store.db"
+        base_path: Optional[str] = None,
+        auto_create_dirs: bool = True,
+        use_compression: bool = False
     ):
         """
-        Initialize the vector store.
+        Initialize the Memory Manager.
         
         Args:
-            model_name: Name of the sentence transformer model to use for embeddings
-            dimension: Dimension of the embeddings
-            storage_path: Path to store the vector database
+            base_path: Base directory for storing memory, defaults to ~/.vot1/memory
+            auto_create_dirs: Automatically create directories when saving
+            use_compression: Whether to compress stored data (not implemented yet)
         """
-        self.dimension = dimension
-        self.storage_path = storage_path
-        self.model_name = model_name
+        if base_path is None:
+            # Default to user's home directory
+            home_dir = os.path.expanduser("~")
+            base_path = os.path.join(home_dir, ".vot1", "memory")
         
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(storage_path), exist_ok=True)
+        self.base_path = os.path.abspath(base_path)
+        self.auto_create_dirs = auto_create_dirs
+        self.use_compression = use_compression
         
-        # Initialize database
-        self._init_db()
-        
-        logger.info(f"Initialized VectorStore with model {model_name} at {storage_path}")
-    
-    def _get_connection(self):
-        """Get a thread-local connection to the database."""
-        return sqlite3.connect(self.storage_path)
-    
-    def _init_db(self):
-        """Initialize the database schema."""
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            
-            # Create tables if they don't exist
-            cursor.execute('''
-            CREATE TABLE IF NOT EXISTS memories (
-                id TEXT PRIMARY KEY,
-                content TEXT NOT NULL,
-                metadata TEXT,
-                timestamp REAL NOT NULL
-            )
-            ''')
-            
-            cursor.execute('''
-            CREATE TABLE IF NOT EXISTS embeddings (
-                memory_id TEXT PRIMARY KEY,
-                embedding BLOB NOT NULL,
-                FOREIGN KEY (memory_id) REFERENCES memories(id)
-            )
-            ''')
-            
-            conn.commit()
-        finally:
-            conn.close()
-    
-    def add(
-        self,
-        content: str,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> str:
-        """
-        Add content to the vector store.
-        
-        Args:
-            content: Text content to store
-            metadata: Additional information about this content
-            
-        Returns:
-            ID of the stored content
-        """
-        # Generate a unique ID
-        memory_id = str(uuid.uuid4())
-        
-        # Get current timestamp
-        timestamp = datetime.now().timestamp()
-        
-        # Serialize metadata
-        metadata_json = json.dumps(metadata or {})
-        
-        # Generate embedding (mock implementation)
-        embedding = np.random.rand(self.dimension).astype(np.float32)
-        embedding_blob = embedding.tobytes()
-        
-        # Store in database
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            
-            cursor.execute(
-                "INSERT INTO memories (id, content, metadata, timestamp) VALUES (?, ?, ?, ?)",
-                (memory_id, content, metadata_json, timestamp)
-            )
-            
-            cursor.execute(
-                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-                (memory_id, embedding_blob)
-            )
-            
-            conn.commit()
-        finally:
-            conn.close()
-        
-        return memory_id
-    
-    def search(
-        self,
-        query: str,
-        limit: int = 5
-    ) -> List[Dict[str, Any]]:
-        """
-        Search for similar content.
-        
-        Args:
-            query: Search query
-            limit: Maximum number of results to return
-            
-        Returns:
-            List of results with similarity scores
-        """
-        # In a real implementation, we would:
-        # 1. Generate an embedding for the query
-        # 2. Find the nearest neighbors in the vector space
-        # 3. Return the corresponding memories
-        
-        # For this mock implementation, we'll just return random memories
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            
-            cursor.execute(
-                "SELECT id, content, metadata, timestamp FROM memories ORDER BY RANDOM() LIMIT ?",
-                (limit,)
-            )
-            
-            results = []
-            for row in cursor.fetchall():
-                memory_id, content, metadata_json, timestamp = row
-                metadata = json.loads(metadata_json)
-                
-                # Generate a random similarity score
-                similarity = np.random.rand()
-                
-                results.append({
-                    "id": memory_id,
-                    "content": content,
-                    "metadata": metadata,
-                    "timestamp": timestamp,
-                    "similarity": float(similarity)
-                })
-            
-            # Sort by similarity (highest first)
-            results.sort(key=lambda x: x["similarity"], reverse=True)
-            
-            return results
-        finally:
-            conn.close()
-    
-    def get(self, memory_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get a specific memory by ID.
-        
-        Args:
-            memory_id: ID of the memory to retrieve
-            
-        Returns:
-            Memory data or None if not found
-        """
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            
-            cursor.execute(
-                "SELECT content, metadata, timestamp FROM memories WHERE id = ?",
-                (memory_id,)
-            )
-            
-            row = cursor.fetchone()
-            if not row:
-                return None
-            
-            content, metadata_json, timestamp = row
-            metadata = json.loads(metadata_json)
-            
-            return {
-                "id": memory_id,
-                "content": content,
-                "metadata": metadata,
-                "timestamp": timestamp
-            }
-        finally:
-            conn.close()
-    
-    def delete(self, memory_id: str) -> bool:
-        """
-        Delete a memory by ID.
-        
-        Args:
-            memory_id: ID of the memory to delete
-            
-        Returns:
-            True if deleted, False if not found
-        """
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            
-            # Check if memory exists
-            cursor.execute("SELECT 1 FROM memories WHERE id = ?", (memory_id,))
-            if not cursor.fetchone():
-                return False
-            
-            # Delete from embeddings table
-            cursor.execute("DELETE FROM embeddings WHERE memory_id = ?", (memory_id,))
-            
-            # Delete from memories table
-            cursor.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
-            
-            conn.commit()
-            return True
-        finally:
-            conn.close()
-    
-    def clear(self):
-        """Clear all memories from the store."""
-        conn = self._get_connection()
-        try:
-            cursor = conn.cursor()
-            
-            cursor.execute("DELETE FROM embeddings")
-            cursor.execute("DELETE FROM memories")
-            
-            conn.commit()
-        finally:
-            conn.close()
-
-
-class MemoryManager:
-    """
-    Memory management system for VOT1.
-    
-    This class manages different types of memory, including:
-    - Semantic memory (vector store)
-    - Conversation history
-    - Project memory
-    """
-    
-    def __init__(
-        self,
-        vector_store: Optional[VectorStore] = None,
-        memory_path: str = "memory",
-        max_conversation_history: int = 100,
-        auto_cleanup_threshold: int = 1000,
-        compression_enabled: bool = True,
-        compression_ratio: float = 0.5
-    ):
-        """
-        Initialize the memory manager.
-        
-        Args:
-            vector_store: Vector store instance (created if None)
-            memory_path: Path to store memory files
-            max_conversation_history: Maximum number of conversation entries to keep
-            auto_cleanup_threshold: Number of entries before auto cleanup is triggered
-            compression_enabled: Whether to use memory compression
-            compression_ratio: Compression ratio for vector embeddings (0.0-1.0)
-        """
-        # Create directory if it doesn't exist
-        os.makedirs(memory_path, exist_ok=True)
-        
-        # Initialize vector store if not provided
-        self.vector_store = vector_store or VectorStore(
-            storage_path=os.path.join(memory_path, "vector_store.db")
-        )
-        
-        self.memory_path = memory_path
-        self.conversation_path = os.path.join(memory_path, "conversations")
-        os.makedirs(self.conversation_path, exist_ok=True)
-        
-        # Initialize conversation memory file
-        self.conversation_file = os.path.join(self.conversation_path, "current_conversation.json")
-        if not os.path.exists(self.conversation_file):
-            with open(self.conversation_file, "w") as f:
-                json.dump([], f)
-        
-        # Memory optimization settings
-        self.max_conversation_history = max_conversation_history
-        self.auto_cleanup_threshold = auto_cleanup_threshold
-        self.compression_enabled = compression_enabled
-        self.compression_ratio = compression_ratio
-        self.memory_stats = {
-            "total_memories": 0,
-            "compressed_memories": 0,
-            "last_cleanup": datetime.now().timestamp(),
-            "cleanup_count": 0
-        }
-        
-        # Load memory statistics if they exist
-        self.stats_file = os.path.join(memory_path, "memory_stats.json")
-        if os.path.exists(self.stats_file):
+        # Create base directory if it doesn't exist
+        if auto_create_dirs and not os.path.exists(self.base_path):
             try:
-                with open(self.stats_file, "r") as f:
-                    self.memory_stats.update(json.load(f))
-            except:
-                logger.warning("Failed to load memory statistics, using defaults")
+                os.makedirs(self.base_path, exist_ok=True)
+                logger.info(f"Created memory base directory: {self.base_path}")
+            except Exception as e:
+                logger.error(f"Failed to create memory base directory: {e}")
+                raise MemoryError(f"Failed to create memory base directory: {e}")
         
-        self.storage_dir = memory_path  # Add this line to fix the dashboard issue
+        # Initialize in-memory cache for frequently accessed data
+        self.cache = {}
+        self.cache_hits = 0
+        self.cache_misses = 0
         
-        logger.info(f"Initialized MemoryManager with storage at {memory_path}")
+        logger.info(f"Memory Manager initialized with base path: {self.base_path}")
     
-    def add_semantic_memory(
-        self,
-        content: str,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> str:
+    def _get_category_path(self, category: str) -> str:
         """
-        Add semantic memory that can be searched later.
+        Get the directory path for a category.
         
         Args:
-            content: Text content to remember
-            metadata: Additional information about this memory
+            category: Memory category
             
         Returns:
-            ID of the stored memory
+            Path to the category directory
         """
-        # Add type information to metadata
-        metadata = metadata or {}
-        if "type" not in metadata:
-            metadata["type"] = "semantic"
-        
-        # Add to vector store
-        memory_id = self.vector_store.add(content, metadata)
-        
-        logger.debug(f"Added semantic memory: {content[:50]}... [id: {memory_id}]")
-        return memory_id
+        # Normalize category name
+        category = category.strip().lower().replace(" ", "_")
+        return os.path.join(self.base_path, category)
     
-    def add_conversation_memory(
-        self,
-        role: str,
-        content: str,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def _get_file_path(self, category: str, key: str) -> str:
         """
-        Add an entry to the conversation history.
+        Get the file path for a specific memory key.
         
         Args:
-            role: Role of the speaker (user, assistant, system, etc.)
-            content: Message content
-            metadata: Additional information about this message
+            category: Memory category
+            key: Memory key
             
         Returns:
-            The conversation memory entry
+            Path to the memory file
         """
-        # Create memory entry
-        memory = {
-            "id": str(uuid.uuid4()),
-            "role": role,
-            "content": content,
-            "timestamp": datetime.now().timestamp(),
-            "metadata": metadata or {}
-        }
-        
-        # Add to conversation history
-        self.conversation_history.append(memory)
-        
-        # Add to semantic memory as well for search
-        self.add_semantic_memory(
-            content=content,
-            metadata={
-                "type": "conversation",
-                "role": role,
-                "conversation_id": memory["id"],
-                **(metadata or {})
-            }
-        )
-        
-        logger.debug(f"Added conversation memory: {role} - {content[:50]}...")
-        return memory
+        # Normalize key name
+        key = key.strip().replace(" ", "_").replace("/", "_")
+        return os.path.join(self._get_category_path(category), f"{key}.json")
     
-    def search_memories(
-        self,
-        query: str,
-        limit: int = 5,
-        memory_types: Optional[List[str]] = None
-    ) -> List[Dict[str, Any]]:
+    def _build_cache_key(self, category: str, key: str) -> str:
         """
-        Search for memories similar to the query.
+        Build a cache key from category and key.
         
         Args:
-            query: Search query
-            limit: Maximum number of results to return
-            memory_types: Optional filter for memory types
+            category: Memory category
+            key: Memory key
             
         Returns:
-            List of memories with similarity scores
+            Cache key string
         """
-        # Search vector store
-        results = self.vector_store.search(query, limit=limit)
-        
-        # Filter by memory type if specified
-        if memory_types:
-            results = [
-                r for r in results 
-                if r.get("metadata", {}).get("type") in memory_types
-            ]
-        
-        return results
+        return f"{category}:{key}"
     
-    def search(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+    def list_categories(self) -> List[str]:
         """
-        Alias for search_memories that supports the API expected by McpHybridAutomation.
-        
-        Args:
-            query: Search query
-            limit: Maximum number of results to return
+        List all memory categories.
             
         Returns:
-            List of memories with similarity scores
-        """
-        return self.search_memories(query, limit=limit)
-    
-    def get_recent_memories(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """
-        Get the most recent memories.
-        
-        Args:
-            limit: Maximum number of memories to return
-            
-        Returns:
-            List of recent memories
+            List of category names
         """
         try:
-            # Query the most recent memories from the vector store
-            self.vector_store.cursor.execute(
-                """
-                SELECT id, content, metadata, timestamp 
-                FROM memories 
-                ORDER BY timestamp DESC
-                LIMIT ?
-                """, 
-                (limit,)
-            )
+            if not os.path.exists(self.base_path):
+                return []
             
-            results = []
-            for row in self.vector_store.cursor.fetchall():
-                memory_id, content, metadata_str, timestamp = row
-                metadata = json.loads(metadata_str) if metadata_str else {}
-                
-                results.append({
-                    "id": memory_id,
-                    "content": content,
-                    "metadata": metadata,
-                    "timestamp": timestamp
-                })
+            categories = []
+            for item in os.listdir(self.base_path):
+                item_path = os.path.join(self.base_path, item)
+                if os.path.isdir(item_path):
+                    categories.append(item)
             
-            return results
+            return sorted(categories)
+        
         except Exception as e:
-            logger.error(f"Error retrieving recent memories: {e}")
+            logger.error(f"Error listing categories: {e}")
             return []
     
-    def get_conversation_history(
-        self,
-        limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+    def list_keys(self, category: str) -> List[str]:
         """
-        Get conversation history.
+        List all memory keys in a category.
         
         Args:
-            limit: Optional limit on number of messages to return
+            category: Memory category
             
         Returns:
-            List of conversation messages
+            List of memory keys
         """
-        if limit:
-            return self.conversation_history[-limit:]
-        return self.conversation_history
-    
-    def clear_conversation_history(self):
-        """Clear the conversation history."""
-        self.conversation_history = []
-        
-    def get_memory_graph(self) -> Dict[str, Any]:
-        """
-        Get a graph representation of memories for visualization.
-        
-        Returns:
-            Dictionary with nodes and links for visualization
-        """
-        # Simplified implementation for testing purposes
-        nodes = []
-        links = []
-        
-        # Get some memories from the vector store
-        conn = self.vector_store._get_connection()
         try:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT id, content, metadata FROM memories LIMIT 20"
-            )
+            category_path = self._get_category_path(category)
+            if not os.path.exists(category_path):
+                return []
             
-            for i, row in enumerate(cursor.fetchall()):
-                memory_id, content, metadata_str = row
-                metadata = json.loads(metadata_str)
-                memory_type = metadata.get("type", "default")
-                
-                # Create node
-                node = {
-                    "id": memory_id,
-                    "label": content[:20] + "..." if len(content) > 20 else content,
-                    "type": memory_type,
-                    "size": 1.0,
-                    "x": (np.random.rand() - 0.5) * 100,
-                    "y": (np.random.rand() - 0.5) * 100, 
-                    "z": (np.random.rand() - 0.5) * 100
-                }
-                nodes.append(node)
-                
-                # Create some random links between nodes
-                if i > 0 and np.random.rand() < 0.5:
-                    target_idx = np.random.randint(0, i)
-                    links.append({
-                        "source": memory_id,
-                        "target": nodes[target_idx]["id"],
-                        "value": np.random.rand()
-                    })
-        finally:
-            conn.close()
+            keys = []
+            for item in os.listdir(category_path):
+                if item.endswith(".json"):
+                    keys.append(item[:-5])  # Remove .json extension
+            
+            return sorted(keys)
         
+        except Exception as e:
+            logger.error(f"Error listing keys for category '{category}': {e}")
+            return []
+    
+    def save(self, category: str, key: str, data: Any) -> bool:
+        """
+        Save data to memory.
+        
+        Args:
+            category: Memory category
+            key: Memory key
+            data: Data to save
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get file path
+            category_path = self._get_category_path(category)
+            file_path = self._get_file_path(category, key)
+            
+            # Create category directory if it doesn't exist
+            if self.auto_create_dirs and not os.path.exists(category_path):
+                os.makedirs(category_path, exist_ok=True)
+            
+            # Add metadata
+            metadata = {
+                "timestamp": datetime.now().isoformat(),
+                "category": category,
+                "key": key
+            }
+            
+            # Prepare data for storage
+            storage_data = {
+                "metadata": metadata,
+                "data": data
+            }
+            
+            # Write to file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(storage_data, f, indent=2)
+            
+            # Update cache
+            cache_key = self._build_cache_key(category, key)
+            self.cache[cache_key] = data
+            
+            logger.debug(f"Saved data to {category}/{key}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error saving memory {category}/{key}: {e}")
+            logger.error(traceback.format_exc())
+            return False
+    
+    def load(self, category: str, key: str) -> Optional[Any]:
+        """
+        Load data from memory.
+        
+        Args:
+            category: Memory category
+            key: Memory key
+            
+        Returns:
+            Loaded data or None if not found
+        """
+        try:
+            # Check cache first
+            cache_key = self._build_cache_key(category, key)
+            if cache_key in self.cache:
+                self.cache_hits += 1
+                logger.debug(f"Cache hit for {category}/{key}")
+                return self.cache[cache_key]
+            
+            self.cache_misses += 1
+            
+            # Get file path
+            file_path = self._get_file_path(category, key)
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                logger.debug(f"Memory not found for {category}/{key}")
+                return None
+            
+            # Read from file
+            with open(file_path, 'r', encoding='utf-8') as f:
+                storage_data = json.load(f)
+            
+            # Extract data
+            data = storage_data.get("data")
+            
+            # Update cache
+            self.cache[cache_key] = data
+            
+            logger.debug(f"Loaded data from {category}/{key}")
+            return data
+        
+        except Exception as e:
+            logger.error(f"Error loading memory {category}/{key}: {e}")
+            return None
+    
+    def delete(self, category: str, key: str) -> bool:
+        """
+        Delete data from memory.
+        
+        Args:
+            category: Memory category
+            key: Memory key
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get file path
+            file_path = self._get_file_path(category, key)
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                logger.debug(f"Memory not found for {category}/{key}")
+                return False
+            
+            # Delete file
+            os.remove(file_path)
+            
+            # Remove from cache
+            cache_key = self._build_cache_key(category, key)
+            if cache_key in self.cache:
+                del self.cache[cache_key]
+            
+            logger.debug(f"Deleted memory {category}/{key}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error deleting memory {category}/{key}: {e}")
+            return False
+    
+    def delete_category(self, category: str) -> bool:
+        """
+        Delete an entire category from memory.
+        
+        Args:
+            category: Memory category
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get category path
+            category_path = self._get_category_path(category)
+            
+            # Check if directory exists
+            if not os.path.exists(category_path):
+                logger.debug(f"Category not found: {category}")
+                return False
+            
+            # Delete directory
+            shutil.rmtree(category_path)
+            
+            # Remove from cache
+            category_prefix = f"{category}:"
+            keys_to_remove = [k for k in self.cache.keys() if k.startswith(category_prefix)]
+            for k in keys_to_remove:
+                del self.cache[k]
+            
+            logger.debug(f"Deleted category: {category}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error deleting category {category}: {e}")
+            return False
+    
+    def clear_cache(self) -> None:
+        """Clear the in-memory cache."""
+        self.cache.clear()
+        self.cache_hits = 0
+        self.cache_misses = 0
+        logger.debug("Cache cleared")
+    
+    def get_cache_stats(self) -> Dict[str, int]:
+        """
+        Get cache usage statistics.
+        
+        Returns:
+            Dict containing cache statistics
+        """
         return {
-            "nodes": nodes,
-            "links": links
+            "cache_size": len(self.cache),
+            "cache_hits": self.cache_hits,
+            "cache_misses": self.cache_misses,
+            "hit_ratio": self.cache_hits / max(self.cache_hits + self.cache_misses, 1)
         }
     
-    async def optimize_memory(self) -> Dict[str, Any]:
+    def search(self, query: str, categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """
-        Optimize memory usage by cleaning up old, low-relevance memories and compressing vectors.
-        
-        Returns:
-            Dictionary with optimization statistics
-        """
-        start_time = datetime.now()
-        stats = {
-            "memories_before": 0,
-            "memories_after": 0,
-            "bytes_saved": 0,
-            "duration_seconds": 0
-        }
-        
-        try:
-            # Get connection to vector database
-            conn = self.vector_store._get_connection()
-            cursor = conn.cursor()
-            
-            # Count memories before optimization
-            cursor.execute("SELECT COUNT(*) FROM memories")
-            stats["memories_before"] = cursor.fetchone()[0]
-            
-            # Get database size before optimization
-            cursor.execute("PRAGMA page_count")
-            page_count_before = cursor.fetchone()[0]
-            cursor.execute("PRAGMA page_size")
-            page_size = cursor.fetchone()[0]
-            size_before = page_count_before * page_size
-            
-            # Identify low-relevance memories based on access patterns and age
-            # Keep memories that are frequently accessed or recently added
-            thirty_days_ago = datetime.now().timestamp() - (30 * 24 * 60 * 60)
-            
-            # Find candidates for removal - old and rarely accessed memories
-            cursor.execute("""
-                SELECT id FROM memories 
-                WHERE timestamp < ? 
-                ORDER BY timestamp ASC 
-                LIMIT 100
-            """, (thirty_days_ago,))
-            
-            candidates = [row[0] for row in cursor.fetchall()]
-            
-            # Only remove a percentage of candidates to avoid aggressive cleanup
-            to_remove = candidates[:int(len(candidates) * 0.5)]
-            
-            # Delete low-relevance memories
-            for memory_id in to_remove:
-                self.vector_store.delete(memory_id)
-            
-            # Vacuum database to reclaim space
-            cursor.execute("VACUUM")
-            
-            # Get new database size
-            cursor.execute("PRAGMA page_count")
-            page_count_after = cursor.fetchone()[0]
-            size_after = page_count_after * page_size
-            
-            # Update stats
-            cursor.execute("SELECT COUNT(*) FROM memories")
-            stats["memories_after"] = cursor.fetchone()[0]
-            stats["bytes_saved"] = max(0, size_before - size_after)
-            
-            # Clean up conversation history if it exceeds the limit
-            if await self._conversation_count() > self.max_conversation_history:
-                await self._trim_conversation_history()
-            
-            # Update memory stats
-            self.memory_stats["last_cleanup"] = datetime.now().timestamp()
-            self.memory_stats["cleanup_count"] += 1
-            self.memory_stats["total_memories"] = stats["memories_after"]
-            
-            # Save stats
-            with open(self.stats_file, "w") as f:
-                json.dump(self.memory_stats, f)
-            
-            conn.close()
-        except Exception as e:
-            logger.error(f"Error optimizing memory: {e}")
-            stats["error"] = str(e)
-        
-        stats["duration_seconds"] = (datetime.now() - start_time).total_seconds()
-        return stats
-    
-    async def _trim_conversation_history(self) -> int:
-        """
-        Trim conversation history to the maximum allowed size.
-        
-        Returns:
-            Number of entries removed
-        """
-        try:
-            # Load current conversation
-            conversations = []
-            with open(self.conversation_file, "r") as f:
-                conversations = json.load(f)
-            
-            # Calculate how many entries to remove
-            current_count = len(conversations)
-            entries_to_keep = self.max_conversation_history
-            entries_to_remove = max(0, current_count - entries_to_keep)
-            
-            if entries_to_remove > 0:
-                # Keep the most recent entries
-                conversations = conversations[-entries_to_keep:]
-                
-                # Save trimmed conversation
-                with open(self.conversation_file, "w") as f:
-                    json.dump(conversations, f)
-                
-                logger.info(f"Trimmed conversation history, removed {entries_to_remove} entries")
-                return entries_to_remove
-            return 0
-        except Exception as e:
-            logger.error(f"Error trimming conversation history: {e}")
-            return 0
-    
-    async def _conversation_count(self) -> int:
-        """Get the number of entries in the conversation history."""
-        try:
-            with open(self.conversation_file, "r") as f:
-                conversations = json.load(f)
-            return len(conversations)
-        except:
-            return 0
-    
-    async def check_memory_health(self) -> Dict[str, Any]:
-        """
-        Check the health of the memory system.
-        
-        Returns:
-            Dictionary with health statistics
-        """
-        health = {
-            "total_memories": 0,
-            "vector_store_size_bytes": 0,
-            "conversation_count": 0,
-            "conversation_size_bytes": 0,
-            "last_cleanup": self.memory_stats.get("last_cleanup", 0),
-            "cleanup_count": self.memory_stats.get("cleanup_count", 0),
-            "status": "healthy"
-        }
-        
-        try:
-            # Check vector store health
-            conn = self.vector_store._get_connection()
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT COUNT(*) FROM memories")
-            health["total_memories"] = cursor.fetchone()[0]
-            
-            cursor.execute("PRAGMA page_count")
-            page_count = cursor.fetchone()[0]
-            cursor.execute("PRAGMA page_size")
-            page_size = cursor.fetchone()[0]
-            health["vector_store_size_bytes"] = page_count * page_size
-            
-            # Check if optimization is needed
-            if health["total_memories"] > self.auto_cleanup_threshold:
-                health["status"] = "needs_optimization"
-            
-            conn.close()
-            
-            # Check conversation health
-            health["conversation_count"] = await self._conversation_count()
-            if os.path.exists(self.conversation_file):
-                health["conversation_size_bytes"] = os.path.getsize(self.conversation_file)
-            
-            if health["conversation_count"] > self.max_conversation_history:
-                health["status"] = "needs_optimization"
-            
-        except Exception as e:
-            logger.error(f"Error checking memory health: {e}")
-            health["status"] = "error"
-            health["error"] = str(e)
-        
-        return health
-    
-    async def advanced_search(
-        self,
-        query: str,
-        filters: Optional[Dict[str, Any]] = None,
-        limit: int = 5,
-        threshold: float = 0.6,
-    ) -> List[Dict[str, Any]]:
-        """
-        Advanced semantic search with filtering.
+        Search for memories matching the query.
         
         Args:
             query: Search query
-            filters: Metadata filters to apply
-            limit: Maximum number of results to return
-            threshold: Minimum similarity threshold
-            
-        Returns:
-            List of matching memory entries
-        """
-        # Start with basic vector search
-        results = self.vector_store.search(query, limit=limit * 2)  # Get more results for filtering
+            categories: Optional list of categories to search in
         
-        # Apply filters if provided
-        if filters and isinstance(filters, dict):
-            filtered_results = []
-            for result in results:
-                # Skip entries below threshold
-                if result.get("score", 0) < threshold:
+        Returns:
+            List of matching memories with metadata
+        """
+        try:
+            query = query.lower()
+            results = []
+            
+            # Get categories to search
+            if categories is None:
+                categories = self.list_categories()
+            
+            # Search in each category
+            for category in categories:
+                category_path = self._get_category_path(category)
+                if not os.path.exists(category_path):
                     continue
                 
-                # Apply metadata filters
-                metadata = result.get("metadata", {})
-                if isinstance(metadata, str):
-                    try:
-                        metadata = json.loads(metadata)
-                    except:
-                        metadata = {}
-                
-                # Check if all filters match
-                matches = True
-                for key, value in filters.items():
-                    if key not in metadata or metadata[key] != value:
-                        matches = False
-                        break
-                
-                if matches:
-                    filtered_results.append(result)
+                for key in self.list_keys(category):
+                    # Check if query matches key
+                    if query in key.lower():
+                        data = self.load(category, key)
+                        if data is not None:
+                            results.append({
+                                "category": category,
+                                "key": key,
+                                "data": data,
+                                "match_type": "key"
+                            })
+                        continue
+                    
+                    # Load data and search in content
+                    data = self.load(category, key)
+                    if data is None:
+                        continue
+                    
+                    # Convert data to string for searching
+                    data_str = json.dumps(data).lower()
+                    if query in data_str:
+                        results.append({
+                            "category": category,
+                            "key": key,
+                            "data": data,
+                            "match_type": "content"
+                        })
             
-            results = filtered_results[:limit]
-        else:
-            # Just apply threshold
-            results = [r for r in results if r.get("score", 0) >= threshold][:limit]
-        
-        return results
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error searching memories: {e}")
+            return []
     
-    def add_memory_with_metrics(self, content, metadata=None):
+    def get_memory_info(self) -> Dict[str, Any]:
         """
-        Add memory with advanced linguistic metrics for more natural retrieval.
-        Implements perplexity (word complexity) and burstiness (sentence variation).
+        Get information about the memory storage.
+            
+        Returns:
+            Dict containing memory information
         """
-        # Calculate perplexity score (lower is more predictable)
-        tokens = content.split()
-        perplexity_score = self._calculate_perplexity(tokens)
-        
-        # Calculate burstiness (sentence length variation)
-        sentences = re.split(r'[.!?]+', content)
-        sentence_lengths = [len(s.split()) for s in sentences if s.strip()]
-        burstiness = np.std(sentence_lengths) if sentence_lengths else 0
-        
-        # Store extended metadata
-        enhanced_metadata = metadata or {}
-        enhanced_metadata.update({
-            "perplexity": perplexity_score,
-            "burstiness": burstiness,
-            "timestamp": datetime.now().timestamp(),
-            "memory_type": self._classify_memory_type(content)
-        })
-        
-        # Add to vector store with enhanced retrieval properties
-        memory_id = self.vector_store.add(content, enhanced_metadata)
-        
-        return memory_id
-    
-    def _calculate_perplexity(self, tokens):
-        """Calculate a simple perplexity score based on token frequency."""
-        if not tokens:
-            return 0
+        try:
+            info = {
+                "base_path": self.base_path,
+                "categories": {},
+                "total_memories": 0,
+                "total_size_bytes": 0
+            }
             
-        # Simple approximation - in real implementation, use a proper language model
-        token_freqs = {}
-        for token in tokens:
-            token_freqs[token] = token_freqs.get(token, 0) + 1
+            # Get categories
+            categories = self.list_categories()
+            for category in categories:
+                category_path = self._get_category_path(category)
+                keys = self.list_keys(category)
+                
+                # Calculate size
+                category_size = 0
+                for key in keys:
+                    file_path = self._get_file_path(category, key)
+                    if os.path.exists(file_path):
+                        category_size += os.path.getsize(file_path)
+                
+                info["categories"][category] = {
+                    "memory_count": len(keys),
+                    "size_bytes": category_size
+                }
+                
+                info["total_memories"] += len(keys)
+                info["total_size_bytes"] += category_size
             
-        # Calculate entropy as a proxy for perplexity
-        token_count = len(tokens)
-        entropy = 0
-        for token, freq in token_freqs.items():
-            prob = freq / token_count
-            entropy -= prob * np.log2(prob)
-            
-        return entropy
-    
-    def _classify_memory_type(self, content):
-        """Classify memory type based on content."""
-        # Simple rule-based classification - in real implementation, use ML
-        content_lower = content.lower()
+            return info
         
-        if "how to" in content_lower or "steps" in content_lower:
-            return "procedure"
-        elif any(q in content_lower for q in ["what is", "who is", "when", "where"]):
-            return "fact"
-        elif "i think" in content_lower or "could be" in content_lower:
-            return "insight"
-        else:
-            return "concept" 
+        except Exception as e:
+            logger.error(f"Error getting memory info: {e}")
+            return {"error": str(e)}
