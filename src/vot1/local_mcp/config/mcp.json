@@ -1,0 +1,260 @@
+{
+  "mcpServers": {
+    "MCP": {
+      "url": "https://mcp.composio.dev/github/victorious-damaged-branch-0ojHhf"
+    },
+    "PERPLEXITY": {
+      "url": "https://mcp.composio.dev/perplexityai/plump-colossal-account-RTix4q"
+    },
+    "FIRECRAWL": {
+      "url": "https://mcp.composio.dev/firecrawl/plump-colossal-account-RTix4q"
+    },
+    "FIGMA": {
+      "url": "https://mcp.composio.dev/figma/plump-colossal-account-RTix4q"
+    },
+    "COMPOSIO": {
+      "url": "https://mcp.composio.dev/composio/plump-colossal-account-RTix4q"
+    },
+    "LOCAL": {
+      "url": "http://localhost:5680/api"
+    }
+  },
+  "feedbackLoop": {
+    "enabled": true,
+    "interval": 3600,
+    "endpoints": [
+      {
+        "name": "GitHub Analysis",
+        "url": "/api/integrations/github/analyze",
+        "method": "POST",
+        "params": {
+          "analysis_type": "auto"
+        },
+        "processor": "memory"
+      },
+      {
+        "name": "Memory Optimization",
+        "url": "/api/memory/optimize",
+        "method": "POST",
+        "processor": "memory"
+      },
+      {
+        "name": "System Health Check",
+        "url": "/api/system/health",
+        "method": "GET",
+        "processor": "alert",
+        "alertCondition": {
+          "type": "status",
+          "minStatus": 400
+        },
+        "alertConfig": {
+          "message": "System health check failed with status {status_code}"
+        }
+      },
+      {
+        "name": "Composio Status Check",
+        "url": "/api/openapi/status",
+        "method": "GET",
+        "processor": "alert",
+        "alertCondition": {
+          "type": "content",
+          "field": "connected",
+          "value": false
+        },
+        "alertConfig": {
+          "message": "Composio connection is down"
+        }
+      }
+    ],
+    "notificationChannels": [
+      "dashboard",
+      "memory"
+    ]
+  },
+  "internalTools": {
+    "memory": {
+      "functions": [
+        {
+          "name": "store_memory",
+          "description": "Store a memory in the system",
+          "parameters": {
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "Key to identify the memory"
+              },
+              "value": {
+                "type": "object",
+                "description": "Value to store"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Tags to classify the memory"
+              }
+            },
+            "required": [
+              "key",
+              "value"
+            ]
+          }
+        },
+        {
+          "name": "retrieve_memory",
+          "description": "Retrieve a memory from the system",
+          "parameters": {
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "Key of the memory to retrieve"
+              }
+            },
+            "required": [
+              "key"
+            ]
+          }
+        },
+        {
+          "name": "search_memories",
+          "description": "Search memories by tags",
+          "parameters": {
+            "properties": {
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Tags to search for"
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Maximum number of results to return"
+              }
+            },
+            "required": [
+              "tags"
+            ]
+          }
+        }
+      ]
+    },
+    "agent": {
+      "functions": [
+        {
+          "name": "list_agents",
+          "description": "List all available agents",
+          "parameters": {
+            "properties": {}
+          }
+        },
+        {
+          "name": "send_task",
+          "description": "Send a task to an agent",
+          "parameters": {
+            "properties": {
+              "agent_id": {
+                "type": "string",
+                "description": "ID of the agent to send the task to"
+              },
+              "task_type": {
+                "type": "string",
+                "description": "Type of task to send",
+                "enum": [
+                  "query",
+                  "analyze_repo",
+                  "scrape_url",
+                  "process_search_results",
+                  "memory",
+                  "call_function"
+                ]
+              },
+              "task_data": {
+                "type": "object",
+                "description": "Task data"
+              }
+            },
+            "required": [
+              "agent_id",
+              "task_type",
+              "task_data"
+            ]
+          }
+        }
+      ]
+    },
+    "perplexity": {
+      "functions": [
+        {
+          "name": "search",
+          "description": "Search the web using Perplexity AI",
+          "parameters": {
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query"
+              },
+              "temperature": {
+                "type": "number",
+                "description": "Temperature for generation",
+                "default": 0.7
+              },
+              "max_tokens": {
+                "type": "integer",
+                "description": "Maximum number of tokens to generate",
+                "default": 1000
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      ]
+    },
+    "github": {
+      "functions": [
+        {
+          "name": "search_repos",
+          "description": "Search GitHub repositories",
+          "parameters": {
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Search query"
+              },
+              "sort": {
+                "type": "string",
+                "description": "Sort field",
+                "enum": [
+                  "stars",
+                  "forks",
+                  "updated"
+                ],
+                "default": "stars"
+              },
+              "order": {
+                "type": "string",
+                "description": "Sort order",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "desc"
+              },
+              "per_page": {
+                "type": "integer",
+                "description": "Results per page",
+                "default": 10
+              }
+            },
+            "required": [
+              "query"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

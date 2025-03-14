@@ -1,0 +1,376 @@
+/**
+ * Dashboard Statistics and Card Styles
+ * Part of VOT1 Cyberpunk Theme
+ */
+
+/* Dashboard Grid Layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 1400px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* System Stats Grid */
+.system-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    border: 1px solid var(--cyberpunk-border-dark);
+}
+
+.stat-icon {
+    margin-right: 1rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--cyberpunk-bg-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--cyberpunk-primary);
+    font-size: 1.25rem;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--cyberpunk-text-bright);
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--cyberpunk-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Chart Container */
+.chart-container {
+    height: 250px;
+    margin-top: 1rem;
+    position: relative;
+}
+
+/* Card Actions */
+.card-actions {
+    display: flex;
+    align-items: center;
+}
+
+.time-range-select, 
+.memory-type-filter {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+    background-color: var(--cyberpunk-bg-light);
+    border: 1px solid var(--cyberpunk-border-dark);
+    color: var(--cyberpunk-text-secondary);
+    border-radius: 2px;
+}
+
+/* Memory List */
+.memory-list {
+    max-height: 350px;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+    margin-top: 1rem;
+}
+
+.memory-item {
+    display: flex;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    border-left: 3px solid var(--cyberpunk-primary);
+    transition: all 0.3s ease;
+}
+
+.memory-item:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+    transform: translateX(5px);
+}
+
+.memory-conversation {
+    border-left-color: var(--cyberpunk-primary);
+}
+
+.memory-fact {
+    border-left-color: var(--cyberpunk-secondary);
+}
+
+.memory-concept {
+    border-left-color: var(--cyberpunk-tertiary);
+}
+
+.memory-icon {
+    margin-right: 0.75rem;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 0.25rem;
+    font-size: 1.25rem;
+}
+
+.memory-conversation .memory-icon {
+    color: var(--cyberpunk-primary);
+}
+
+.memory-fact .memory-icon {
+    color: var(--cyberpunk-secondary);
+}
+
+.memory-concept .memory-icon {
+    color: var(--cyberpunk-tertiary);
+}
+
+.memory-content {
+    flex: 1;
+}
+
+.memory-title {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--cyberpunk-text-bright);
+}
+
+.memory-details {
+    display: flex;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.memory-type {
+    color: var(--cyberpunk-text-secondary);
+    margin-right: 1rem;
+}
+
+.memory-time {
+    color: var(--cyberpunk-text-muted);
+}
+
+.memory-summary {
+    font-size: 0.85rem;
+    color: var(--cyberpunk-text-primary);
+    line-height: 1.4;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--cyberpunk-text-secondary);
+    font-size: 0.9rem;
+}
+
+.spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--cyberpunk-primary);
+    animation: spin 1s ease-in-out infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Telemetry Grid */
+.telemetry-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.telemetry-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.telemetry-label {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--cyberpunk-text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+/* Integration Status List */
+.integration-status-list {
+    margin-top: 1rem;
+}
+
+.integration-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.integration-icon {
+    margin-right: 1rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--cyberpunk-bg-light);
+    border-radius: 50%;
+    color: var(--cyberpunk-secondary);
+    font-size: 1.25rem;
+}
+
+.integration-info {
+    flex: 1;
+}
+
+.integration-name {
+    font-weight: bold;
+    color: var(--cyberpunk-text-bright);
+    margin-bottom: 0.25rem;
+}
+
+.integration-status {
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.integration-status[data-status="online"] .status-indicator {
+    background-color: var(--cyberpunk-tertiary);
+    box-shadow: 0 0 10px var(--cyberpunk-tertiary);
+    animation: pulse 2s infinite;
+}
+
+.integration-status[data-status="offline"] .status-indicator {
+    background-color: var(--cyberpunk-primary);
+}
+
+.integration-status[data-status="warning"] .status-indicator {
+    background-color: var(--cyberpunk-accent-2);
+}
+
+.integration-status[data-status="online"] .status-text {
+    color: var(--cyberpunk-tertiary);
+}
+
+.integration-status[data-status="offline"] .status-text {
+    color: var(--cyberpunk-primary);
+}
+
+.integration-status[data-status="warning"] .status-text {
+    color: var(--cyberpunk-accent-2);
+}
+
+.integration-actions {
+    margin-left: 1rem;
+}
+
+/* Quick Actions */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.quick-action-btn {
+    background-color: var(--cyberpunk-bg-light);
+    border: 1px solid var(--cyberpunk-border-dark);
+    color: var(--cyberpunk-text-primary);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-main);
+    border-radius: 4px;
+}
+
+.quick-action-btn i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.quick-action-btn:hover {
+    background-color: var(--cyberpunk-primary);
+    color: var(--cyberpunk-text-bright);
+    box-shadow: 0 0 15px var(--cyberpunk-primary);
+}
+
+.quick-action-btn:hover i {
+    transform: scale(1.2);
+}
+
+/* Buttons */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Refresh button animation */
+.refresh-card i {
+    transition: transform 0.5s ease;
+}
+
+.refresh-card:hover i {
+    transform: rotate(180deg);
+}
+
+/* Pulse animation for status indicators */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(1, 200, 83, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 5px rgba(1, 200, 83, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(1, 200, 83, 0);
+    }
+} 

@@ -96,7 +96,7 @@ class PerplexityClient:
                 "completion_tokens": 250,
                 "total_tokens": (len(prompt) // 4) + 250
             }
-        }
+            }
 
 
 class PerplexityMcpClient:

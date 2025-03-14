@@ -1,0 +1,85 @@
+name: "✨ Feature Request"
+description: "Suggest an enhancement or new feature for VOT1"
+title: "[FEATURE] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        <div style="background-color: #3c1f3c; padding: 15px; border-radius: 10px; border-left: 5px solid #6c4f9c;">
+          <h2 style="color: #f9f9fb; margin-top: 0;">🔮 VOT1 Feature Request</h2>
+          <p style="color: #f9f9fb;">Thanks for taking the time to suggest an enhancement! Please fill out this form as completely as possible.</p>
+        </div>
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: "🧩 Component"
+      description: "Which component of VOT1 does this feature relate to?"
+      options:
+        - Memory Management System
+        - OWL Reasoning Engine
+        - Dashboard & Visualization
+        - MCP Hybrid Automation
+        - Integration (GitHub/Composio/etc.)
+        - AI Chat Interface
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: "📋 Feature Description"
+      description: "Provide a clear and detailed description of the feature you're suggesting"
+      placeholder: "I'd like to see VOT1 implement..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: "🎯 Use Case"
+      description: "Describe how this feature would be used and why it would be valuable"
+      placeholder: "This feature would help users to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "🔄 Alternatives Considered"
+      description: "Have you considered any alternative approaches or workarounds?"
+      placeholder: "I've tried using... but it doesn't..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "🔥 Priority"
+      description: "How important is this feature to you?"
+      options:
+        - Critical (blocking my usage)
+        - High (significant improvement)
+        - Medium (nice to have)
+        - Low (minor enhancement)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: implementation
+    attributes:
+      label: "🛠️ Implementation"
+      description: "Would you be willing to help implement this feature?"
+      options:
+        - label: "I'm willing to submit a PR for this feature"
+        - label: "I'd like to collaborate on implementing this"
+        - label: "I can help test this feature"
+
+  - type: markdown
+    attributes:
+      value: |
+        <div style="background-color: #1f3c3c; padding: 15px; border-radius: 10px; margin-top: 20px;">
+          <p style="color: #f9f9fb; margin: 0;">Thank you for contributing to the VOT1 project! Your feedback helps make our autonomous intelligence system better for everyone in the Village of Thousands community.</p>
+        </div> 

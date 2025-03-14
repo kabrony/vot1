@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOT1 Memory Dashboard - Improved Accessibility</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    
+    <!-- Accessibility enhancements -->
+    <style>
+        /* Focus styles for better keyboard navigation */
+        :focus {
+            outline: 2px solid var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(51, 102, 204, 0.4);
+        }
+        
+        /* Skip to content link for keyboard users */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--color-primary);
+            color: white;
+            padding: 8px;
+            z-index: 100;
+            transition: top 0.3s;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* High contrast mode improvements */
+        @media (forced-colors: active) {
+            button, select, input {
+                forced-color-adjust: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Skip link for keyboard navigation -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <div class="dashboard-container">
+        <!-- Semantic HTML header element -->
+        <header class="dashboard-header" role="banner">
+            <h1>VOT1 Memory System</h1>
+            <div class="header-controls">
+                <!-- Button has accessible name and keyboard support -->
+                <button id="refresh-btn" class="control-btn" aria-label="Refresh data">
+                    <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                    <span>Refresh</span>
+                </button>
+                
+                <!-- Theme toggle with accessible name -->
+                <button id="theme-toggle" class="control-btn" aria-label="Toggle theme" aria-pressed="false">
+                    <i class="fas fa-adjust" aria-hidden="true"></i>
+                    <span class="visually-hidden">Toggle theme</span>
+                </button>
+                
+                <!-- Search with proper labeling -->
+                <div class="search-container">
+                    <label for="memory-search" class="visually-hidden">Search memories</label>
+                    <input type="text" id="memory-search" placeholder="Search memories..." aria-label="Search memories">
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main content with proper role -->
+        <main id="main-content" class="dashboard-content" role="main">
+            <!-- Sidebar with proper landmark -->
+            <aside class="dashboard-sidebar" role="complementary" aria-label="Filters and details">
+                <div class="control-section">
+                    <h2>Filters</h2>
+                    
+                    <div class="filter-group">
+                        <label for="memory-type-filter">Memory Type:</label>
+                        <select id="memory-type-filter" aria-label="Filter by memory type">
+                            <option value="all">All Types</option>
+                            <option value="conversation">Conversation</option>
+                            <option value="semantic">Semantic</option>
+                            <option value="swarm">Swarm</option>
+                            <option value="feedback">Feedback</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <fieldset>
+                            <legend>Time Range</legend>
+                            <div class="time-range-inputs">
+                                <div class="input-group">
+                                    <label for="time-range-start">Start:</label>
+                                    <input type="datetime-local" id="time-range-start" aria-label="Start time">
+                                </div>
+                                <div class="input-group">
+                                    <label for="time-range-end">End:</label>
+                                    <input type="datetime-local" id="time-range-end" aria-label="End time">
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+                
+                <div id="memory-stats" class="stats-section" aria-live="polite">
+                    <h2>Memory Statistics</h2>
+                    <!-- Stats will be populated by JavaScript -->
+                    <p>Loading memory statistics...</p>
+                </div>
+                
+                <div id="node-details" class="details-section" aria-live="polite">
+                    <h2>Node Details</h2>
+                    <!-- Node details will be populated when a node is selected -->
+                    <p>Select a node to view details</p>
+                </div>
+            </aside>
+            
+            <!-- Main visualization section -->
+            <section class="visualization-section" aria-label="Memory visualization">
+                <!-- Accessible loading indicator with aria-live -->
+                <div id="loading-indicator" class="loading-overlay" aria-live="assertive" role="status">
+                    <div class="spinner" aria-hidden="true"></div>
+                    <div>Loading memory data...</div>
+                </div>
+                
+                <!-- Error container with proper role -->
+                <div id="error-container" class="error-message" aria-live="assertive" role="alert" hidden>
+                    <!-- Error messages will be shown here -->
+                </div>
+                
+                <!-- Visualization container with description -->
+                <div id="visualization-container" 
+                     role="img" 
+                     aria-label="3D visualization of memory connections" 
+                     tabindex="0">
+                    <!-- Visualization will be rendered here -->
+                </div>
+                
+                <!-- Text alternative for screen reader users -->
+                <div class="visually-hidden" aria-live="polite" id="visualization-description">
+                    This is a 3D visualization of memory nodes and their connections. 
+                    The visualization shows how different pieces of information are 
+                    interconnected in the VOT1 memory system.
+                </div>
+            </section>
+        </main>
+        
+        <!-- Footer with semantic element -->
+        <footer class="dashboard-footer" role="contentinfo">
+            <div class="footer-info">
+                VOT1 Memory System Dashboard | Version 0.1.0
+                <a href="/accessibility" class="footer-link">Accessibility</a>
+                <a href="/help" class="footer-link">Help</a>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Modal dialog with proper role and aria attributes -->
+    <div id="modal-dialog" class="modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true" aria-modal="true" hidden>
+        <div class="modal-content">
+            <header class="modal-header">
+                <h2 id="modal-title">Modal Title</h2>
+                <button class="modal-close" aria-label="Close modal">×</button>
+            </header>
+            <div class="modal-body">
+                <!-- Modal content will go here -->
+            </div>
+            <footer class="modal-footer">
+                <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="modal-confirm">Confirm</button>
+            </footer>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initDashboard } from '/static/js/dashboard.js';
+        
+        // Initialize the dashboard when the DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initDashboard();
+            
+            // Accessibility enhancements
+            setupKeyboardNavigation();
+            setupScreenReaderAnnouncements();
+        });
+        
+        // Enhanced keyboard navigation
+        function setupKeyboardNavigation() {
+            // Make visualization navigable with keyboard
+            const visContainer = document.getElementById('visualization-container');
+            visContainer.addEventListener('keydown', function(e) {
+                // Arrow keys to navigate
+                if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+                    e.preventDefault();
+                    // The actual navigation would be implemented in the visualization code
+                    document.getElementById('visualization-description').textContent = 
+                        `Navigating visualization with ${e.key}`;
+                }
+                
+                // Space or Enter to select a node
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    // Select focused node
+                    document.getElementById('visualization-description').textContent = 
+                        'Selected node in visualization';
+                }
+            });
+        }
+        
+        // Setup announcements for screen reader users
+        function setupScreenReaderAnnouncements() {
+            // Example: Announce when data is updated
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                setTimeout(() => {
+                    const statsElement = document.getElementById('memory-stats');
+                    statsElement.setAttribute('aria-live', 'polite');
+                    // After data is loaded, this would be updated by the app
+                }, 100);
+            });
+        }
+    </script>
+</body>
+</html> 

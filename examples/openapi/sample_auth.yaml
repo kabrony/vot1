@@ -1,0 +1,6 @@
+# Sample authentication configuration for OpenAPI import
+type: apiKey
+in: header
+name: X-API-Key
+value: ${API_KEY}
+description: API key for authentication 

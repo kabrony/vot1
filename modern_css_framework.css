@@ -1,0 +1,711 @@
+/* 
+ * VOT1 Dashboard - Modern CSS Framework
+ * Version: 1.0.0
+ * 
+ * A lightweight, modern CSS framework implementing the latest web standards
+ * and best practices for 2025, including accessibility features, responsive design,
+ * and performance optimizations.
+ */
+
+/* CSS Reset with modern approach */
+:root {
+  /* Core theme variables */
+  --color-primary: #4a6cf7;
+  --color-primary-dark: #3651d4;
+  --color-secondary: #6c757d;
+  --color-success: #28a745;
+  --color-info: #17a2b8;
+  --color-warning: #ffc107;
+  --color-danger: #dc3545;
+  --color-light: #f8f9fa;
+  --color-dark: #343a40;
+  
+  /* Light theme variables */
+  --background-color: #ffffff;
+  --text-color: #333333;
+  --border-color: #e2e8f0;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --input-background: #f9fafb;
+  --card-background: #ffffff;
+  
+  /* Typography */
+  --font-family-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 
+                      Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-code: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  
+  /* Spacings */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.5rem;
+  --spacing-6: 2rem;
+  --spacing-8: 3rem;
+  --spacing-10: 4rem;
+  
+  /* Z-index layers */
+  --z-below: -1;
+  --z-normal: 1;
+  --z-tooltip: 10;
+  --z-fixed: 100;
+  --z-modal: 1000;
+  
+  /* Animation speeds */
+  --transition-fast: 150ms;
+  --transition-normal: 300ms;
+  --transition-slow: 500ms;
+  
+  /* Border radiuses */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+  
+  /* Container sizes */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  
+  /* System UI preferences - for respecting user preferences */
+  color-scheme: light dark;
+}
+
+/* Dark theme using prefers-color-scheme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #121212;
+    --text-color: #e4e4e4;
+    --border-color: #2d2d2d;
+    --shadow-color: rgba(0, 0, 0, 0.4);
+    --input-background: #2d2d2d;
+    --card-background: #1e1e1e;
+  }
+}
+
+/* Modern CSS reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Improve text rendering */
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  height: 100%;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-family-base);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: 
+    background-color var(--transition-normal),
+    color var(--transition-normal);
+}
+
+/* Improved focus styles for accessibility */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Remove focus for mouse users, keep for keyboard */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Images and media */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6, p {
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.1;
+  margin-bottom: var(--spacing-6);
+}
+
+h2 {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  line-height: 1.2;
+  margin-bottom: var(--spacing-5);
+}
+
+h3 {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  line-height: 1.3;
+  margin-bottom: var(--spacing-4);
+}
+
+p {
+  margin-bottom: var(--spacing-4);
+}
+
+/* Modern layout system using Grid */
+.container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: var(--spacing-4);
+  max-width: var(--container-lg);
+}
+
+.grid {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+/* Responsive grid with auto-fit */
+.grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: var(--spacing-4);
+}
+
+/* Flexbox utils */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-2 {
+  gap: var(--spacing-2);
+}
+
+.gap-4 {
+  gap: var(--spacing-4);
+}
+
+/* Utility classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to content link - accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: white;
+  padding: 8px;
+  z-index: var(--z-fixed);
+  transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Card component with modern styling */
+.card {
+  background-color: var(--card-background);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-5);
+  box-shadow: 0 4px 6px var(--shadow-color);
+  transition: 
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px var(--shadow-color);
+}
+
+/* Button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+.btn:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Button variants */
+.btn-secondary {
+  background-color: var(--color-secondary);
+}
+
+.btn-success {
+  background-color: var(--color-success);
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+/* Form elements with modern styling */
+.form-group {
+  margin-bottom: var(--spacing-4);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-weight: 500;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-3);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: var(--input-background);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+/* Accessibility: High contrast support */
+@media (forced-colors: active) {
+  .btn {
+    border: 1px solid;
+  }
+  
+  .card {
+    border: 1px solid;
+  }
+}
+
+/* Modern container queries for component-based design */
+@supports (container-type: inline-size) {
+  .container-card {
+    container-type: inline-size;
+    container-name: card;
+  }
+  
+  @container card (min-width: 400px) {
+    .card-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-4);
+    }
+  }
+}
+
+/* Scroll-driven animations */
+@supports (animation-timeline: scroll()) {
+  .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: reveal linear both;
+    animation-timeline: scroll();
+    animation-range: entry 10% cover 30%;
+  }
+  
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Responsive breakpoints with modern approach */
+@media (min-width: 640px) {
+  .container {
+    max-width: var(--container-sm);
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: var(--container-md);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: var(--container-lg);
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: var(--container-xl);
+  }
+}
+
+/* Nesting example */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-4);
+  background-color: var(--background-color);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-fixed);
+  
+  & .logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+  
+  & .nav-links {
+    display: flex;
+    gap: var(--spacing-5);
+    list-style: none;
+    
+    & a {
+      color: var(--text-color);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+      
+      &:hover {
+        color: var(--color-primary);
+      }
+    }
+  }
+  
+  /* Responsive navigation for mobile */
+  @media (max-width: 640px) {
+    & .nav-links {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      background-color: var(--background-color);
+      flex-direction: column;
+      padding: var(--spacing-4);
+      border-bottom: 1px solid var(--border-color);
+      transform: translateY(-100%);
+      transition: transform var(--transition-normal);
+      
+      &.active {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+/* Parent selector example using :has() */
+.form-group:has(.form-input:focus) {
+  & .form-label {
+    color: var(--color-primary);
+  }
+}
+
+/* Footer styling */
+.footer {
+  margin-top: var(--spacing-8);
+  padding: var(--spacing-6) 0;
+  border-top: 1px solid var(--border-color);
+  
+  & .footer-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-6);
+    justify-content: space-between;
+    
+    @media (max-width: 640px) {
+      flex-direction: column;
+    }
+  }
+  
+  & .footer-section {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  & .footer-title {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-4);
+    font-weight: 600;
+  }
+  
+  & .footer-links {
+    list-style: none;
+    
+    & li {
+      margin-bottom: var(--spacing-2);
+    }
+    
+    & a {
+      color: var(--text-color);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+      
+      &:hover {
+        color: var(--color-primary);
+      }
+    }
+  }
+}
+
+/* Utilities for spacing */
+.mt-2 { margin-top: var(--spacing-2); }
+.mt-4 { margin-top: var(--spacing-4); }
+.mt-6 { margin-top: var(--spacing-6); }
+.mb-2 { margin-bottom: var(--spacing-2); }
+.mb-4 { margin-bottom: var(--spacing-4); }
+.mb-6 { margin-bottom: var(--spacing-6); }
+.ml-2 { margin-left: var(--spacing-2); }
+.mr-2 { margin-right: var(--spacing-2); }
+.mx-auto { margin-inline: auto; }
+.p-2 { padding: var(--spacing-2); }
+.p-4 { padding: var(--spacing-4); }
+.p-6 { padding: var(--spacing-6); }
+
+/* Modern text colorization using color-mix() */
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-muted {
+  color: color-mix(in srgb, var(--text-color) 70%, transparent);
+}
+
+.bg-primary-light {
+  background-color: color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+/* Print styles for better printing */
+@media print {
+  body {
+    background-color: white;
+    color: black;
+    font-size: 12pt;
+  }
+  
+  .no-print {
+    display: none;
+  }
+  
+  a {
+    text-decoration: underline;
+    color: blue;
+  }
+  
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+  
+  img {
+    page-break-inside: avoid;
+    max-width: 100% !important;
+  }
+  
+  table, figure {
+    page-break-inside: avoid;
+  }
+}
+
+/* Reduced motion for users who prefer less animation */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .reveal-on-scroll {
+    animation: none !important;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility classes for colors */
+.bg-primary { background-color: var(--color-primary); }
+.bg-secondary { background-color: var(--color-secondary); }
+.bg-success { background-color: var(--color-success); }
+.bg-danger { background-color: var(--color-danger); }
+.bg-warning { background-color: var(--color-warning); }
+.bg-info { background-color: var(--color-info); }
+.bg-light { background-color: var(--color-light); }
+.bg-dark { background-color: var(--color-dark); }
+
+/* Additional accessibility enhancements */
+[aria-busy="true"] {
+  cursor: progress;
+}
+
+[aria-disabled="true"],
+[disabled] {
+  cursor: not-allowed;
+}
+
+/* Modern aspect ratio classes */
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+/* Enhanced tooltip accessible by keyboard and screen readers */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  position: absolute;
+  z-index: var(--z-tooltip);
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-dark);
+  color: white;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-2) var(--spacing-4);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  width: max-content;
+  max-width: 200px;
+  font-size: 0.875rem;
+}
+
+.tooltip:hover .tooltip-text,
+.tooltip:focus .tooltip-text,
+.tooltip:focus-within .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Progress indicators */
+.progress {
+  width: 100%;
+  height: 8px;
+  background-color: var(--border-color);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+/* Loading spinner with reduced motion support */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spinner 1s linear infinite;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: spinner 2s linear infinite;
+  }
+} 

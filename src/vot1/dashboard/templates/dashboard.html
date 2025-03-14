@@ -1,87 +1,326 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOT1 Memory Dashboard</title>
-    <link rel="stylesheet" href="/static/css/dashboard.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
-</head>
-<body>
-    <div class="dashboard-container">
-        <header class="dashboard-header">
-            <h1>VOT1 Memory System</h1>
-            <div class="header-controls">
-                <button id="refresh-btn" class="control-btn">Refresh</button>
-                <div class="search-container">
-                    <input type="text" id="memory-search" placeholder="Search memories...">
-                </div>
+{% extends "base.html" %}
+
+{% block title %}System Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- System Status Column -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                System Status
             </div>
-        </header>
-        
-        <main class="dashboard-content">
-            <aside class="dashboard-sidebar">
-                <div class="control-section">
-                    <h3>Filters</h3>
-                    
-                    <div class="filter-group">
-                        <label for="memory-type-filter">Memory Type:</label>
-                        <select id="memory-type-filter">
-                            <option value="all">All Types</option>
-                            <option value="conversation">Conversation</option>
-                            <option value="semantic">Semantic</option>
-                            <option value="swarm">Swarm</option>
-                            <option value="feedback">Feedback</option>
-                        </select>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <!-- GitHub Status -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {% if status.github.status == "active" %}
+                                    <span class="status-indicator status-active"></span>
+                                    {% elif status.github.status == "inactive" %}
+                                    <span class="status-indicator status-inactive"></span>
+                                    {% elif status.github.status == "error" %}
+                                    <span class="status-indicator status-error"></span>
+                                    {% else %}
+                                    <span class="status-indicator status-unknown"></span>
+                                    {% endif %}
+                                    GitHub
+                                </h5>
+                                <p class="card-text">
+                                    {% if status.github.status == "active" %}
+                                    Connected to {{ status.github.connection_url }}
+                                    {% elif status.github.status == "inactive" %}
+                                    Inactive
+                                    {% elif status.github.status == "error" %}
+                                    Error: {{ status.github.error }}
+                                    {% else %}
+                                    Unknown status
+                                    {% endif %}
+                                </p>
+                                <a href="/github" class="btn btn-sm btn-primary">Manage</a>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="filter-group">
-                        <label>Time Range:</label>
-                        <div class="time-range-inputs">
-                            <input type="datetime-local" id="time-range-start" placeholder="Start">
-                            <input type="datetime-local" id="time-range-end" placeholder="End">
+                    <!-- Bridge Status -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {% if status.bridge.status == "active" %}
+                                    <span class="status-indicator status-active"></span>
+                                    {% elif status.bridge.status == "inactive" %}
+                                    <span class="status-indicator status-inactive"></span>
+                                    {% elif status.bridge.status == "error" %}
+                                    <span class="status-indicator status-error"></span>
+                                    {% else %}
+                                    <span class="status-indicator status-unknown"></span>
+                                    {% endif %}
+                                    MCP Bridge
+                                </h5>
+                                <p class="card-text">
+                                    {% if status.bridge.status == "active" %}
+                                    Active
+                                    {% elif status.bridge.status == "inactive" %}
+                                    Inactive
+                                    {% elif status.bridge.status == "error" %}
+                                    Error: {{ status.bridge.error }}
+                                    {% else %}
+                                    Not configured
+                                    {% endif %}
+                                </p>
+                                <button class="btn btn-sm btn-primary" onclick="checkBridgeHealth()">Check Health</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Memory Status -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {% if status.memory.status == "active" %}
+                                    <span class="status-indicator status-active"></span>
+                                    {% elif status.memory.status == "inactive" %}
+                                    <span class="status-indicator status-inactive"></span>
+                                    {% elif status.memory.status == "error" %}
+                                    <span class="status-indicator status-error"></span>
+                                    {% else %}
+                                    <span class="status-indicator status-unknown"></span>
+                                    {% endif %}
+                                    Memory
+                                </h5>
+                                <p class="card-text">
+                                    {% if status.memory.status == "active" %}
+                                    {{ status.memory.activity_count }} activities<br>
+                                    {{ status.memory.tasks_count }} tasks<br>
+                                    {{ status.memory.knowledge_count }} knowledge items
+                                    {% elif status.memory.status == "inactive" %}
+                                    Inactive
+                                    {% elif status.memory.status == "error" %}
+                                    Error: {{ status.memory.error }}
+                                    {% else %}
+                                    Not configured
+                                    {% endif %}
+                                </p>
+                                <a href="/memory" class="btn btn-sm btn-primary">Explore</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Agents Status -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <span class="status-indicator 
+                                        {% if status.agents|length > 0 %}status-active{% else %}status-inactive{% endif %}"></span>
+                                    Agents
+                                </h5>
+                                <p class="card-text">
+                                    {% if status.agents|length > 0 %}
+                                    {{ status.agents|length }} agents registered
+                                    {% else %}
+                                    No agents registered
+                                    {% endif %}
+                                </p>
+                                <a href="/agents" class="btn btn-sm btn-primary">Manage</a>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div id="memory-stats" class="stats-section">
-                    <!-- Stats will be populated by JavaScript -->
-                </div>
-                
-                <div id="node-details" class="details-section">
-                    <!-- Node details will be populated when a node is selected -->
-                </div>
-            </aside>
-            
-            <section class="visualization-section">
-                <div id="loading-indicator" class="loading-overlay">
-                    <div class="spinner"></div>
-                    <div>Loading memory data...</div>
-                </div>
-                
-                <div id="error-container" class="error-message">
-                    <!-- Error messages will be shown here -->
-                </div>
-                
-                <div id="visualization-container"></div>
-            </section>
-        </main>
-        
-        <footer class="dashboard-footer">
-            <div class="footer-info">
-                VOT1 Memory System Dashboard | Version 0.1.0
             </div>
-        </footer>
+        </div>
     </div>
     
-    <script type="module">
-        import { initDashboard } from '/static/js/dashboard.js';
+    <!-- GitHub Repository Status -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                GitHub Repository Status
+                <button class="btn btn-sm btn-outline-primary" onclick="syncGitHubRepo()">
+                    <i class="bi bi-arrow-repeat"></i> Sync
+                </button>
+            </div>
+            <div class="card-body">
+                {% if status.github.status == "active" and status.github.repo_status is defined %}
+                    {% if status.github.repo_status.sync_status == "synced" %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i> Repository synchronized
+                    </div>
+                    <h5>{{ status.github.repo_status.name }}</h5>
+                    <p>{{ status.github.repo_status.description }}</p>
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <span class="badge bg-primary">{{ status.github.repo_status.open_issues_count }} open issues</span>
+                        </div>
+                        <div>
+                            Last updated: {{ status.github.repo_status.updated_at }}
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-success" onclick="createGitHubIssue()">
+                        <i class="bi bi-plus-circle"></i> Create Issue
+                    </button>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Repository not synchronized
+                    </div>
+                    <p>The repository kabrony/vot1 is not synchronized with the GitHub API.</p>
+                    <button class="btn btn-primary" onclick="syncGitHubRepo()">
+                        <i class="bi bi-arrow-repeat"></i> Sync Repository
+                    </button>
+                    {% endif %}
+                {% elif status.github.status == "active" %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Repository information not available
+                </div>
+                <p>Click the Sync button to get repository information.</p>
+                <button class="btn btn-primary" onclick="syncGitHubRepo()">
+                    <i class="bi bi-arrow-repeat"></i> Sync Repository
+                </button>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> GitHub integration not active
+                </div>
+                <p>The GitHub integration is not active. Please check the configuration.</p>
+                <a href="/github" class="btn btn-primary">
+                    <i class="bi bi-github"></i> Configure GitHub
+                </a>
+                {% endif %}
+            </div>
+        </div>
         
-        // Initialize the dashboard when the DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            initDashboard();
-        });
-    </script>
-</body>
-</html> 
+        <!-- Agent Activity -->
+        <div class="card mt-4">
+            <div class="card-header">
+                Agent Activity
+            </div>
+            <div class="card-body">
+                {% if status.agents|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Agent</th>
+                                <th>Status</th>
+                                <th>Last Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for agent in status.agents %}
+                            <tr>
+                                <td>{{ agent.name }}</td>
+                                <td>
+                                    <span class="status-indicator 
+                                        {% if agent.status == 'active' %}status-active
+                                        {% elif agent.status == 'inactive' %}status-inactive
+                                        {% elif agent.status == 'error' %}status-error
+                                        {% else %}status-unknown{% endif %}"></span>
+                                    {{ agent.status }}
+                                </td>
+                                <td>{{ agent.last_activity }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    No agents registered
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+function checkBridgeHealth() {
+    fetch('/api/bridge/health', {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Bridge is healthy!');
+        } else {
+            alert('Bridge health check failed: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error checking bridge health: ' + error);
+    });
+}
+
+function syncGitHubRepo() {
+    const syncBtn = document.querySelector('button[onclick="syncGitHubRepo()"]');
+    syncBtn.disabled = true;
+    syncBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Syncing...';
+    
+    fetch('/api/github/sync_repository', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            owner: 'kabrony',
+            repo: 'vot1'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Failed to sync repository: ' + (data.error || 'Unknown error'));
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Sync Repository';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error syncing repository: ' + error);
+        syncBtn.disabled = false;
+        syncBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Sync Repository';
+    });
+}
+
+function createGitHubIssue() {
+    const title = prompt('Enter issue title:');
+    if (!title) return;
+    
+    const body = prompt('Enter issue description:');
+    if (!body) return;
+    
+    fetch('/api/github/create_issue', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            owner: 'kabrony',
+            repo: 'vot1',
+            title: title,
+            body: body,
+            labels: ['dashboard-created']
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Issue created successfully!');
+            window.location.reload();
+        } else {
+            alert('Failed to create issue: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating issue: ' + error);
+    });
+}
+{% endblock %} 

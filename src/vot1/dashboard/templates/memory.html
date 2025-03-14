@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Memory System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Memory Status Column -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                Memory System Status
+            </div>
+            <div class="card-body">
+                <div class="status-summary mb-4">
+                    {% if memory_status.status == "active" %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i> Memory system is active
+                    </div>
+                    {% elif memory_status.status == "inactive" %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Memory system is inactive
+                    </div>
+                    {% elif memory_status.status == "error" %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i> Memory system has an error
+                    </div>
+                    <p>Error: {{ memory_status.error }}</p>
+                    {% else %}
+                    <div class="alert alert-secondary">
+                        <i class="bi bi-question-circle"></i> Memory system status unknown
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if memory_status.status == "active" %}
+                <div class="mb-3">
+                    <h5>Memory Statistics</h5>
+                    <div class="list-group">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Agent Activities
+                            <span class="badge bg-primary rounded-pill">{{ memory_status.activity_count }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Agent Tasks
+                            <span class="badge bg-primary rounded-pill">{{ memory_status.tasks_count }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Knowledge Items
+                            <span class="badge bg-primary rounded-pill">{{ memory_status.knowledge_count }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="checkMemorySystem()">
+                        <i class="bi bi-arrow-repeat"></i> Check Memory System
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Memory Search Column -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                Search Memory
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="search-query" placeholder="Search for knowledge, activities, tasks...">
+                        <select class="form-select" id="search-category" style="max-width: 180px;">
+                            <option value="">All Categories</option>
+                            <option value="agent_knowledge">Knowledge</option>
+                            <option value="agent_activity">Activities</option>
+                            <option value="agent_tasks">Tasks</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="searchMemory()">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="search-results">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Enter a search query to find items in memory
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Knowledge Graph -->
+        <div class="card mt-4">
+            <div class="card-header">
+                Knowledge Graph
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Knowledge graph visualization will be available in a future update
+                </div>
+                <div class="text-center p-4">
+                    <i class="bi bi-diagram-3" style="font-size: 48px; color: #6c757d;"></i>
+                    <p class="mt-3">The knowledge graph helps visualize connections between different pieces of knowledge, 
+                    tasks, and agent activities in the VOTai ecosystem.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+function checkMemorySystem() {
+    const checkBtn = document.querySelector('button[onclick="checkMemorySystem()"]');
+    checkBtn.disabled = true;
+    checkBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Checking...';
+    
+    fetch('/api/memory/status', {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error checking memory system: ' + error);
+        checkBtn.disabled = false;
+        checkBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Check Memory System';
+    });
+}
+
+function searchMemory() {
+    const query = document.getElementById('search-query').value;
+    const category = document.getElementById('search-category').value;
+    
+    if (!query) {
+        alert('Please enter a search query');
+        return;
+    }
+    
+    const resultsDiv = document.getElementById('search-results');
+    resultsDiv.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Searching memory...</p></div>';
+    
+    fetch(`/api/memory/search?query=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.results.length > 0) {
+                let html = '<div class="list-group">';
+                data.results.forEach(result => {
+                    const resultCategory = result.category || category || 'unknown';
+                    const resultTitle = result.data.title || result.data.name || result.key;
+                    const resultContent = JSON.stringify(result.data, null, 2);
+                    
+                    html += `
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">${resultTitle}</h5>
+                            <small class="text-muted">${resultCategory}</small>
+                        </div>
+                        <p class="mb-1">${resultContent.length > 200 ? resultContent.substring(0, 200) + '...' : resultContent}</p>
+                        <small class="text-muted">Key: ${result.key}</small>
+                    </div>`;
+                });
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            } else {
+                resultsDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> No results found</div>';
+            }
+        } else {
+            resultsDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Error: ${data.error || 'Unknown error'}</div>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultsDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Error: ${error}</div>`;
+    });
+}
+{% endblock %} 

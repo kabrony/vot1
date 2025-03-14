@@ -26,8 +26,8 @@ class OWLReasoningEngine:
     
     def __init__(
         self,
-        ontology_path: Optional[str] = None,
-        memory_manager = None,
+                 ontology_path: Optional[str] = None,
+                 memory_manager = None,
         embedding_model: str = "sentence-transformers/all-mpnet-base-v2"
     ):
         """

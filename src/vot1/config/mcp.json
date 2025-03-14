@@ -1,0 +1,74 @@
+{
+  "mcpServers": {
+    "MCP": {
+      "url": "https://mcp.composio.dev/github/victorious-damaged-branch-0ojHhf"
+    },
+    "GITHUB": {
+      "url": "https://api.github.com"
+    },
+    "PERPLEXITY": {
+      "url": "https://mcp.composio.dev/perplexityai/plump-colossal-account-RTix4q"
+    },
+    "FIRECRAWL": {
+      "url": "https://mcp.composio.dev/firecrawl/plump-colossal-account-RTix4q"
+    },
+    "FIGMA": {
+      "url": "https://mcp.composio.dev/figma/plump-colossal-account-RTix4q"
+    },
+    "COMPOSIO": {
+      "url": "https://mcp.composio.dev/composio/plump-colossal-account-RTix4q"
+    }
+  },
+  "feedbackLoop": {
+    "enabled": true,
+    "interval": 3600,
+    "endpoints": [
+      {
+        "name": "GitHub Analysis",
+        "url": "/api/integrations/github/analyze",
+        "method": "POST",
+        "params": {
+          "analysis_type": "auto"
+        },
+        "processor": "memory"
+      },
+      {
+        "name": "Memory Optimization",
+        "url": "/api/memory/optimize",
+        "method": "POST",
+        "processor": "memory"
+      },
+      {
+        "name": "System Health Check",
+        "url": "/api/system/health",
+        "method": "GET",
+        "processor": "alert",
+        "alertCondition": {
+          "type": "status",
+          "minStatus": 400
+        },
+        "alertConfig": {
+          "message": "System health check failed with status {status_code}"
+        }
+      },
+      {
+        "name": "Composio Status Check",
+        "url": "/api/openapi/status",
+        "method": "GET",
+        "processor": "alert",
+        "alertCondition": {
+          "type": "content",
+          "field": "connected",
+          "value": false
+        },
+        "alertConfig": {
+          "message": "Composio connection is down"
+        }
+      }
+    ],
+    "notificationChannels": [
+      "dashboard",
+      "memory"
+    ]
+  }
+} 

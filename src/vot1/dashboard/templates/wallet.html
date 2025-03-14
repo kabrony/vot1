@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}VOT1 Dashboard - Wallet Integration{% endblock %}
+
+{% block styles %}
+<style>
+    .wallet-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .page-header {
+        margin-bottom: 30px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+    }
+    .info-block {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wallet-container">
+    <div class="page-header">
+        <h1>Blockchain Wallet Integration</h1>
+        <p class="lead">Connect your Phantom wallet and interact with ZK proofs and hex.dev services</p>
+    </div>
+    
+    <div class="info-block">
+        <h4>📱 Wallet Integration</h4>
+        <p>This page demonstrates integration with Phantom Wallet (Solana), ZK proof validation, and hex.dev utilities.</p>
+        <p><strong>Note:</strong> You'll need a <a href="https://phantom.app/" target="_blank">Phantom wallet</a> browser extension to use all features.</p>
+    </div>
+    
+    <div id="wallet-integration-container">
+        <!-- Wallet UI will be inserted here by JavaScript -->
+        <div class="text-center my-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading wallet integration...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Polyfills and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
+
+<!-- VOT1 Wallet Integration scripts -->
+<script src="{{ url_for('static', filename='js/wallet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/wallet-ui.js') }}"></script>
+
+<!-- Initialize wallet UI -->
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Initialize the wallet UI component
+        await VOT1WalletUI.init('wallet-integration-container', {
+            zkEnabled: true,
+            hexEnabled: true,
+            autoConnect: false
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,384 +1,448 @@
 #!/usr/bin/env python3
 """
-VOT1 Memory Management System
+Memory Manager Module
 
-This module provides a memory management system for VOT1, including vector storage
-for semantic memory and conversation history management.
+This module provides a comprehensive memory management system for storing and
+retrieving structured data with optimized performance and organization.
 """
 
 import os
 import json
+import shutil
 import logging
-import sqlite3
-from typing import Dict, List, Any, Optional, Union
+import traceback
+from typing import Dict, Any, List, Optional, Union
 from datetime import datetime
-import uuid
-import numpy as np
 from pathlib import Path
 
-# Configure logging
+# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class VectorStore:
-    """
-    Basic vector storage for semantic search capabilities.
-    
-    This is a simplified implementation for testing purposes.
-    """
-    
-    def __init__(
-        self, 
-        model_name: str = "all-MiniLM-L6-v2",
-        dimension: int = 384,
-        storage_path: str = "memory/vector_store.db"
-    ):
-        """
-        Initialize the vector store.
-        
-        Args:
-            model_name: Name of the sentence transformer model to use for embeddings
-            dimension: Dimension of the embeddings
-            storage_path: Path to store the vector database
-        """
-        self.dimension = dimension
-        self.storage_path = storage_path
-        self.model_name = model_name
-        
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(storage_path), exist_ok=True)
-        
-        # Connect to SQLite database
-        self.conn = sqlite3.connect(storage_path)
-        self.cursor = self.conn.cursor()
-        
-        # Create tables if they don't exist
-        self._create_tables()
-        
-        logger.info(f"Initialized VectorStore with model {model_name} at {storage_path}")
-    
-    def _create_tables(self):
-        """Create database tables if they don't exist."""
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS memories (
-            id TEXT PRIMARY KEY,
-            content TEXT NOT NULL,
-            metadata TEXT,
-            timestamp REAL NOT NULL
-        )
-        ''')
-        
-        self.cursor.execute('''
-        CREATE TABLE IF NOT EXISTS embeddings (
-            memory_id TEXT PRIMARY KEY,
-            embedding BLOB NOT NULL,
-            FOREIGN KEY (memory_id) REFERENCES memories(id)
-        )
-        ''')
-        
-        self.conn.commit()
-    
-    def add(self, content: str, metadata: Optional[Dict[str, Any]] = None) -> str:
-        """
-        Add content to the vector store.
-        
-        Args:
-            content: Text content to store
-            metadata: Optional metadata associated with the content
-            
-        Returns:
-            ID of the stored memory
-        """
-        memory_id = str(uuid.uuid4())
-        timestamp = datetime.now().timestamp()
-        
-        # Store memory
-        self.cursor.execute(
-            "INSERT INTO memories (id, content, metadata, timestamp) VALUES (?, ?, ?, ?)",
-            (memory_id, content, json.dumps(metadata or {}), timestamp)
-        )
-        
-        # Create a dummy embedding (random vector)
-        embedding = np.random.rand(self.dimension).astype(np.float32)
-        
-        # Store embedding
-        self.cursor.execute(
-            "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-            (memory_id, embedding.tobytes())
-        )
-        
-        self.conn.commit()
-        return memory_id
-    
-    def search(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """
-        Search for similar content.
-        
-        This is a simplified implementation that returns random results.
-        
-        Args:
-            query: Search query
-            limit: Maximum number of results to return
-            
-        Returns:
-            List of similar memories with similarity scores
-        """
-        # Simplified implementation: return random memories
-        self.cursor.execute(
-            "SELECT id, content, metadata FROM memories ORDER BY RANDOM() LIMIT ?",
-            (limit,)
-        )
-        
-        results = []
-        for row in self.cursor.fetchall():
-            memory_id, content, metadata_str = row
-            metadata = json.loads(metadata_str)
-            
-            # Generate a random similarity score between 0.5 and 1.0
-            similarity = 0.5 + np.random.rand() * 0.5
-            
-            results.append({
-                "id": memory_id,
-                "content": content,
-                "metadata": metadata,
-                "similarity": similarity
-            })
-        
-        # Sort by similarity (highest first)
-        results.sort(key=lambda x: x["similarity"], reverse=True)
-        return results
-    
-    def get(self, memory_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get a specific memory by ID.
-        
-        Args:
-            memory_id: ID of the memory to retrieve
-            
-        Returns:
-            Memory data or None if not found
-        """
-        self.cursor.execute(
-            "SELECT content, metadata, timestamp FROM memories WHERE id = ?",
-            (memory_id,)
-        )
-        
-        row = self.cursor.fetchone()
-        if not row:
-            return None
-        
-        content, metadata_str, timestamp = row
-        return {
-            "id": memory_id,
-            "content": content,
-            "metadata": json.loads(metadata_str),
-            "timestamp": timestamp
-        }
-    
-    def close(self):
-        """Close database connection."""
-        self.conn.close()
-    
-    def __del__(self):
-        """Ensure connection is closed on object deletion."""
-        try:
-            self.conn.close()
-        except:
-            pass
-
+class MemoryError(Exception):
+    """Base exception for memory-related errors"""
+    pass
 
 class MemoryManager:
     """
-    Memory management system combining vector storage and other memory types.
+    A comprehensive memory management system for storing and retrieving structured data
+    with optimized performance and organization.
     """
     
     def __init__(
-        self,
-        vector_store: Optional[VectorStore] = None,
-        memory_path: str = "memory"
+        self, 
+        base_path: Optional[str] = None,
+        auto_create_dirs: bool = True,
+        use_compression: bool = False
     ):
         """
-        Initialize the memory manager.
+        Initialize the Memory Manager.
         
         Args:
-            vector_store: VectorStore instance or None to create a new one
-            memory_path: Path to the memory storage directory
+            base_path: Base directory for storing memory, defaults to ~/.vot1/memory
+            auto_create_dirs: Automatically create directories when saving
+            use_compression: Whether to compress stored data (not implemented yet)
         """
-        self.storage_dir = memory_path
-        os.makedirs(self.storage_dir, exist_ok=True)
+        if base_path is None:
+            # Default to user's home directory
+            home_dir = os.path.expanduser("~")
+            base_path = os.path.join(home_dir, ".vot1", "memory")
         
-        # Initialize vector store if not provided
-        self.vector_store = vector_store or VectorStore(
-            storage_path=os.path.join(self.storage_dir, "vector_store.db")
-        )
+        self.base_path = os.path.abspath(base_path)
+        self.auto_create_dirs = auto_create_dirs
+        self.use_compression = use_compression
         
-        # Conversation history
-        self.conversation_history = []
+        # Create base directory if it doesn't exist
+        if auto_create_dirs and not os.path.exists(self.base_path):
+            try:
+                os.makedirs(self.base_path, exist_ok=True)
+                logger.info(f"Created memory base directory: {self.base_path}")
+            except Exception as e:
+                logger.error(f"Failed to create memory base directory: {e}")
+                raise MemoryError(f"Failed to create memory base directory: {e}")
         
-        logger.info(f"Initialized MemoryManager with storage at {self.storage_dir}")
+        # Initialize in-memory cache for frequently accessed data
+        self.cache = {}
+        self.cache_hits = 0
+        self.cache_misses = 0
+        
+        logger.info(f"Memory Manager initialized with base path: {self.base_path}")
     
-    def add_semantic_memory(
-        self, 
-        content: str, 
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> str:
+    def _get_category_path(self, category: str) -> str:
         """
-        Add semantic memory that can be searched later.
+        Get the directory path for a category.
         
         Args:
-            content: Text content to remember
-            metadata: Additional information about this memory
+            category: Memory category
             
         Returns:
-            ID of the stored memory
+            Path to the category directory
         """
-        # Add type information to metadata
-        metadata = metadata or {}
-        if "type" not in metadata:
-            metadata["type"] = "semantic"
-        
-        # Add to vector store
-        memory_id = self.vector_store.add(content, metadata)
-        
-        logger.debug(f"Added semantic memory: {content[:50]}... [id: {memory_id}]")
-        return memory_id
+        # Normalize category name
+        category = category.strip().lower().replace(" ", "_")
+        return os.path.join(self.base_path, category)
     
-    def add_conversation_memory(
-        self, 
-        role: str, 
-        content: str, 
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def _get_file_path(self, category: str, key: str) -> str:
         """
-        Add an entry to the conversation history.
+        Get the file path for a specific memory key.
         
         Args:
-            role: Role of the speaker (user, assistant, system, etc.)
-            content: Message content
-            metadata: Additional information about this message
+            category: Memory category
+            key: Memory key
             
         Returns:
-            The conversation memory entry
+            Path to the memory file
         """
-        # Create memory entry
-        memory = {
-            "id": str(uuid.uuid4()),
-            "role": role,
-            "content": content,
-            "timestamp": datetime.now().timestamp(),
-            "metadata": metadata or {}
-        }
+        # Normalize key name
+        key = key.strip().replace(" ", "_").replace("/", "_")
+        return os.path.join(self._get_category_path(category), f"{key}.json")
+    
+    def _build_cache_key(self, category: str, key: str) -> str:
+        """
+        Build a cache key from category and key.
         
-        # Add to conversation history
-        self.conversation_history.append(memory)
+        Args:
+            category: Memory category
+            key: Memory key
+            
+        Returns:
+            Cache key string
+        """
+        return f"{category}:{key}"
+    
+    def list_categories(self) -> List[str]:
+        """
+        List all memory categories.
+            
+        Returns:
+            List of category names
+        """
+        try:
+            if not os.path.exists(self.base_path):
+                return []
+            
+            categories = []
+            for item in os.listdir(self.base_path):
+                item_path = os.path.join(self.base_path, item)
+                if os.path.isdir(item_path):
+                    categories.append(item)
+            
+            return sorted(categories)
         
-        # Add to semantic memory as well for search
-        self.add_semantic_memory(
-            content=content,
-            metadata={
-                "type": "conversation",
-                "role": role,
-                "conversation_id": memory["id"],
-                **(metadata or {})
+        except Exception as e:
+            logger.error(f"Error listing categories: {e}")
+            return []
+    
+    def list_keys(self, category: str) -> List[str]:
+        """
+        List all memory keys in a category.
+        
+        Args:
+            category: Memory category
+            
+        Returns:
+            List of memory keys
+        """
+        try:
+            category_path = self._get_category_path(category)
+            if not os.path.exists(category_path):
+                return []
+            
+            keys = []
+            for item in os.listdir(category_path):
+                if item.endswith(".json"):
+                    keys.append(item[:-5])  # Remove .json extension
+            
+            return sorted(keys)
+        
+        except Exception as e:
+            logger.error(f"Error listing keys for category '{category}': {e}")
+            return []
+    
+    def save(self, category: str, key: str, data: Any) -> bool:
+        """
+        Save data to memory.
+        
+        Args:
+            category: Memory category
+            key: Memory key
+            data: Data to save
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get file path
+            category_path = self._get_category_path(category)
+            file_path = self._get_file_path(category, key)
+            
+            # Create category directory if it doesn't exist
+            if self.auto_create_dirs and not os.path.exists(category_path):
+                os.makedirs(category_path, exist_ok=True)
+            
+            # Add metadata
+            metadata = {
+                "timestamp": datetime.now().isoformat(),
+                "category": category,
+                "key": key
             }
-        )
+            
+            # Prepare data for storage
+            storage_data = {
+                "metadata": metadata,
+                "data": data
+            }
+            
+            # Write to file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(storage_data, f, indent=2)
+            
+            # Update cache
+            cache_key = self._build_cache_key(category, key)
+            self.cache[cache_key] = data
+            
+            logger.debug(f"Saved data to {category}/{key}")
+            return True
         
-        logger.debug(f"Added conversation memory: {role} - {content[:50]}...")
-        return memory
+        except Exception as e:
+            logger.error(f"Error saving memory {category}/{key}: {e}")
+            logger.error(traceback.format_exc())
+            return False
     
-    def search_memories(
-        self, 
-        query: str, 
-        limit: int = 5, 
-        memory_types: Optional[List[str]] = None
-    ) -> List[Dict[str, Any]]:
+    def load(self, category: str, key: str) -> Optional[Any]:
         """
-        Search for memories similar to the query.
+        Load data from memory.
+        
+        Args:
+            category: Memory category
+            key: Memory key
+            
+        Returns:
+            Loaded data or None if not found
+        """
+        try:
+            # Check cache first
+            cache_key = self._build_cache_key(category, key)
+            if cache_key in self.cache:
+                self.cache_hits += 1
+                logger.debug(f"Cache hit for {category}/{key}")
+                return self.cache[cache_key]
+            
+            self.cache_misses += 1
+            
+            # Get file path
+            file_path = self._get_file_path(category, key)
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                logger.debug(f"Memory not found for {category}/{key}")
+                return None
+            
+            # Read from file
+            with open(file_path, 'r', encoding='utf-8') as f:
+                storage_data = json.load(f)
+            
+            # Extract data
+            data = storage_data.get("data")
+            
+            # Update cache
+            self.cache[cache_key] = data
+            
+            logger.debug(f"Loaded data from {category}/{key}")
+            return data
+        
+        except Exception as e:
+            logger.error(f"Error loading memory {category}/{key}: {e}")
+            return None
+    
+    def delete(self, category: str, key: str) -> bool:
+        """
+        Delete data from memory.
+        
+        Args:
+            category: Memory category
+            key: Memory key
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get file path
+            file_path = self._get_file_path(category, key)
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                logger.debug(f"Memory not found for {category}/{key}")
+                return False
+            
+            # Delete file
+            os.remove(file_path)
+            
+            # Remove from cache
+            cache_key = self._build_cache_key(category, key)
+            if cache_key in self.cache:
+                del self.cache[cache_key]
+            
+            logger.debug(f"Deleted memory {category}/{key}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error deleting memory {category}/{key}: {e}")
+            return False
+    
+    def delete_category(self, category: str) -> bool:
+        """
+        Delete an entire category from memory.
+        
+        Args:
+            category: Memory category
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get category path
+            category_path = self._get_category_path(category)
+            
+            # Check if directory exists
+            if not os.path.exists(category_path):
+                logger.debug(f"Category not found: {category}")
+                return False
+            
+            # Delete directory
+            shutil.rmtree(category_path)
+            
+            # Remove from cache
+            category_prefix = f"{category}:"
+            keys_to_remove = [k for k in self.cache.keys() if k.startswith(category_prefix)]
+            for k in keys_to_remove:
+                del self.cache[k]
+            
+            logger.debug(f"Deleted category: {category}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error deleting category {category}: {e}")
+            return False
+    
+    def clear_cache(self) -> None:
+        """Clear the in-memory cache."""
+        self.cache.clear()
+        self.cache_hits = 0
+        self.cache_misses = 0
+        logger.debug("Cache cleared")
+    
+    def get_cache_stats(self) -> Dict[str, int]:
+        """
+        Get cache usage statistics.
+        
+        Returns:
+            Dict containing cache statistics
+        """
+        return {
+            "cache_size": len(self.cache),
+            "cache_hits": self.cache_hits,
+            "cache_misses": self.cache_misses,
+            "hit_ratio": self.cache_hits / max(self.cache_hits + self.cache_misses, 1)
+        }
+    
+    def search(self, query: str, categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """
+        Search for memories matching the query.
         
         Args:
             query: Search query
-            limit: Maximum number of results to return
-            memory_types: Optional filter for memory types
-            
+            categories: Optional list of categories to search in
+        
         Returns:
-            List of memories with similarity scores
+            List of matching memories with metadata
         """
-        # Search vector store
-        results = self.vector_store.search(query, limit=limit)
-        
-        # Filter by memory type if specified
-        if memory_types:
-            results = [
-                r for r in results 
-                if r.get("metadata", {}).get("type") in memory_types
-            ]
-        
-        return results
+        try:
+            query = query.lower()
+            results = []
+            
+            # Get categories to search
+            if categories is None:
+                categories = self.list_categories()
+            
+            # Search in each category
+            for category in categories:
+                category_path = self._get_category_path(category)
+                if not os.path.exists(category_path):
+                    continue
+                
+                for key in self.list_keys(category):
+                    # Check if query matches key
+                    if query in key.lower():
+                        data = self.load(category, key)
+                        if data is not None:
+                            results.append({
+                                "category": category,
+                                "key": key,
+                                "data": data,
+                                "match_type": "key"
+                            })
+                        continue
+                    
+                    # Load data and search in content
+                    data = self.load(category, key)
+                    if data is None:
+                        continue
+                    
+                    # Convert data to string for searching
+                    data_str = json.dumps(data).lower()
+                    if query in data_str:
+                        results.append({
+                            "category": category,
+                            "key": key,
+                            "data": data,
+                            "match_type": "content"
+                        })
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error searching memories: {e}")
+            return []
     
-    def get_conversation_history(
-        self, 
-        limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+    def get_memory_info(self) -> Dict[str, Any]:
         """
-        Get conversation history.
-        
-        Args:
-            limit: Optional limit on number of messages to return
+        Get information about the memory storage.
             
         Returns:
-            List of conversation messages
+            Dict containing memory information
         """
-        if limit:
-            return self.conversation_history[-limit:]
-        return self.conversation_history
-    
-    def clear_conversation_history(self):
-        """Clear the conversation history."""
-        self.conversation_history = []
-        
-    def get_memory_graph(self) -> Dict[str, Any]:
-        """
-        Get a graph representation of memories for visualization.
-        
-        Returns:
-            Dictionary with nodes and links for visualization
-        """
-        # Simplified implementation for testing purposes
-        nodes = []
-        links = []
-        
-        # Get some memories from the vector store
-        self.vector_store.cursor.execute(
-            "SELECT id, content, metadata FROM memories LIMIT 20"
-        )
-        
-        for i, row in enumerate(self.vector_store.cursor.fetchall()):
-            memory_id, content, metadata_str = row
-            metadata = json.loads(metadata_str)
-            memory_type = metadata.get("type", "default")
-            
-            # Create node
-            node = {
-                "id": memory_id,
-                "label": content[:20] + "..." if len(content) > 20 else content,
-                "type": memory_type,
-                "size": 1.0,
-                "x": (np.random.rand() - 0.5) * 100,
-                "y": (np.random.rand() - 0.5) * 100, 
-                "z": (np.random.rand() - 0.5) * 100
+        try:
+            info = {
+                "base_path": self.base_path,
+                "categories": {},
+                "total_memories": 0,
+                "total_size_bytes": 0
             }
-            nodes.append(node)
             
-            # Create some random links between nodes
-            if i > 0 and np.random.rand() < 0.5:
-                target_idx = np.random.randint(0, i)
-                links.append({
-                    "source": memory_id,
-                    "target": nodes[target_idx]["id"],
-                    "value": np.random.rand()
-                })
+            # Get categories
+            categories = self.list_categories()
+            for category in categories:
+                category_path = self._get_category_path(category)
+                keys = self.list_keys(category)
+                
+                # Calculate size
+                category_size = 0
+                for key in keys:
+                    file_path = self._get_file_path(category, key)
+                    if os.path.exists(file_path):
+                        category_size += os.path.getsize(file_path)
+                
+                info["categories"][category] = {
+                    "memory_count": len(keys),
+                    "size_bytes": category_size
+                }
+                
+                info["total_memories"] += len(keys)
+                info["total_size_bytes"] += category_size
+            
+            return info
         
-        return {
-            "nodes": nodes,
-            "links": links
-        } 
+        except Exception as e:
+            logger.error(f"Error getting memory info: {e}")
+            return {"error": str(e)}

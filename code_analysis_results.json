@@ -1,0 +1,458 @@
+{
+  "summary": {
+    "timestamp": "2025-03-13T16:52:09.117531",
+    "file_count": 132,
+    "directory_count": 83,
+    "total_size": 1800247,
+    "total_size_formatted": "1.72 MB",
+    "average_file_size": 13638.234848484848,
+    "average_file_size_formatted": "13.32 KB"
+  },
+  "largest_files": [
+    {
+      "path": "src/vot1/dashboard/api.py",
+      "size": 66000,
+      "size_formatted": "64.45 KB"
+    },
+    {
+      "path": "src/vot1/github_app_bridge.py",
+      "size": 65834,
+      "size_formatted": "64.29 KB"
+    },
+    {
+      "path": "src/vot1/github_composio_bridge.py",
+      "size": 63905,
+      "size_formatted": "62.41 KB"
+    },
+    {
+      "path": "scripts/github_update_automation.py",
+      "size": 58437,
+      "size_formatted": "57.07 KB"
+    },
+    {
+      "path": "src/vot1/vot_mcp.py",
+      "size": 50891,
+      "size_formatted": "49.70 KB"
+    },
+    {
+      "path": "src/vot1/self_improvement_agent.py",
+      "size": 48527,
+      "size_formatted": "47.39 KB"
+    },
+    {
+      "path": "scripts/github_ecosystem_analyzer.py",
+      "size": 44600,
+      "size_formatted": "43.55 KB"
+    },
+    {
+      "path": "src/vot1/dashboard/hybrid_thinking.py",
+      "size": 42195,
+      "size_formatted": "41.21 KB"
+    },
+    {
+      "path": "src/vot1/self_improvement_workflow.py",
+      "size": 39799,
+      "size_formatted": "38.87 KB"
+    },
+    {
+      "path": "src/vot1/dashboard/dev_assistant.py",
+      "size": 37432,
+      "size_formatted": "36.55 KB"
+    }
+  ],
+  "function_patterns": {
+    "summary": {
+      "total_functions": 232,
+      "total_classes": 26,
+      "avg_functions_per_file": 23.2,
+      "avg_classes_per_file": 2.6,
+      "avg_comment_ratio": 0.06472201697108107,
+      "avg_docstring_ratio": 1.31268068848714,
+      "empty_line_percentage": 16.314972847168345,
+      "avg_args_per_function": 3.3232758620689653,
+      "common_function_prefixes": [
+        {
+          "prefix": "",
+          "count": 91
+        },
+        {
+          "prefix": "get",
+          "count": 22
+        },
+        {
+          "prefix": "create",
+          "count": 13
+        },
+        {
+          "prefix": "post",
+          "count": 10
+        },
+        {
+          "prefix": "run",
+          "count": 9
+        }
+      ]
+    },
+    "file_results": [
+      {
+        "file_path": "src/vot1/dashboard/api.py",
+        "size": 66000,
+        "size_formatted": "64.45 KB",
+        "lines": 1743,
+        "empty_lines": 349,
+        "empty_line_ratio": 0.2002294893861159,
+        "functions": 51,
+        "classes": 17,
+        "comments": 105,
+        "docstrings": 72,
+        "comment_ratio": 0.060240963855421686,
+        "docstring_ratio": 1.0588235294117647,
+        "lines_per_function": 34.1764705882353,
+        "avg_args_per_function": 1.1764705882352942,
+        "function_examples": [
+          "init_api",
+          "_update_system_stats",
+          "get"
+        ],
+        "class_examples": [
+          "MemoryAPI",
+          "VisualizationDataAPI",
+          "StatsAPI"
+        ]
+      },
+      {
+        "file_path": "src/vot1/github_app_bridge.py",
+        "size": 65834,
+        "size_formatted": "64.29 KB",
+        "lines": 1708,
+        "empty_lines": 296,
+        "empty_line_ratio": 0.17330210772833723,
+        "functions": 30,
+        "classes": 1,
+        "comments": 124,
+        "docstrings": 39,
+        "comment_ratio": 0.07259953161592506,
+        "docstring_ratio": 1.2580645161290323,
+        "lines_per_function": 56.93333333333333,
+        "avg_args_per_function": 4.233333333333333,
+        "function_examples": [
+          "__init__",
+          "check_connection",
+          "get_required_parameters"
+        ],
+        "class_examples": [
+          "GitHubAppBridge"
+        ]
+      },
+      {
+        "file_path": "src/vot1/github_composio_bridge.py",
+        "size": 63905,
+        "size_formatted": "62.41 KB",
+        "lines": 1547,
+        "empty_lines": 277,
+        "empty_line_ratio": 0.1790562378797673,
+        "functions": 27,
+        "classes": 1,
+        "comments": 113,
+        "docstrings": 37,
+        "comment_ratio": 0.07304460245636717,
+        "docstring_ratio": 1.3214285714285714,
+        "lines_per_function": 57.2962962962963,
+        "avg_args_per_function": 3.4444444444444446,
+        "function_examples": [
+          "__init__",
+          "check_connection",
+          "_check_mcp_health"
+        ],
+        "class_examples": [
+          "GitHubComposioBridge"
+        ]
+      },
+      {
+        "file_path": "scripts/github_update_automation.py",
+        "size": 58437,
+        "size_formatted": "57.07 KB",
+        "lines": 1468,
+        "empty_lines": 226,
+        "empty_line_ratio": 0.1539509536784741,
+        "functions": 25,
+        "classes": 1,
+        "comments": 79,
+        "docstrings": 36,
+        "comment_ratio": 0.05381471389645776,
+        "docstring_ratio": 1.3846153846153846,
+        "lines_per_function": 58.72,
+        "avg_args_per_function": 5.76,
+        "function_examples": [
+          "__init__",
+          "analyze_and_update",
+          "create_updates"
+        ],
+        "class_examples": [
+          "GitHubUpdateAutomation"
+        ]
+      },
+      {
+        "file_path": "src/vot1/vot_mcp.py",
+        "size": 50891,
+        "size_formatted": "49.70 KB",
+        "lines": 1042,
+        "empty_lines": 87,
+        "empty_line_ratio": 0.08349328214971209,
+        "functions": 15,
+        "classes": 1,
+        "comments": 35,
+        "docstrings": 19,
+        "comment_ratio": 0.03358925143953935,
+        "docstring_ratio": 1.1875,
+        "lines_per_function": 69.46666666666667,
+        "avg_args_per_function": 4.933333333333334,
+        "function_examples": [
+          "__init__",
+          "register_tool",
+          "process_request"
+        ],
+        "class_examples": [
+          "VotModelControlProtocol"
+        ]
+      },
+      {
+        "file_path": "src/vot1/self_improvement_agent.py",
+        "size": 48527,
+        "size_formatted": "47.39 KB",
+        "lines": 1173,
+        "empty_lines": 191,
+        "empty_line_ratio": 0.1628303495311168,
+        "functions": 20,
+        "classes": 1,
+        "comments": 89,
+        "docstrings": 39,
+        "comment_ratio": 0.07587382779198636,
+        "docstring_ratio": 1.8571428571428572,
+        "lines_per_function": 58.65,
+        "avg_args_per_function": 3.3,
+        "function_examples": [
+          "__init__",
+          "_init_safety_verifier",
+          "improve_component"
+        ],
+        "class_examples": [
+          "SelfImprovementAgent"
+        ]
+      },
+      {
+        "file_path": "scripts/github_ecosystem_analyzer.py",
+        "size": 44600,
+        "size_formatted": "43.55 KB",
+        "lines": 1117,
+        "empty_lines": 188,
+        "empty_line_ratio": 0.1683079677708147,
+        "functions": 16,
+        "classes": 1,
+        "comments": 70,
+        "docstrings": 24,
+        "comment_ratio": 0.06266786034019696,
+        "docstring_ratio": 1.411764705882353,
+        "lines_per_function": 69.8125,
+        "avg_args_per_function": 3.9375,
+        "function_examples": [
+          "__init__",
+          "analyze_repository",
+          "_perform_enhanced_analysis"
+        ],
+        "class_examples": [
+          "GitHubEcosystemAnalyzer"
+        ]
+      },
+      {
+        "file_path": "src/vot1/dashboard/hybrid_thinking.py",
+        "size": 42195,
+        "size_formatted": "41.21 KB",
+        "lines": 1089,
+        "empty_lines": 173,
+        "empty_line_ratio": 0.1588613406795225,
+        "functions": 17,
+        "classes": 1,
+        "comments": 69,
+        "docstrings": 19,
+        "comment_ratio": 0.06336088154269973,
+        "docstring_ratio": 1.0555555555555556,
+        "lines_per_function": 64.05882352941177,
+        "avg_args_per_function": 3.1176470588235294,
+        "function_examples": [
+          "__init__",
+          "is_initialized",
+          "get_config"
+        ],
+        "class_examples": [
+          "HybridThinkingSystem"
+        ]
+      },
+      {
+        "file_path": "src/vot1/self_improvement_workflow.py",
+        "size": 39799,
+        "size_formatted": "38.87 KB",
+        "lines": 1024,
+        "empty_lines": 173,
+        "empty_line_ratio": 0.1689453125,
+        "functions": 16,
+        "classes": 1,
+        "comments": 72,
+        "docstrings": 26,
+        "comment_ratio": 0.0703125,
+        "docstring_ratio": 1.5294117647058822,
+        "lines_per_function": 64.0,
+        "avg_args_per_function": 2.625,
+        "function_examples": [
+          "__init__",
+          "_create_tool_definitions",
+          "_register_tool_handlers"
+        ],
+        "class_examples": [
+          "SelfImprovementWorkflow"
+        ]
+      },
+      {
+        "file_path": "src/vot1/dashboard/dev_assistant.py",
+        "size": 37432,
+        "size_formatted": "36.55 KB",
+        "lines": 979,
+        "empty_lines": 143,
+        "empty_line_ratio": 0.14606741573033707,
+        "functions": 15,
+        "classes": 1,
+        "comments": 80,
+        "docstrings": 17,
+        "comment_ratio": 0.08171603677221655,
+        "docstring_ratio": 1.0625,
+        "lines_per_function": 65.26666666666667,
+        "avg_args_per_function": 3.2666666666666666,
+        "function_examples": [
+          "__init__",
+          "is_initialized",
+          "get_config"
+        ],
+        "class_examples": [
+          "DevelopmentAssistant"
+        ]
+      }
+    ]
+  },
+  "import_analysis": {
+    "summary": {
+      "total_imports": 176,
+      "distinct_imports": 49,
+      "standard_library_count": 18,
+      "third_party_count": 21,
+      "project_specific_count": 10
+    },
+    "most_common": [
+      {
+        "name": "os",
+        "count": 10
+      },
+      {
+        "name": "json",
+        "count": 10
+      },
+      {
+        "name": "time",
+        "count": 10
+      },
+      {
+        "name": "logging",
+        "count": 10
+      },
+      {
+        "name": "typing.List",
+        "count": 10
+      },
+      {
+        "name": "typing.Dict",
+        "count": 10
+      },
+      {
+        "name": "typing.Any",
+        "count": 10
+      },
+      {
+        "name": "typing.Optional",
+        "count": 10
+      },
+      {
+        "name": "typing.Union",
+        "count": 10
+      },
+      {
+        "name": "asyncio",
+        "count": 8
+      }
+    ],
+    "standard_library": [
+      {
+        "name": "os",
+        "count": 10
+      },
+      {
+        "name": "json",
+        "count": 10
+      },
+      {
+        "name": "time",
+        "count": 10
+      },
+      {
+        "name": "logging",
+        "count": 10
+      },
+      {
+        "name": "typing.List",
+        "count": 10
+      }
+    ],
+    "third_party": [
+      {
+        "name": "asyncio",
+        "count": 8
+      },
+      {
+        "name": "uuid",
+        "count": 6
+      },
+      {
+        "name": "dotenv.load_dotenv",
+        "count": 3
+      },
+      {
+        "name": "io",
+        "count": 1
+      },
+      {
+        "name": "tempfile",
+        "count": 1
+      }
+    ],
+    "project_specific": [
+      {
+        "name": "src.vot1.github_app_bridge.GitHubAppBridge",
+        "count": 3
+      },
+      {
+        "name": "src.vot1.vot_mcp.VotModelControlProtocol",
+        "count": 2
+      },
+      {
+        "name": "src.vot1.memory.MemoryManager",
+        "count": 2
+      },
+      {
+        "name": "src.vot1.github_composio_bridge.GitHubComposioBridge",
+        "count": 2
+      },
+      {
+        "name": "vot1.vot_mcp.VotModelControlProtocol",
+        "count": 1
+      }
+    ]
+  }
+}
