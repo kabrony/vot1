@@ -1,0 +1,62 @@
+{
+  "frameworks": {
+    "React": [],
+    "Vue.js": [],
+    "Angular": [],
+    "Svelte": [],
+    "Three.js": [],
+    "D3.js": [],
+    "Plotly": [],
+    "Bokeh": [],
+    "Dash": [],
+    "Streamlit": [],
+    "Flask": [],
+    "Django": [],
+    "Bootstrap": [],
+    "TailwindCSS": [],
+    "Material UI": [],
+    "Chakra UI": [],
+    "Blueprint": [],
+    "Ant Design": []
+  },
+  "components": {
+    "Dashboard": [],
+    "UI Module": [],
+    "View": [],
+    "Template": [],
+    "Component": [],
+    "Widget": [],
+    "Page": [],
+    "Screen": [],
+    "Layout": [],
+    "Form": []
+  },
+  "modules": {
+    "UI Module": []
+  },
+  "patterns": {
+    "Dashboard": [],
+    "View": [],
+    "Template": [],
+    "Component": [],
+    "Widget": [],
+    "Page": [],
+    "Screen": [],
+    "Layout": [],
+    "Form": [],
+    "Button": [],
+    "Input": [],
+    "Dropdown": [],
+    "Menu": [],
+    "Modal": [],
+    "Dialog": [],
+    "Tooltip": [],
+    "Card": [],
+    "Panel": [],
+    "Tab": [],
+    "Navbar": [],
+    "Sidebar": [],
+    "Footer": [],
+    "Header": []
+  }
+}

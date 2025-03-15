@@ -1,0 +1,21 @@
+{
+      "nodes": [,
+        {
+          "id": "concept1",
+          "label": "Concept 1",
+          "type": "primary"
+        },
+        {
+          "id": "concept2",
+          "label": "Concept 2"
+          "type": "secondary"
+        }
+      ],
+      "edges": [
+        {
+          "source": "concept1",
+          "target": "concept2",
+          "label": "relates to"
+        },
+      ]
+    }

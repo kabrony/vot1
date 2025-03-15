@@ -1,53 +1,169 @@
+# TRILOGY BRAIN System Requirements
+# Core dependencies
+aiohttp==3.9.1
+anthropic==0.9.0
+async-timeout==4.0.3
+composio>=1.0.0
+fastapi==0.104.1
+numpy==1.26.2
+pandas==2.1.3
+pydantic==2.5.2
+python-dotenv==1.0.0
+requests==2.31.0
+uvicorn==0.24.0
+
+# Memory and database
+faiss-cpu==1.7.4
+pymongo==4.6.0
+redis==5.0.1
+sqlalchemy==2.0.23
+
+# Visualization
+matplotlib==3.8.2
+seaborn==0.13.0
+plotly==5.18.0
+
+# Text processing
+nltk==3.8.1
+spacy==3.7.2
+transformers==4.35.2
+sentence-transformers==2.2.2
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Utilities
+tqdm==4.66.1
+loguru==0.7.2
+networkx==3.2.1
+rich==13.7.0
+
+# Web UI
+aiofiles==23.2.1
+jinja2==3.1.2
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==1.3.0
+
 # VOT1 Dependencies
 
 # Core
-numpy>=1.20.0
-sentence-transformers>=2.2.2
-scikit-learn>=1.0.2
-sqlite3-api>=0.1.0
-requests>=2.28.0
-python-dotenv>=0.20.0
-aiohttp>=3.8.3
-asyncio>=3.4.3
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+matplotlib>=3.4.0
+tqdm>=4.62.0
+python-dotenv>=0.19.0
+pydantic>=1.9.0
 
-# For OWL reasoning
-owlready2>=0.36
-rdflib>=6.2.0
+# API and networking
+requests>=2.27.0
+aiohttp>=3.8.0
+aiohttp-cors>=0.7.0
+websockets>=10.1
+fastapi>=0.75.0
+uvicorn>=0.17.0
 
-# For web server and API
-flask>=2.2.0
-flask-cors>=3.0.10
+# Vector storage
+faiss-cpu>=1.7.0  # Use faiss-gpu for GPU support
+annoy>=1.17.0
+sentence-transformers>=2.2.0
+transformers>=4.18.0
+
+# Blockchain integration
+solana>=0.25.0
+py-solana-api>=0.0.3
+jsonschema>=4.4.0
+base58>=2.1.0
+cryptography>=37.0.0
+
+# Memory and data management
+sqlalchemy>=1.4.0
+alembic>=1.7.0
+pymongo>=4.0.0
+redis>=4.2.0
+lmdb>=1.3.0
+
+# Web UI
+jinja2>=3.0.0
+pillow>=9.1.0
+
+# Utilities
+joblib>=1.1.0
+loguru>=0.6.0
+click>=8.0.0
+typer>=0.4.0
+rich>=12.0.0
+pyyaml>=6.0
+ujson>=5.1.0
+
+# Testing
+pytest>=7.0.0
+pytest-asyncio>=0.18.0
+pytest-cov>=3.0.0
+
+# Documentation
+sphinx>=4.5.0
+sphinx-rtd-theme>=1.0.0
+nbsphinx>=0.8.8
+
+# Claude integration
+anthropic>=0.2.7
 
 # For CLI tools
 click>=8.1.3
-tqdm>=4.64.0
 
 # For async processing
 aiofiles>=22.1.0
 aiomultiprocess>=0.9.0
-
-# For testing
-pytest>=7.2.0
-pytest-asyncio>=0.20.3
-pytest-cov>=4.0.0
-
-# For documentation
-sphinx>=5.3.0
-sphinx-rtd-theme>=1.1.1
-
-# Memory Management
-faiss-cpu>=1.7.4
-pymilvus>=2.3.0
-langchain>=0.0.312
 
 # Web Server & Dashboard
 flask-socketio>=5.3.4
 pyyaml>=6.0.1
 tenacity>=8.2.3
 uuid>=1.30
-rich>=13.4.2
-sqlitedict>=2.1.0
+
+# Memory Management
+faiss-cpu>=1.7.4
+pymilvus>=2.3.0
+langchain>=0.0.312
 
 # Storage & Database
 sqlalchemy>=2.0.20
-alembic>=1.12.0 
+alembic>=1.12.0
+
+# Enhanced Research Agent Requirements
+# Core dependencies
+anthropic>=0.49.0
+perplexipy>=1.2.0
+python-dotenv>=1.0.0
+requests>=2.32.0
+composio>=1.0.0
+
+# Optional dependencies
+openai>=1.66.0  # Used by perplexipy
+pyyaml>=6.0.0   # For configuration files
+prompt-toolkit>=3.0.0  # For interactive CLI
+appdirs>=1.4.4  # For managing application directories
+
+Flask==2.3.3
+Flask-SocketIO==5.3.6
+python-socketio==5.10.0
+python-engineio==4.8.0
+Werkzeug==2.3.7
+Jinja2==3.1.3
+MarkupSafe==2.1.3
+itsdangerous==2.1.2
+urllib3==2.0.7
+idna==3.4
+certifi==2023.7.22
+charset-normalizer==3.2.0
+eventlet==0.33.3
+dnspython==2.4.2
+gevent==23.9.1
+gevent-websocket==0.10.1
+greenlet==2.0.2
+zope.event==5.0
+zope.interface==6.0 

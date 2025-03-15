@@ -1,0 +1,97 @@
+{
+    "health_monitor": {
+        "enabled": true,
+        "script": "system_health_monitor.py",
+        "args": ["start", "--interval", "60"],
+        "priority": 1,
+        "auto_restart": true,
+        "max_restarts": 10
+    },
+    "memory_system": {
+        "enabled": true,
+        "init_script": "memory_init.py",
+        "args": [],
+        "priority": 2,
+        "auto_restart": false
+    },
+    "agents": [
+        {
+            "name": "Research Agent",
+            "script": "enhanced_research_agent.py",
+            "args": ["--self-analyze"],
+            "enabled": true,
+            "auto_restart": true,
+            "priority": 3,
+            "max_restarts": 5,
+            "restart_delay": 10,
+            "health_check": {
+                "endpoint": "/api/agent/status",
+                "interval": 60
+            }
+        },
+        {
+            "name": "Hybrid Thinking Tester",
+            "script": "test_claude_hybrid.py",
+            "args": [],
+            "enabled": true,
+            "auto_restart": true,
+            "priority": 4,
+            "max_restarts": 3,
+            "restart_delay": 5
+        }
+    ],
+    "directory_structure": [
+        "logs",
+        "memory",
+        "memory/health",
+        "memory/agent",
+        "output",
+        "config",
+        "backups",
+        "backups/memory"
+    ],
+    "feedback_loop": {
+        "enabled": true,
+        "interval": 3600,
+        "script": "enhanced_research_agent.py",
+        "args": ["--consolidate"]
+    },
+    "system_reflection": {
+        "enabled": true,
+        "interval": 86400,
+        "script": "enhanced_research_agent.py",
+        "args": ["--self-analyze"]
+    },
+    "data_streams": [
+        {
+            "name": "system_metrics",
+            "enabled": true,
+            "interval": 60,
+            "script": "system_health_monitor.py",
+            "args": ["status"],
+            "output_file": "logs/system_metrics.json"
+        },
+        {
+            "name": "memory_metrics",
+            "enabled": true,
+            "interval": 300,
+            "endpoint": "/api/memory/metrics",
+            "output_file": "logs/memory_metrics.json"
+        }
+    ],
+    "integration": {
+        "composio_mcp": {
+            "enabled": true,
+            "url": "https://mcp.composio.dev/composio/plump-colossal-account-RTix4q",
+            "api_key_env": "COMPOSIO_API_KEY"
+        },
+        "perplexity": {
+            "enabled": true,
+            "api_key_env": "PERPLEXITY_API_KEY"
+        },
+        "anthropic": {
+            "enabled": true,
+            "api_key_env": "ANTHROPIC_API_KEY"
+        }
+    }
+} 

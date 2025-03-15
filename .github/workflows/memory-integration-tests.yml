@@ -1,0 +1,84 @@
+name: Memory Integration Tests
+
+on:
+  push:
+    branches: [ main, feature/*, release/* ]
+    paths:
+      - 'src/vot1/composio/**'
+      - 'src/vot1/memory/**'
+      - 'tests/memory/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/vot1/composio/**'
+      - 'src/vot1/memory/**'
+      - 'tests/memory/**'
+  workflow_dispatch:
+    inputs:
+      memory_test_depth:
+        description: 'Memory test depth (basic, comprehensive, stress)'
+        required: true
+        default: 'comprehensive'
+        type: choice
+        options:
+          - basic
+          - comprehensive
+          - stress
+
+jobs:
+  memory-integration-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-asyncio pytest-cov
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Create test environment
+      run: |
+        mkdir -p memory/test
+        echo "COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY }}" >> .env
+        echo "COMPOSIO_MCP_URL=${{ secrets.COMPOSIO_MCP_URL }}" >> .env
+    
+    - name: Run memory unit tests
+      run: |
+        pytest tests/memory/test_memory_manager.py -v
+    
+    - name: Run ComposioMemoryBridge tests
+      run: |
+        pytest tests/memory/test_memory_bridge.py -v
+    
+    - name: Run integration tests
+      if: ${{ github.event.inputs.memory_test_depth != 'basic' }}
+      run: |
+        pytest tests/integration/test_memory_integration.py -v
+    
+    - name: Run memory stress tests
+      if: ${{ github.event.inputs.memory_test_depth == 'stress' }}
+      run: |
+        pytest tests/stress/test_memory_performance.py -v
+    
+    - name: Generate coverage report
+      run: |
+        pytest --cov=src/vot1/composio --cov=src/vot1/memory --cov-report=xml tests/
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: memory-tests
+        name: codecov-memory
+        fail_ci_if_error: false 

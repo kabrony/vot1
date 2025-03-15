@@ -1,16 +1,8 @@
 """
-VOT1 - Memory Management System with OWL Reasoning and Self-Improvement
+TRILOGY BRAIN - Advanced Language Model Cognitive Architecture
 
-This package provides a sophisticated memory management system with OWL reasoning
-capabilities and self-improvement workflows for autonomous code enhancement.
-
-Key modules:
-- memory: Vector-based memory storage and retrieval
-- owl_reasoning: Semantic reasoning using OWL ontologies
-- vot_mcp: Model Control Protocol for AI model interaction
-- self_improvement_workflow: Framework for autonomous system improvement
-- self_improvement_agent: Agent for autonomous code enhancement
-- dashboard: THREE.js visualization with cyberpunk aesthetic
+A cognitive architecture for large language models, implementing advanced memory
+systems, reasoning frameworks, and enhanced interaction capabilities.
 """
 
 __version__ = "0.1.0"

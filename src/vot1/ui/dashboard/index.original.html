@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOTai TRILOGY BRAIN - Cyberpunk Dashboard</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/cyberpunk.css">
+    <link rel="stylesheet" href="css/terminal.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="dashboard-header">
+        <div class="logo-container">
+            <h1 class="glitch" data-text="VOTai TRILOGY BRAIN">VOTai TRILOGY BRAIN</h1>
+            <div class="sub-title">Powered by <span class="highlight">VillageOfThousands.io</span></div>
+        </div>
+        <div class="system-status">
+            <div class="status-item">
+                <span class="label">System Status:</span>
+                <span class="value online">ONLINE</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Connected Agents:</span>
+                <span class="value">12</span>
+            </div>
+            <div class="status-item">
+                <span class="label">VOTai Tokens:</span>
+                <span class="value">8,427</span>
+            </div>
+        </div>
+        <div class="action-menu">
+            <button class="cyber-button" id="connect-wallet">
+                <span class="cyber-button__glitch"></span>
+                <span class="cyber-button__text">CONNECT WALLET</span>
+            </button>
+            <button class="cyber-button secondary" id="toggle-view">
+                <span class="cyber-button__glitch"></span>
+                <span class="cyber-button__text">SWITCH VIEW</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+        <section class="sidebar left-panel">
+            <div class="panel-header">Performance Metrics</div>
+            <div class="panel-content">
+                <div class="metric-card">
+                    <div class="metric-title">Memory Usage</div>
+                    <div class="metric-value">67<span class="unit">%</span></div>
+                    <canvas id="memoryUsageChart" class="metric-chart"></canvas>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Token Processing</div>
+                    <div class="metric-value">1.2<span class="unit">K/s</span></div>
+                    <canvas id="tokenProcessingChart" class="metric-chart"></canvas>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Cache Hit Rate</div>
+                    <div class="metric-value">89<span class="unit">%</span></div>
+                    <canvas id="cacheHitChart" class="metric-chart"></canvas>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">ZK Verifications</div>
+                    <div class="metric-value">42<span class="unit">/min</span></div>
+                    <canvas id="zkVerificationChart" class="metric-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="main-panel">
+            <div class="panel-header">Memory Network Visualization</div>
+            <div class="visualization-container">
+                <div id="three-container"></div>
+                <div class="overlay-controls">
+                    <div class="control-group">
+                        <label>Visualization Mode</label>
+                        <div class="cyber-select">
+                            <select id="vis-mode">
+                                <option value="network">Network</option>
+                                <option value="clusters">Memory Clusters</option>
+                                <option value="importance">Importance Heatmap</option>
+                                <option value="temporal">Temporal Flow</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Detail Level</label>
+                        <div class="slider-container">
+                            <input type="range" min="1" max="5" value="3" id="detail-level">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="terminal-container">
+                <div class="terminal-header">
+                    <div class="terminal-title">SYSTEM CONSOLE</div>
+                    <div class="terminal-controls">
+                        <button class="terminal-button" id="clear-console">CLEAR</button>
+                        <button class="terminal-button" id="toggle-console">HIDE</button>
+                    </div>
+                </div>
+                <div class="terminal-content" id="system-console">
+                    <div class="terminal-line"><span class="terminal-time">[10:42:15]</span> <span class="terminal-info">System initialized</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:42:18]</span> <span class="terminal-success">Connected to IPFS network</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:42:20]</span> <span class="terminal-info">Loading CascadingMemoryCache...</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:42:23]</span> <span class="terminal-success">CascadingMemoryCache initialized with 3 levels</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:42:25]</span> <span class="terminal-warning">ZK verification service starting...</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:42:30]</span> <span class="terminal-success">ZK verification service online</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:42:35]</span> <span class="terminal-info">Connecting to Claude 3.7 API...</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:42:40]</span> <span class="terminal-success">Claude 3.7 integration active</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:43:15]</span> <span class="terminal-warning">Memory cascade operation triggered</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:43:18]</span> <span class="terminal-info">Processing 24 memories for cascade</span></div>
+                    <div class="terminal-line"><span class="terminal-time">[10:43:20]</span> <span class="terminal-success">Cascade complete: 18 memories moved to L2, 6 to L3</span></div>
+                </div>
+                <div class="terminal-input-container">
+                    <span class="terminal-prompt">VOTai@TRILOGY:~$</span>
+                    <input type="text" class="terminal-input" id="terminal-command" placeholder="Enter command...">
+                </div>
+            </div>
+        </section>
+
+        <section class="sidebar right-panel">
+            <div class="panel-header">System Status</div>
+            <div class="panel-content">
+                <div class="status-section">
+                    <div class="section-title">Connected AI Models</div>
+                    <ul class="status-list">
+                        <li class="status-item active">
+                            <div class="status-icon claude"></div>
+                            <div class="status-details">
+                                <div class="status-name">Claude 3.7</div>
+                                <div class="status-stats">200K context | Active</div>
+                            </div>
+                        </li>
+                        <li class="status-item active">
+                            <div class="status-icon perplexity"></div>
+                            <div class="status-details">
+                                <div class="status-name">Perplexity Pro</div>
+                                <div class="status-stats">Search enabled | Active</div>
+                            </div>
+                        </li>
+                        <li class="status-item inactive">
+                            <div class="status-icon custom"></div>
+                            <div class="status-details">
+                                <div class="status-name">Custom Model</div>
+                                <div class="status-stats">Offline | Configure</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="status-section">
+                    <div class="section-title">Token Economy</div>
+                    <canvas id="tokenEconomyChart" class="token-chart"></canvas>
+                    <div class="token-stats">
+                        <div class="token-stat">
+                            <div class="token-stat-label">24h Volume</div>
+                            <div class="token-stat-value">14.8K VOT</div>
+                        </div>
+                        <div class="token-stat">
+                            <div class="token-stat-label">Memory Providers</div>
+                            <div class="token-stat-value">48</div>
+                        </div>
+                        <div class="token-stat">
+                            <div class="token-stat-label">Service Consumers</div>
+                            <div class="token-stat-value">127</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="status-section">
+                    <div class="section-title">IPFS Status</div>
+                    <div class="ipfs-stats">
+                        <div class="ipfs-stat">
+                            <div class="ipfs-stat-label">Connected Peers</div>
+                            <div class="ipfs-stat-value">32</div>
+                        </div>
+                        <div class="ipfs-stat">
+                            <div class="ipfs-stat-label">Stored Memories</div>
+                            <div class="ipfs-stat-value">2.4K</div>
+                        </div>
+                        <div class="ipfs-stat">
+                            <div class="ipfs-stat-label">Total Storage</div>
+                            <div class="ipfs-stat-value">128 MB</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="dashboard-footer">
+        <div class="footer-stats">
+            <div class="footer-stat">
+                <span class="label">Uptime:</span>
+                <span class="value">3d 12h 47m</span>
+            </div>
+            <div class="footer-stat">
+                <span class="label">Memory Operations:</span>
+                <span class="value">87.5K</span>
+            </div>
+            <div class="footer-stat">
+                <span class="label">Active Nodes:</span>
+                <span class="value">18/24</span>
+            </div>
+        </div>
+        <div class="footer-brand">
+            <span class="copyright">© 2025 VillageOfThousands.io</span>
+            <span class="developed-by">Architected by ORGANIX</span>
+        </div>
+    </footer>
+
+    <!-- Custom Scripts -->
+    <script src="js/three-visualization.js"></script>
+    <script src="js/terminal.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html> 

@@ -1,0 +1,35 @@
+{
+  "basic_test": {
+    "storage": {
+      "memory_id": "a21ed461-dc05-41a2-94bf-404c5c157421",
+      "success": true
+    },
+    "retrieval": {
+      "success": true,
+      "content_match": true
+    },
+    "start_time": 1742015993.9948611,
+    "success": false,
+    "error": "'MemoryManager' object has no attribute 'search_memories'",
+    "end_time": 1742015993.9980412,
+    "duration": 0.0031800270080566406
+  },
+  "cascading_cache": {
+    "cache_metrics": {},
+    "start_time": 1742015993.9982495,
+    "success": false,
+    "error": "CascadingMemoryCache not found in memory manager"
+  },
+  "episodic_memory": {
+    "episodic_metrics": {},
+    "start_time": 1742015993.9984424,
+    "success": false,
+    "error": "EpisodicMemoryManager not found in memory manager"
+  },
+  "benchmark": {
+    "error": "'ComposioMemoryBridge' object has no attribute 'enhanced_memory'",
+    "success": false
+  },
+  "timestamp": "2025-03-15T00:19:54.002414",
+  "overall_success": false
+}

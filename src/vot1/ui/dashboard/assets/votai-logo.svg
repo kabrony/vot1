@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff2a6d" />
+      <stop offset="50%" stop-color="#3a1078" />
+      <stop offset="100%" stop-color="#00ccff" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <circle cx="100" cy="100" r="80" fill="none" stroke="url(#gradient)" stroke-width="5" filter="url(#glow)" />
+  <circle cx="100" cy="100" r="60" fill="none" stroke="url(#gradient)" stroke-width="3" filter="url(#glow)" />
+  <text x="100" y="115" font-family="'Orbitron', sans-serif" font-size="42" fill="#e0e0ff" text-anchor="middle" filter="url(#glow)">VOTai</text>
+</svg> 
