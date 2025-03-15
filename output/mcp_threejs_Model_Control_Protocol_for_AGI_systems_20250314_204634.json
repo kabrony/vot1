@@ -1,0 +1,12 @@
+{
+  "topic": "Model Control Protocol for AGI systems",
+  "visualization_focus": "dashboard",
+  "timestamp": "2025-03-14T20:46:34.651234",
+  "session_id": "session_20250314204634_639f0f86",
+  "mcp_research": {
+    "error": "Perplexity client not initialized"
+  },
+  "threejs_research": {
+    "error": "Perplexity client not initialized"
+  }
+}

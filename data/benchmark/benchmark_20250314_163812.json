@@ -1,0 +1,403 @@
+{
+  "storage": {
+    "single_operation": {
+      "min": 5.4836273193359375e-06,
+      "max": 1.430511474609375e-05,
+      "mean": 7.200241088867187e-06,
+      "median": 6.198883056640625e-06
+    },
+    "batch_operations": {
+      "1": {
+        "total_time": 1.3510386149088541e-05,
+        "per_memory": 1.3510386149088541e-05
+      },
+      "10": {
+        "total_time": 6.024042765299479e-05,
+        "per_memory": 6.024042765299479e-06
+      },
+      "50": {
+        "total_time": 0.0007855892181396484,
+        "per_memory": 1.571178436279297e-05
+      },
+      "100": {
+        "total_time": 0.0006303787231445312,
+        "per_memory": 6.303787231445313e-06
+      }
+    },
+    "concurrent_operations": {
+      "10": {
+        "total_time": 0.00028586387634277344,
+        "per_memory": 2.8586387634277345e-05
+      },
+      "50": {
+        "total_time": 0.0006802082061767578,
+        "per_memory": 1.3604164123535157e-05
+      },
+      "100": {
+        "total_time": 0.0022559165954589844,
+        "per_memory": 2.2559165954589845e-05
+      }
+    }
+  },
+  "retrieval": {
+    "direct_retrieval": {
+      "min": 4.76837158203125e-07,
+      "max": 6.198883056640625e-06,
+      "mean": 1.4543533325195312e-06,
+      "median": 8.344650268554688e-07
+    },
+    "search_operations": {
+      "queries": [
+        {
+          "query": "TRILOGY BRAIN architecture",
+          "time": 0.0004010200500488281,
+          "result_count": 0
+        },
+        {
+          "query": "memory consolidation",
+          "time": 0.00022268295288085938,
+          "result_count": 0
+        },
+        {
+          "query": "neural network",
+          "time": 0.00020432472229003906,
+          "result_count": 0
+        },
+        {
+          "query": "blockchain technology",
+          "time": 0.00020313262939453125,
+          "result_count": 0
+        },
+        {
+          "query": "security protocol",
+          "time": 0.00022101402282714844,
+          "result_count": 0
+        }
+      ],
+      "mean_time": 0.00025043487548828127
+    },
+    "strategy_comparison": {
+      "semantic": {
+        "time": 1.4066696166992188e-05,
+        "memory_count": 10
+      },
+      "temporal": {
+        "time": 9.942054748535156e-05,
+        "memory_count": 10
+      },
+      "hybrid": {
+        "time": 0.0568544864654541,
+        "memory_count": "N/A"
+      }
+    }
+  },
+  "relationships": {
+    "create_relationship": {
+      "min": 5.0067901611328125e-06,
+      "max": 3.743171691894531e-05,
+      "mean": 7.450580596923828e-06,
+      "median": 5.4836273193359375e-06
+    },
+    "get_relationships": {
+      "times": [
+        {
+          "time": 1.1444091796875e-05,
+          "relationship_count": 7
+        },
+        {
+          "time": 4.5299530029296875e-06,
+          "relationship_count": 5
+        },
+        {
+          "time": 3.814697265625e-06,
+          "relationship_count": 1
+        },
+        {
+          "time": 3.337860107421875e-06,
+          "relationship_count": 7
+        },
+        {
+          "time": 3.5762786865234375e-06,
+          "relationship_count": 7
+        },
+        {
+          "time": 3.337860107421875e-06,
+          "relationship_count": 8
+        },
+        {
+          "time": 3.0994415283203125e-06,
+          "relationship_count": 1
+        },
+        {
+          "time": 3.337860107421875e-06,
+          "relationship_count": 7
+        },
+        {
+          "time": 3.0994415283203125e-06,
+          "relationship_count": 3
+        },
+        {
+          "time": 3.5762786865234375e-06,
+          "relationship_count": 5
+        }
+      ],
+      "mean_time": 4.315376281738282e-06
+    },
+    "traverse_graph": {
+      "times": [
+        {
+          "depth": 1,
+          "time": 8.344650268554688e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 4.5299530029296875e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 2.6226043701171875e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 1,
+          "time": 2.384185791015625e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 2.1457672119140625e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 1.6689300537109375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 1,
+          "time": 1.9073486328125e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 1.9073486328125e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 1.6689300537109375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 1,
+          "time": 1.430511474609375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 1.430511474609375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 1.9073486328125e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 1,
+          "time": 1.6689300537109375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 1.6689300537109375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 1.6689300537109375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        }
+      ],
+      "mean_time": 2.463658650716146e-06
+    }
+  },
+  "reflection": {
+    "reflection_depth": {
+      "brief": {
+        "time": 4.50342059135437,
+        "success": true,
+        "memory_count": 10
+      },
+      "standard": {
+        "time": 4.531087636947632,
+        "success": true,
+        "memory_count": 10
+      },
+      "deep": {
+        "time": 4.504430055618286,
+        "success": true,
+        "memory_count": 10
+      }
+    },
+    "memory_count_impact": {
+      "5": {
+        "time": 4.549519062042236,
+        "per_memory": 0.9099038124084473
+      },
+      "10": {
+        "time": 4.504251956939697,
+        "per_memory": 0.4504251956939697
+      }
+    }
+  },
+  "hybrid_processing": {
+    "memory_limit_impact": {
+      "5": {
+        "total_time": 8.54237174987793,
+        "memory_count": 5,
+        "retrieval_time": 8.542360544204712,
+        "processing_time": 9.0,
+        "overhead": -8.999988794326782
+      },
+      "10": {
+        "total_time": 9.011100053787231,
+        "memory_count": 5,
+        "retrieval_time": 9.011088132858276,
+        "processing_time": 9.0,
+        "overhead": -8.999988079071045
+      },
+      "20": {
+        "total_time": 9.05455732345581,
+        "memory_count": 5,
+        "retrieval_time": 9.054548740386963,
+        "processing_time": 9.0,
+        "overhead": -8.999991416931152
+      }
+    },
+    "retrieval_strategy_comparison": {
+      "semantic": {
+        "total_time": 9.03645634651184,
+        "memory_count": 5,
+        "retrieval_time": 9.036442995071411,
+        "processing_time": 9.0
+      },
+      "temporal": {
+        "total_time": 8.530709981918335,
+        "memory_count": 5,
+        "retrieval_time": 8.530698299407959,
+        "processing_time": 9.0
+      },
+      "hybrid": {
+        "total_time": 9.0293288230896,
+        "memory_count": 5,
+        "retrieval_time": 9.029319524765015,
+        "processing_time": 9.0
+      }
+    }
+  },
+  "hybrid_thinking": {
+    "thinking_token_limits": {
+      "2000": {
+        "total_time": 0.3369297981262207,
+        "thinking_tokens": 698,
+        "output_tokens": 174,
+        "tokens_per_second": 2588.076224927221
+      },
+      "5000": {
+        "total_time": 0.48105382919311523,
+        "thinking_tokens": 698,
+        "output_tokens": 174,
+        "tokens_per_second": 1812.6869532722137
+      },
+      "10000": {
+        "total_time": 0.7213008403778076,
+        "thinking_tokens": 698,
+        "output_tokens": 174,
+        "tokens_per_second": 1208.9269153537352
+      },
+      "15000": {
+        "total_time": 0.9617140293121338,
+        "thinking_tokens": 698,
+        "output_tokens": 174,
+        "tokens_per_second": 906.7144425705199
+      }
+    },
+    "complexity_levels": {
+      "low": {
+        "total_time": 0.25281643867492676,
+        "thinking_tokens": 678,
+        "output_tokens": 174,
+        "thinking_time": 0.168,
+        "generation_time": 0.084,
+        "tokens_per_second": 3370.034023363124
+      },
+      "medium": {
+        "total_time": 0.4149448871612549,
+        "thinking_tokens": 685,
+        "output_tokens": 174,
+        "thinking_time": 0.276,
+        "generation_time": 0.138,
+        "tokens_per_second": 2070.1544387656895
+      },
+      "high": {
+        "total_time": 1.1115145683288574,
+        "thinking_tokens": 713,
+        "output_tokens": 174,
+        "thinking_time": 0.716,
+        "generation_time": 0.358,
+        "tokens_per_second": 798.010233310382
+      }
+    },
+    "thinking_performance": {
+      "direct_integration": {
+        "total_time": 4.507833242416382,
+        "thinking_tokens": 864,
+        "output_tokens": 174
+      },
+      "iterative_integration": {
+        "total_time": 3.397089958190918,
+        "thinking_tokens": 1740,
+        "output_tokens": 348
+      }
+    }
+  },
+  "memory_count": 10,
+  "total_time": 88.05532193183899,
+  "timestamp": 1741988292.27242,
+  "model_version": "claude-3-7-sonnet",
+  "agent_info": {
+    "id": "8e3dca70-e7ba-46ca-a21f-c1ac99511bd1",
+    "type": "performance_agent",
+    "name": "BenchmarkMaster",
+    "description": "Specialized in performance measurement and optimization",
+    "version": "1.0",
+    "status": "active",
+    "health": 1.0,
+    "uptime": 88.05584383010864,
+    "performance": {
+      "operations_count": 7,
+      "successful_operations": 7,
+      "failed_operations": 0,
+      "total_operation_time": 88.05516028404236,
+      "avg_operation_time": 12.57930861200605
+    }
+  }
+}

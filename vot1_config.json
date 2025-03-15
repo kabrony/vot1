@@ -1,0 +1,139 @@
+{
+    "version": "1.2.0",
+    "environment": "development",
+    "system": {
+        "logging": {
+            "level": "INFO",
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            "file": "logs/vot1.log",
+            "max_size": 10485760,
+            "backup_count": 5,
+            "console_output": true
+        },
+        "performance": {
+            "enable_metrics": true,
+            "metrics_interval": 300,
+            "auto_optimize": true
+        },
+        "security": {
+            "enable_zk_proofs": true,
+            "protected_paths": [".env", "memory/", "vot1_config.json"],
+            "encryption": {
+                "enabled": true,
+                "algorithm": "AES-256-GCM"
+            }
+        }
+    },
+    "memory": {
+        "enabled": true,
+        "path": "memory",
+        "vector_store": {
+            "type": "faiss",
+            "dimension": 1536,
+            "hnsw_config": {
+                "M": 64,
+                "ef_construction": 128,
+                "ef_search": 64
+            }
+        },
+        "structured_storage": {
+            "type": "sqlite",
+            "path": "memory/structured.db"
+        },
+        "graph_storage": {
+            "enabled": true,
+            "type": "networkx",
+            "path": "memory/graph"
+        },
+        "embedding": {
+            "model": "text-embedding-3-large",
+            "dimension": 1536,
+            "batch_size": 32
+        },
+        "retrieval": {
+            "default_limit": 10,
+            "hybrid_search": true,
+            "reranking": true,
+            "temporal_decay": 0.98,
+            "importance_weight": true
+        },
+        "consolidation": {
+            "enabled": true,
+            "interval": 86400,
+            "threshold": 50
+        }
+    },
+    "models": {
+        "primary": {
+            "model": "claude-3.7-sonnet-20240620",
+            "provider": "anthropic",
+            "max_thinking_tokens": 120000,
+            "max_output_tokens": 40000,
+            "default_temperature": 0.7,
+            "timeout": 600
+        },
+        "secondary": {
+            "model": "perplexity-online-70b",
+            "provider": "perplexity",
+            "max_tokens": 16384,
+            "default_temperature": 0.7,
+            "timeout": 120
+        },
+        "embedding": {
+            "model": "text-embedding-3-large",
+            "provider": "openai",
+            "dimension": 1536,
+            "timeout": 60
+        }
+    },
+    "composio": {
+        "enabled": true,
+        "api_key": "${COMPOSIO_API_KEY}",
+        "mcp_url": "${COMPOSIO_MCP_URL}",
+        "default_model": "claude-3.7-sonnet-20240620",
+        "enable_hybrid_mode": true,
+        "connection_timeout": 30,
+        "max_retries": 3
+    },
+    "principles": {
+        "enabled": true,
+        "enforce_principles": true,
+        "verification_level": "strict",
+        "path": "memory/principles",
+        "log_violations": true
+    },
+    "blockchain": {
+        "enabled": false,
+        "network": "devnet",
+        "helius_api_key": "${HELIUS_API_KEY}",
+        "phantom_enabled": false,
+        "token_symbol": "VOT",
+        "memory_storage": {
+            "enabled": false,
+            "critical_only": true
+        }
+    },
+    "feedback_loop": {
+        "enabled": true,
+        "evaluation_interval": 300,
+        "auto_implementation": false,
+        "max_daily_improvements": 5,
+        "path": "memory/feedback"
+    },
+    "tools": {
+        "web_search": {
+            "enabled": true,
+            "provider": "tavily",
+            "max_results": 5
+        },
+        "code_execution": {
+            "enabled": false,
+            "sandbox": true,
+            "allowed_imports": ["os", "sys", "json", "requests", "numpy", "pandas", "matplotlib"]
+        },
+        "file_operations": {
+            "enabled": true,
+            "restricted_paths": [".env", ".git", "venv", "node_modules"]
+        }
+    }
+} 

@@ -1,0 +1,189 @@
+{
+  "nodes": [
+    {
+      "id": "threejs",
+      "label": "THREE.js",
+      "type": "technology",
+      "properties": {
+        "version": "current",
+        "context": "3D visualization library"
+      },
+      "group": "core_technology",
+      "description": "Core 3D JavaScript library for web graphics",
+      "size": 10,
+      "source": "primary_research",
+      "visualProperties": {
+        "color": "#2194CE",
+        "shape": "sphere",
+        "initialPosition": [
+          0,
+          0,
+          0
+        ],
+        "highlightColor": "#30B5EF",
+        "labelVisibility": "always"
+      }
+    },
+    {
+      "id": "force_directed",
+      "label": "Force-Directed Layout",
+      "type": "concept",
+      "properties": {
+        "algorithm": "physics-based",
+        "purpose": "automatic graph layout"
+      },
+      "group": "algorithms",
+      "description": "Physics-based algorithm for graph layout",
+      "size": 8,
+      "source": "primary_research",
+      "visualProperties": {
+        "color": "#E91E63",
+        "shape": "sphere",
+        "initialPosition": [
+          10,
+          0,
+          0
+        ],
+        "highlightColor": "#FF4081",
+        "labelVisibility": "always"
+      }
+    },
+    {
+      "id": "force_graph",
+      "label": "Force-Graph Library",
+      "type": "technology",
+      "properties": {
+        "type": "library",
+        "usage": "high-level abstraction"
+      },
+      "group": "libraries",
+      "description": "Popular library for force-directed graphs",
+      "size": 7,
+      "source": "followup",
+      "visualProperties": {
+        "color": "#4CAF50",
+        "shape": "cube",
+        "initialPosition": [
+          -10,
+          5,
+          0
+        ],
+        "highlightColor": "#69F0AE",
+        "labelVisibility": "onHover"
+      }
+    },
+    {
+      "id": "webgl",
+      "label": "WebGL Rendering",
+      "type": "technology",
+      "properties": {
+        "performance": "high",
+        "context": "graphics rendering"
+      },
+      "group": "performance",
+      "description": "Hardware-accelerated rendering technology",
+      "size": 8,
+      "source": "followup",
+      "visualProperties": {
+        "color": "#FFC107",
+        "shape": "cylinder",
+        "initialPosition": [
+          0,
+          10,
+          0
+        ],
+        "highlightColor": "#FFD740",
+        "labelVisibility": "onHover"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "threejs",
+      "target": "force_directed",
+      "label": "implements",
+      "properties": {
+        "type": "implementation"
+      },
+      "weight": 8,
+      "description": "THREE.js implements force-directed layouts",
+      "visualProperties": {
+        "color": "#888888",
+        "style": "solid",
+        "width": 3,
+        "curvature": 0.2,
+        "animated": true
+      }
+    },
+    {
+      "source": "force_directed",
+      "target": "force_graph",
+      "label": "abstracts",
+      "weight": 6,
+      "description": "Force-Graph provides abstraction over basic force-directed layouts",
+      "visualProperties": {
+        "color": "#666666",
+        "style": "dashed",
+        "width": 2,
+        "curvature": 0.1,
+        "animated": false
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": "core_technology",
+      "label": "Core Technologies",
+      "description": "Fundamental technologies and libraries"
+    },
+    {
+      "id": "algorithms",
+      "label": "Algorithms",
+      "description": "Core algorithmic concepts"
+    },
+    {
+      "id": "libraries",
+      "label": "Libraries",
+      "description": "Supporting libraries and frameworks"
+    },
+    {
+      "id": "performance",
+      "label": "Performance",
+      "description": "Performance-related components"
+    }
+  ],
+  "metadata": {
+    "topic": "THREE.js Force-Directed Graph Visualization",
+    "nodeCount": 4,
+    "edgeCount": 2,
+    "groupCount": 4,
+    "description": "Knowledge graph representing THREE.js force-directed graph visualization concepts",
+    "visualization": {
+      "layout": "force",
+      "groups": {
+        "core_technology": {
+          "color": "#2194CE"
+        },
+        "algorithms": {
+          "color": "#E91E63"
+        },
+        "libraries": {
+          "color": "#4CAF50"
+        },
+        "performance": {
+          "color": "#FFC107"
+        }
+      },
+      "background": "#1A1A1A",
+      "defaultNodeSize": 5,
+      "defaultEdgeWidth": 2,
+      "physics": {
+        "gravity": -0.5,
+        "linkDistance": 100,
+        "charge": -100
+      }
+    },
+    "suggestedVisualization": "Use force-directed layout with nodes as colored spheres and edges as glowing lines. Implement hover effects and interactive camera controls.",
+    "model": "claude-3-5-sonnet-20241022"
+  }
+}

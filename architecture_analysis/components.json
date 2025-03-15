@@ -1,0 +1,20 @@
+{
+  "components": {
+    "Hybrid Intelligence": [
+      {
+        "module": "hybrid_reasoning",
+        "path": "./hybrid_reasoning.py",
+        "size_bytes": 12947,
+        "line_count": 28
+      }
+    ],
+    "Troubleshooting": [
+      {
+        "module": "memory_troubleshooter",
+        "path": "./memory_troubleshooter.py",
+        "size_bytes": 27230,
+        "line_count": 115
+      }
+    ]
+  }
+}

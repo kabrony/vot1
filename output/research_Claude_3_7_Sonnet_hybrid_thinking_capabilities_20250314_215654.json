@@ -1,0 +1,33 @@
+{
+  "topic": "Claude 3.7 Sonnet hybrid thinking capabilities",
+  "focus": "AI research applications",
+  "timestamp": "2025-03-14T21:56:54.607724",
+  "session_id": "session_20250314215654_cac4230e",
+  "status": "in_progress",
+  "web_research": {
+    "error": "Perplexity client not initialized"
+  },
+  "code_search": [
+    {
+      "error": "GitHub not configured"
+    }
+  ],
+  "hybrid_thinking": {
+    "error": "Claude client not initialized"
+  },
+  "final_report": {
+    "title": "Research Report: Claude 3.7 Sonnet hybrid thinking capabilities",
+    "focus": "AI research applications",
+    "date": "2025-03-14",
+    "summary": "No hybrid thinking available.",
+    "web_research_summary": "...",
+    "code_examples": [
+      {
+        "name": "Unknown",
+        "language": "Unknown",
+        "snippet": ""
+      }
+    ],
+    "report_id": "c789823a683b484922a34058543d9784"
+  }
+}

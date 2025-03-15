@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VOTai TRILOGY BRAIN - Dashboard Component Tests">
+    <title>VOTai TRILOGY BRAIN - Component Tests</title>
+    <link rel="icon" href="assets/votai-logo.svg" type="image/svg+xml">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/terminal.css">
+    <link rel="stylesheet" href="css/modern-effects.css">
+    
+    <!-- External libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.4/dist/gsap.min.js"></script>
+    
+    <style>
+        .test-container {
+            padding: 20px;
+        }
+        
+        .test-header {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .test-output {
+            background-color: rgba(10, 10, 18, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .test-visualization {
+            height: 400px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="cyberpunk-theme">
+    <header>
+        <div class="logo-container">
+            <img src="assets/votai-logo.svg" alt="VOTai Logo" class="logo">
+            <h1 class="neon-text">TRILOGY BRAIN</h1>
+        </div>
+        <div>
+            <h2>Component Tests</h2>
+        </div>
+    </header>
+    
+    <main class="test-container">
+        <div class="test-header">
+            <p>This page allows you to test individual components of the TRILOGY BRAIN dashboard.</p>
+            <div class="test-controls">
+                <button id="testAllBtn" class="cyberpunk-button">Run All Tests</button>
+                <select id="testSelector" class="cyberpunk-select">
+                    <option value="memory-network">Memory Network</option>
+                    <option value="terminal">Terminal Interface</option>
+                    <option value="charts">Performance Charts</option>
+                    <option value="modern-ui">Modern UI Effects</option>
+                    <option value="memory-integration">Memory Integration</option>
+                </select>
+                <button id="runTestBtn" class="cyberpunk-button">Run Selected Test</button>
+            </div>
+        </div>
+        
+        <!-- Memory Network Test -->
+        <section id="memory-network-test" class="test-section glass-panel">
+            <h3>Memory Network Test</h3>
+            <div class="test-controls">
+                <button id="generateTestDataBtn" class="cyberpunk-button">Generate Test Data</button>
+                <select id="visualizationModeSelect" class="cyberpunk-select">
+                    <option value="force">Force Directed</option>
+                    <option value="radial">Radial Layout</option>
+                    <option value="cascade">Cascade View</option>
+                </select>
+                <div class="slider-container">
+                    <label for="detailLevelInput">Detail Level:</label>
+                    <input type="range" id="detailLevelInput" min="1" max="10" value="5" class="cyberpunk-slider">
+                </div>
+            </div>
+            <div id="memoryNetworkContainer" class="test-visualization"></div>
+            <div id="memoryNodeTooltip" class="tooltip-panel hidden"></div>
+        </section>
+        
+        <!-- Terminal Test -->
+        <section id="terminal-test" class="test-section glass-panel">
+            <h3>Terminal Interface Test</h3>
+            <div class="test-controls">
+                <button id="addSystemMsgBtn" class="cyberpunk-button">Add System Message</button>
+                <button id="addAgentMsgBtn" class="cyberpunk-button">Add Agent Message</button>
+                <button id="clearTerminalBtn" class="cyberpunk-button">Clear Terminal</button>
+            </div>
+            <div id="terminalContainer" class="terminal-container">
+                <div class="terminal-header">
+                    <span>VOTai Terminal v1.0</span>
+                    <div class="terminal-buttons">
+                        <button id="terminalClearBtn" class="terminal-btn">Clear</button>
+                        <button id="terminalToggleBtn" class="terminal-btn">Toggle</button>
+                    </div>
+                </div>
+                <div id="terminalContent" class="terminal-content"></div>
+                <div class="terminal-input-line">
+                    <span class="terminal-prompt">&gt;</span>
+                    <input type="text" id="terminalInput" class="terminal-input" placeholder="Type 'help' for commands...">
+                </div>
+            </div>
+        </section>
+        
+        <!-- Charts Test -->
+        <section id="charts-test" class="test-section glass-panel">
+            <h3>Performance Charts Test</h3>
+            <div class="test-controls">
+                <button id="generateChartDataBtn" class="cyberpunk-button">Generate Random Data</button>
+                <button id="animateChartsBtn" class="cyberpunk-button">Start Animation</button>
+            </div>
+            <div class="test-grid">
+                <div class="metric-card">
+                    <h3>Memory Usage</h3>
+                    <canvas id="testMemoryUsageChart"></canvas>
+                    <div class="metric-value" id="memoryUsageValue">0 MB</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Token Processing</h3>
+                    <canvas id="testTokenProcessingChart"></canvas>
+                    <div class="metric-value" id="tokenProcessingValue">0 tps</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Cache Hit Rate</h3>
+                    <canvas id="testCacheHitChart"></canvas>
+                    <div class="metric-value" id="cacheHitValue">0%</div>
+                </div>
+                <div class="metric-card">
+                    <h3>ZK Verification</h3>
+                    <canvas id="testZkVerificationChart"></canvas>
+                    <div class="metric-value" id="zkVerificationValue">0 ms</div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Modern UI Effects Test -->
+        <section id="modern-ui-test" class="test-section glass-panel">
+            <h3>Modern UI Effects Test</h3>
+            <div class="test-controls">
+                <button id="testParticlesBtn" class="cyberpunk-button">Test Particles</button>
+                <button id="testGlowEffectBtn" class="cyberpunk-button">Test Glow Effect</button>
+                <button id="testGlitchEffectBtn" class="cyberpunk-button">Test Glitch Effect</button>
+                <button id="testRippleEffectBtn" class="cyberpunk-button">Test Ripple Effect</button>
+            </div>
+            <div class="test-grid">
+                <div class="glass-panel">
+                    <h3>Particle Background</h3>
+                    <div id="particleTestContainer" class="test-visualization"></div>
+                </div>
+                <div class="glass-panel">
+                    <h3>Effects Test Area</h3>
+                    <div id="effectsTestContainer" class="test-visualization">
+                        <div id="testElement" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                            <span class="neon-text">TRILOGY BRAIN</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Memory Integration Test -->
+        <section id="memory-integration-test" class="test-section glass-panel">
+            <h3>Memory Integration Test</h3>
+            <div class="test-controls">
+                <button id="testConnectBtn" class="cyberpunk-button">Test Connection</button>
+                <button id="testStoreMemoryBtn" class="cyberpunk-button">Test Store Memory</button>
+                <button id="testRetrieveMemoryBtn" class="cyberpunk-button">Test Retrieve Memory</button>
+                <button id="testZkVerifyBtn" class="cyberpunk-button">Test ZK Verify</button>
+            </div>
+            <div class="test-output" id="memoryIntegrationOutput">
+                Test results will appear here...
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div>Test page for VOTai TRILOGY BRAIN Dashboard</div>
+        <div>© 2024 VillageOfThousands.io</div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="js/memory-network.js"></script>
+    <script src="js/terminal.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/memory-integration.js"></script>
+    <script src="js/modern-ui.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize test selectors
+            const testSelector = document.getElementById('testSelector');
+            const runTestBtn = document.getElementById('runTestBtn');
+            const testAllBtn = document.getElementById('testAllBtn');
+            
+            // Hide all test sections initially
+            document.querySelectorAll('.test-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected test section
+            function showTestSection(testId) {
+                document.querySelectorAll('.test-section').forEach(section => {
+                    section.style.display = 'none';
+                });
+                
+                const section = document.getElementById(`${testId}-test`);
+                if (section) {
+                    section.style.display = 'block';
+                }
+            }
+            
+            // Run selected test
+            runTestBtn.addEventListener('click', () => {
+                const selectedTest = testSelector.value;
+                showTestSection(selectedTest);
+                runTest(selectedTest);
+            });
+            
+            // Run all tests
+            testAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.test-section').forEach(section => {
+                    section.style.display = 'block';
+                });
+                
+                ['memory-network', 'terminal', 'charts', 'modern-ui', 'memory-integration'].forEach(testId => {
+                    runTest(testId);
+                });
+            });
+            
+            // Run specific test
+            function runTest(testId) {
+                console.log(`Running test: ${testId}`);
+                
+                switch (testId) {
+                    case 'memory-network':
+                        initMemoryNetworkTest();
+                        break;
+                    case 'terminal':
+                        initTerminalTest();
+                        break;
+                    case 'charts':
+                        initChartsTest();
+                        break;
+                    case 'modern-ui':
+                        initModernUITest();
+                        break;
+                    case 'memory-integration':
+                        initMemoryIntegrationTest();
+                        break;
+                }
+            }
+            
+            // Memory Network Test
+            function initMemoryNetworkTest() {
+                // Check if object already exists
+                if (window.memoryNetworkTest) {
+                    return;
+                }
+                
+                try {
+                    // Initialize memory network
+                    window.memoryNetworkTest = new MemoryNetwork('memoryNetworkContainer');
+                    
+                    // Generate test data button
+                    document.getElementById('generateTestDataBtn').addEventListener('click', () => {
+                        window.memoryNetworkTest.loadTestData();
+                    });
+                    
+                    // Visualization mode selector
+                    document.getElementById('visualizationModeSelect').addEventListener('change', (e) => {
+                        window.memoryNetworkTest.setVisualizationMode(e.target.value);
+                    });
+                    
+                    // Detail level slider
+                    document.getElementById('detailLevelInput').addEventListener('input', (e) => {
+                        window.memoryNetworkTest.setDetailLevel(parseInt(e.target.value));
+                    });
+                    
+                    // Generate initial test data
+                    window.memoryNetworkTest.loadTestData();
+                } catch (error) {
+                    console.error('Memory Network Test Error:', error);
+                }
+            }
+            
+            // Terminal Test
+            function initTerminalTest() {
+                // Check if object already exists
+                if (window.terminalTest) {
+                    return;
+                }
+                
+                try {
+                    // Initialize terminal
+                    window.terminalTest = new TerminalInterface({
+                        terminalElement: document.getElementById('terminalContainer'),
+                        contentElement: document.getElementById('terminalContent'),
+                        inputElement: document.getElementById('terminalInput'),
+                        clearButton: document.getElementById('terminalClearBtn'),
+                        toggleButton: document.getElementById('terminalToggleBtn')
+                    });
+                    
+                    // Initialize test buttons
+                    document.getElementById('addSystemMsgBtn').addEventListener('click', () => {
+                        window.terminalTest.logSystem('System message test at ' + new Date().toLocaleTimeString());
+                    });
+                    
+                    document.getElementById('addAgentMsgBtn').addEventListener('click', () => {
+                        window.terminalTest.logAgent('Agent', 'Agent message test at ' + new Date().toLocaleTimeString());
+                    });
+                    
+                    document.getElementById('clearTerminalBtn').addEventListener('click', () => {
+                        window.terminalTest.clearTerminal();
+                    });
+                    
+                    // Add welcome message
+                    window.terminalTest.logSystem('Terminal test initialized');
+                    window.terminalTest.logSystem('Type "help" for available commands');
+                } catch (error) {
+                    console.error('Terminal Test Error:', error);
+                }
+            }
+            
+            // Charts Test
+            function initChartsTest() {
+                // Check if object already exists
+                if (window.chartsTest) {
+                    return;
+                }
+                
+                try {
+                    // Create test charts instance
+                    window.chartsTest = new DashboardCharts({
+                        memoryUsageChart: 'testMemoryUsageChart',
+                        tokenProcessingChart: 'testTokenProcessingChart',
+                        cacheHitChart: 'testCacheHitChart',
+                        zkVerificationChart: 'testZkVerificationChart',
+                        memoryUsageValue: 'memoryUsageValue',
+                        tokenProcessingValue: 'tokenProcessingValue',
+                        cacheHitValue: 'cacheHitValue',
+                        zkVerificationValue: 'zkVerificationValue'
+                    });
+                    
+                    // Initialize charts
+                    window.chartsTest.initCharts();
+                    
+                    // Generate random data button
+                    document.getElementById('generateChartDataBtn').addEventListener('click', () => {
+                        window.chartsTest.generateRandomData();
+                    });
+                    
+                    // Animate charts button
+                    let animationInterval;
+                    document.getElementById('animateChartsBtn').addEventListener('click', (e) => {
+                        if (e.target.textContent === 'Start Animation') {
+                            e.target.textContent = 'Stop Animation';
+                            animationInterval = setInterval(() => {
+                                window.chartsTest.simulateDataUpdate();
+                            }, 2000);
+                        } else {
+                            e.target.textContent = 'Start Animation';
+                            clearInterval(animationInterval);
+                        }
+                    });
+                    
+                    // Generate initial data
+                    window.chartsTest.generateRandomData();
+                } catch (error) {
+                    console.error('Charts Test Error:', error);
+                }
+            }
+            
+            // Modern UI Test
+            function initModernUITest() {
+                // Check if object already exists
+                if (window.modernUITest) {
+                    return;
+                }
+                
+                try {
+                    // Initialize modern UI effects
+                    window.modernUITest = new ModernUIEffects();
+                    
+                    // Create test particle system
+                    window.modernUITest.createParticleBackground(
+                        document.getElementById('particleTestContainer')
+                    );
+                    
+                    // Initialize test buttons
+                    document.getElementById('testGlowEffectBtn').addEventListener('click', () => {
+                        const element = document.getElementById('testElement');
+                        window.modernUITest.addNeonGlowEffect(element);
+                    });
+                    
+                    document.getElementById('testGlitchEffectBtn').addEventListener('click', () => {
+                        const element = document.getElementById('testElement');
+                        window.modernUITest.addGlitchEffect(element);
+                    });
+                    
+                    document.getElementById('testRippleEffectBtn').addEventListener('click', () => {
+                        const container = document.getElementById('effectsTestContainer');
+                        window.modernUITest.addRippleEffect(container, {
+                            x: container.clientWidth / 2,
+                            y: container.clientHeight / 2
+                        });
+                    });
+                } catch (error) {
+                    console.error('Modern UI Test Error:', error);
+                }
+            }
+            
+            // Memory Integration Test
+            function initMemoryIntegrationTest() {
+                // Check if object already exists
+                if (window.memoryIntegrationTest) {
+                    return;
+                }
+                
+                try {
+                    // Initialize memory integration
+                    window.memoryIntegrationTest = new MemoryIntegration();
+                    
+                    const outputElement = document.getElementById('memoryIntegrationOutput');
+                    
+                    // Log to output
+                    function logToOutput(message, type = 'info') {
+                        const timestamp = new Date().toLocaleTimeString();
+                        const msgElement = document.createElement('div');
+                        msgElement.className = `log-message log-${type}`;
+                        msgElement.innerHTML = `[${timestamp}] ${message}`;
+                        outputElement.appendChild(msgElement);
+                        outputElement.scrollTop = outputElement.scrollHeight;
+                    }
+                    
+                    // Clear output
+                    function clearOutput() {
+                        outputElement.innerHTML = '';
+                    }
+                    
+                    // Test connection button
+                    document.getElementById('testConnectBtn').addEventListener('click', () => {
+                        clearOutput();
+                        logToOutput('Testing connection to memory system...');
+                        
+                        setTimeout(() => {
+                            const connected = window.memoryIntegrationTest.updateConnectionStatus();
+                            if (connected) {
+                                logToOutput('Connected to memory system successfully', 'success');
+                                logToOutput(`IPFS Connected: ${window.memoryIntegrationTest.ipfsConnected ? 'Yes' : 'No'}`);
+                                logToOutput(`ZK Enabled: ${window.memoryIntegrationTest.zkEnabled ? 'Yes' : 'No'}`);
+                                logToOutput(`Token Balance: ${window.memoryIntegrationTest.tokenBalance}`);
+                            } else {
+                                logToOutput('Failed to connect to memory system', 'error');
+                                logToOutput('Using mock implementation instead', 'warning');
+                            }
+                        }, 1000);
+                    });
+                    
+                    // Test store memory button
+                    document.getElementById('testStoreMemoryBtn').addEventListener('click', () => {
+                        clearOutput();
+                        logToOutput('Testing memory storage...');
+                        
+                        const testMemory = {
+                            content: 'Test memory created at ' + new Date().toISOString(),
+                            importance: Math.random(),
+                            tags: ['test', 'dashboard']
+                        };
+                        
+                        window.memoryIntegrationTest.memoryAPI.storeMemory(testMemory)
+                            .then(result => {
+                                logToOutput(`Memory stored with ID: ${result.id}`, 'success');
+                                logToOutput(`Level: ${result.level}`);
+                                window.testMemoryId = result.id; // Store for retrieval test
+                            })
+                            .catch(error => {
+                                logToOutput('Failed to store memory: ' + error, 'error');
+                            });
+                    });
+                    
+                    // Test retrieve memory button
+                    document.getElementById('testRetrieveMemoryBtn').addEventListener('click', () => {
+                        clearOutput();
+                        logToOutput('Testing memory retrieval...');
+                        
+                        if (!window.testMemoryId) {
+                            logToOutput('No stored memory ID found. Please store a memory first.', 'warning');
+                            return;
+                        }
+                        
+                        window.memoryIntegrationTest.memoryAPI.retrieveMemory(window.testMemoryId)
+                            .then(memory => {
+                                logToOutput(`Retrieved memory with ID: ${memory.id}`, 'success');
+                                logToOutput(`Content: ${memory.content}`);
+                                logToOutput(`Level: ${memory.level}`);
+                                logToOutput(`Importance: ${memory.importance.toFixed(2)}`);
+                                logToOutput(`Tags: ${memory.tags.join(', ')}`);
+                            })
+                            .catch(error => {
+                                logToOutput('Failed to retrieve memory: ' + error, 'error');
+                            });
+                    });
+                    
+                    // Test ZK verify button
+                    document.getElementById('testZkVerifyBtn').addEventListener('click', () => {
+                        clearOutput();
+                        logToOutput('Testing ZK verification...');
+                        
+                        if (!window.testMemoryId) {
+                            logToOutput('No stored memory ID found. Please store a memory first.', 'warning');
+                            return;
+                        }
+                        
+                        window.memoryIntegrationTest.memoryAPI.verifyMemory(window.testMemoryId)
+                            .then(result => {
+                                logToOutput(`ZK Verification result: ${result.verified ? 'Verified' : 'Failed'}`, 
+                                    result.verified ? 'success' : 'error');
+                                logToOutput(`Verification time: ${result.verificationTime} ms`);
+                                logToOutput(`Proof size: ${result.proofSize} bytes`);
+                            })
+                            .catch(error => {
+                                logToOutput('Failed to verify memory: ' + error, 'error');
+                            });
+                    });
+                    
+                    // Init with welcome message
+                    logToOutput('Memory Integration Test initialized');
+                } catch (error) {
+                    console.error('Memory Integration Test Error:', error);
+                }
+            }
+            
+            // Start with memory network test by default
+            showTestSection('memory-network');
+            runTest('memory-network');
+        });
+    </script>
+</body>
+</html> 

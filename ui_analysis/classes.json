@@ -1,0 +1,132 @@
+{
+  "hybrid_reasoning": {
+    "HybridReasoning": {
+      "methods": {
+        "__init__": {
+          "args": [
+            "self"
+          ],
+          "line_count": 19
+        },
+        "_extract_solution": {
+          "args": [
+            "self",
+            "thinking"
+          ],
+          "line_count": 28
+        }
+      },
+      "line_count": 257
+    }
+  },
+  "json_fixer": {
+    "JSONFixer": {
+      "methods": {
+        "__init__": {
+          "args": [
+            "self",
+            "model",
+            "output_dir"
+          ],
+          "line_count": 33
+        },
+        "analyze_json_error": {
+          "args": [
+            "self",
+            "error_msg",
+            "json_str"
+          ],
+          "line_count": 56
+        },
+        "apply_quick_fixes": {
+          "args": [
+            "self",
+            "json_str"
+          ],
+          "line_count": 69
+        },
+        "extract_json_from_markdown": {
+          "args": [
+            "self",
+            "text"
+          ],
+          "line_count": 24
+        }
+      },
+      "line_count": 436
+    }
+  },
+  "memory_troubleshooter": {
+    "MemorySystemTroubleshooter": {
+      "methods": {
+        "__init__": {
+          "args": [
+            "self"
+          ],
+          "line_count": 9
+        },
+        "find_memory_bridge_module": {
+          "args": [
+            "self",
+            "search_dir"
+          ],
+          "line_count": 39
+        },
+        "find_memory_bridge_uses": {
+          "args": [
+            "self",
+            "search_dir"
+          ],
+          "line_count": 44
+        },
+        "analyze_bridge_signature": {
+          "args": [
+            "self"
+          ],
+          "line_count": 43
+        },
+        "analyze_init_calls": {
+          "args": [
+            "self"
+          ],
+          "line_count": 77
+        },
+        "extract_memory_bridge_class": {
+          "args": [
+            "self"
+          ],
+          "line_count": 27
+        },
+        "generate_fix_suggestions": {
+          "args": [
+            "self"
+          ],
+          "line_count": 122
+        },
+        "fix_memory_bridge_issues": {
+          "args": [
+            "self",
+            "auto_apply"
+          ],
+          "line_count": 79
+        },
+        "_get_line_context": {
+          "args": [
+            "self",
+            "content",
+            "position",
+            "context_lines"
+          ],
+          "line_count": 14
+        },
+        "create_dummy_composio_client": {
+          "args": [
+            "self"
+          ],
+          "line_count": 115
+        }
+      },
+      "line_count": 586
+    }
+  }
+}

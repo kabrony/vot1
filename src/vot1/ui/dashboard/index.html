@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VOTai TRILOGY BRAIN - Advanced Memory Management System Dashboard">
+    <title>VOTai TRILOGY BRAIN Dashboard</title>
+    <link rel="icon" href="assets/votai-logo.svg" type="image/svg+xml">
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/terminal.css">
+    <link rel="stylesheet" href="css/modern-effects.css">
+    <!-- External libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.4/dist/gsap.min.js"></script>
+    <!-- Composio integration (loaded dynamically) -->
+    <script>
+        // Dynamically load Composio SDK if available
+        (function() {
+            try {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/composio-core@latest/dist/index.min.js';
+                script.async = true;
+                script.onerror = function() {
+                    console.warn('Failed to load Composio SDK. Tool calling features will be limited.');
+                };
+                document.head.appendChild(script);
+            } catch (e) {
+                console.warn('Failed to load Composio SDK:', e);
+            }
+        })();
+    </script>
+</head>
+<body class="cyberpunk-theme">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <img src="assets/votai-logo.svg" alt="VOTai Logo" class="loading-logo">
+        <div class="loading-progress">
+            <div id="loadingProgressBar" class="loading-progress-bar" style="width: 0%"></div>
+        </div>
+        <div id="loadingStatus" class="loading-status">INITIALIZING TRILOGY BRAIN...</div>
+    </div>
+
+    <header>
+        <div class="logo-container">
+            <img src="assets/votai-logo.svg" alt="VOTai Logo" class="logo">
+            <h1 class="neon-text" style="color: var(--accent-tertiary);">TRILOGY BRAIN</h1>
+        </div>
+        <nav>
+            <button id="connectWalletBtn" class="cyberpunk-button">Connect Wallet</button>
+            <button id="toggleVisualizationBtn" class="cyberpunk-button blue">Toggle View</button>
+            <select id="visualizationMode" class="cyberpunk-select">
+                <option value="force">Force Directed</option>
+                <option value="radial">Radial Layout</option>
+                <option value="cascade">Cascade View</option>
+            </select>
+            <div class="slider-container">
+                <label for="detailLevel">Detail Level:</label>
+                <input type="range" id="detailLevel" min="1" max="10" value="5" class="cyberpunk-slider">
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Memory Visualization Block -->
+        <div id="visualizationBlock" class="module-block">
+            <div class="module-header">
+                <div class="module-title">Memory Network</div>
+                <div class="module-actions">
+                    <button class="module-action-btn expand-btn" aria-label="Expand/Collapse" data-target="visualizationBlock"></button>
+                </div>
+            </div>
+            <div class="module-content">
+                <div id="memoryVisualization" class="visualization-container"></div>
+                <div id="nodeTooltip" class="tooltip-panel hidden"></div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics Block -->
+        <div id="metricsBlock" class="module-block">
+            <div class="module-header">
+                <div class="module-title">Performance Metrics</div>
+                <div class="module-actions">
+                    <button class="module-action-btn expand-btn" aria-label="Expand/Collapse" data-target="metricsBlock"></button>
+                </div>
+            </div>
+            <div class="module-content">
+                <div class="metrics-container">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h3>Memory Usage</h3>
+                            <canvas id="memoryUsageChart"></canvas>
+                            <div id="memoryUsageValue" class="metric-value">0 MB</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Token Processing</h3>
+                            <canvas id="tokenProcessingChart"></canvas>
+                            <div id="tokenProcessingValue" class="metric-value">0 tps</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Cache Hit Rate</h3>
+                            <canvas id="cacheHitChart"></canvas>
+                            <div id="cacheHitValue" class="metric-value">0%</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3>ZK Verification</h3>
+                            <canvas id="zkVerificationChart"></canvas>
+                            <div id="zkVerificationValue" class="metric-value">0 ms</div>
+                        </div>
+                        <div class="metric-card" style="grid-column: span 2;">
+                            <h3>Token Economy</h3>
+                            <canvas id="tokenEconomyChart"></canvas>
+                            <div id="tokenBalanceValue" class="metric-value">0 VOT</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Block -->
+        <div id="terminalBlock" class="module-block">
+            <div class="module-header">
+                <div class="module-title">Terminal Interface</div>
+                <div class="module-actions">
+                    <button class="module-action-btn expand-btn" aria-label="Expand/Collapse" data-target="terminalBlock"></button>
+                </div>
+            </div>
+            <div class="module-content">
+                <div id="terminal" class="terminal-container">
+                    <div id="terminalContent" class="terminal-content"></div>
+                    <div class="terminal-input-line">
+                        <span class="terminal-prompt">&gt;</span>
+                        <input type="text" id="terminalInput" class="terminal-input" placeholder="Type 'help' for commands...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tool Integration Block -->
+        <div id="toolIntegrationBlock" class="module-block">
+            <div class="module-header">
+                <div class="module-title">Tool Integration</div>
+                <div class="module-actions">
+                    <button class="module-action-btn expand-btn" aria-label="Expand/Collapse" data-target="toolIntegrationBlock"></button>
+                </div>
+            </div>
+            <div class="module-content">
+                <div class="tool-integration-container">
+                    <div class="tool-integration-header">
+                        <h3>Composio Tool Integration</h3>
+                        <div class="tool-integration-status">
+                            <span id="composioStatus" class="status-badge">Disconnected</span>
+                        </div>
+                    </div>
+                    <div class="tool-integration-actions">
+                        <button id="initComposioBtn" class="cyberpunk-button green">Initialize</button>
+                        <button id="refreshToolsBtn" class="cyberpunk-button blue">Refresh Tools</button>
+                    </div>
+                    <div class="tool-integration-content">
+                        <div class="tool-list-container">
+                            <h4>Available Tools</h4>
+                            <div id="toolList" class="tool-list">
+                                <!-- Tool items will be dynamically generated -->
+                                <div class="tool-list-empty">No tools available. Click Initialize to connect.</div>
+                            </div>
+                        </div>
+                        <div class="tool-execution-container">
+                            <h4>Tool Execution</h4>
+                            <div class="tool-execution-form">
+                                <div class="form-group">
+                                    <label for="toolNameInput">Tool Name:</label>
+                                    <input type="text" id="toolNameInput" class="cyberpunk-input" placeholder="Enter tool name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="toolParamsInput">Parameters (JSON):</label>
+                                    <textarea id="toolParamsInput" class="cyberpunk-textarea" placeholder='{"param1": "value1"}'></textarea>
+                                </div>
+                                <button id="executeToolBtn" class="cyberpunk-button">Execute Tool</button>
+                            </div>
+                            <div class="tool-execution-result">
+                                <h4>Result</h4>
+                                <pre id="toolExecutionResult" class="result-container">No results yet</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="system-stats">
+            <span id="uptimeDisplay">Uptime: 00:00:00</span>
+            <span id="memoryOpsDisplay">Memory Ops: 0</span>
+            <span id="activeNodesDisplay">Active Nodes: 0</span>
+            <span id="connectedAgentsDisplay">Connected Agents: 0</span>
+        </div>
+        <div class="copyright">© 2024 VillageOfThousands.io - TRILOGY BRAIN v1.0</div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/memory-network.js"></script>
+    <script src="js/terminal.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/memory-integration.js"></script>
+    <script src="js/modern-ui.js"></script>
+    <script src="js/composio-integration.js"></script>
+    <script src="js/dashboard.js"></script>
+    
+    <script>
+        // Loading screen animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const loadingProgressBar = document.getElementById('loadingProgressBar');
+            const loadingStatus = document.getElementById('loadingStatus');
+            let progress = 0;
+            
+            // Define loading steps
+            const loadingSteps = [
+                { progress: 10, status: "INITIALIZING SYSTEMS..." },
+                { progress: 20, status: "CONNECTING TO MEMORY NETWORK..." },
+                { progress: 35, status: "LOADING VISUALIZATION ENGINE..." },
+                { progress: 50, status: "ESTABLISHING IPFS CONNECTION..." },
+                { progress: 65, status: "INITIALIZING TERMINAL INTERFACE..." },
+                { progress: 80, status: "LOADING PERFORMANCE METRICS..." },
+                { progress: 90, status: "PREPARING MEMORY INSPECTOR..." },
+                { progress: 100, status: "READY" }
+            ];
+            
+            // Simulate loading process
+            let currentStep = 0;
+            const loadingInterval = setInterval(() => {
+                if (currentStep < loadingSteps.length) {
+                    const step = loadingSteps[currentStep];
+                    loadingProgressBar.style.width = `${step.progress}%`;
+                    loadingStatus.textContent = step.status;
+                    currentStep++;
+                } else {
+                    clearInterval(loadingInterval);
+                    
+                    // Hide loading screen with fade out
+                    setTimeout(() => {
+                        loadingScreen.classList.add('hidden');
+                        
+                        // Initialize dashboard after loading
+                        initializeDashboard();
+                    }, 500);
+                }
+            }, 400);
+            
+            // Initialize dashboard components
+            function initializeDashboard() {
+                // Initialize dashboard
+                const dashboard = new TrilogyDashboard();
+                dashboard.init();
+                
+                // Initialize UI effects
+                const uiEffects = new ModernUIEffects();
+                uiEffects.init();
+                
+                // Initialize memory integration
+                const memoryIntegration = new MemoryIntegration();
+                memoryIntegration.init();
+                
+                // Initialize Composio integration
+                const composioIntegration = new ComposioIntegration({
+                    apiKey: "af20c9ht05ouuhwo6zkzs7",
+                    integrationId: "7cc53fd7-ed35-442f-bc6d-10b1ed3cf85e",
+                    debugMode: true
+                });
+                
+                // Set up expandable blocks
+                setupModuleBlocks();
+                
+                // Register memory integration with the terminal
+                if (dashboard.terminal) {
+                    memoryIntegration.registerTerminalCommands(dashboard.terminal);
+                    composioIntegration.registerTerminalCommands(dashboard.terminal);
+                }
+                
+                // Set up Composio UI interactions
+                setupComposioUI(composioIntegration);
+            }
+            
+            // Set up expandable module blocks
+            function setupModuleBlocks() {
+                const expandButtons = document.querySelectorAll('.module-action-btn.expand-btn');
+                
+                expandButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const targetId = button.getAttribute('data-target');
+                        const targetBlock = document.getElementById(targetId);
+                        
+                        if (targetBlock.classList.contains('expanded')) {
+                            // Collapse the block
+                            targetBlock.classList.remove('expanded');
+                        } else {
+                            // Collapse any currently expanded block
+                            const expandedBlock = document.querySelector('.module-block.expanded');
+                            if (expandedBlock) {
+                                expandedBlock.classList.remove('expanded');
+                            }
+                            
+                            // Expand this block
+                            targetBlock.classList.add('expanded');
+                            
+                            // Trigger resize event to fix charts
+                            window.dispatchEvent(new Event('resize'));
+                        }
+                    });
+                });
+            }
+            
+            // Set up Composio UI interactions
+            function setupComposioUI(composioIntegration) {
+                const composioStatus = document.getElementById('composioStatus');
+                const initComposioBtn = document.getElementById('initComposioBtn');
+                const refreshToolsBtn = document.getElementById('refreshToolsBtn');
+                const toolList = document.getElementById('toolList');
+                const toolNameInput = document.getElementById('toolNameInput');
+                const toolParamsInput = document.getElementById('toolParamsInput');
+                const executeToolBtn = document.getElementById('executeToolBtn');
+                const toolExecutionResult = document.getElementById('toolExecutionResult');
+                
+                // Initialize button
+                initComposioBtn.addEventListener('click', async () => {
+                    composioStatus.textContent = 'Connecting...';
+                    composioStatus.className = 'status-badge status-warning';
+                    
+                    const success = await composioIntegration.initializeComposio();
+                    
+                    if (success) {
+                        composioStatus.textContent = 'Connected';
+                        composioStatus.className = 'status-badge status-success';
+                        
+                        // Refresh tool list
+                        refreshToolList();
+                    } else {
+                        composioStatus.textContent = 'Connection Failed';
+                        composioStatus.className = 'status-badge status-error';
+                    }
+                });
+                
+                // Refresh tools button
+                refreshToolsBtn.addEventListener('click', refreshToolList);
+                
+                // Execute tool button
+                executeToolBtn.addEventListener('click', async () => {
+                    const toolName = toolNameInput.value.trim();
+                    if (!toolName) {
+                        toolExecutionResult.textContent = 'Error: Tool name is required';
+                        return;
+                    }
+                    
+                    let params = {};
+                    try {
+                        const paramsText = toolParamsInput.value.trim();
+                        if (paramsText) {
+                            params = JSON.parse(paramsText);
+                        }
+                    } catch (e) {
+                        toolExecutionResult.textContent = `Error parsing parameters: ${e.message}`;
+                        return;
+                    }
+                    
+                    toolExecutionResult.textContent = 'Executing...';
+                    
+                    try {
+                        const result = await composioIntegration.executeToolCall(toolName, params);
+                        toolExecutionResult.textContent = JSON.stringify(result, null, 2);
+                    } catch (e) {
+                        toolExecutionResult.textContent = `Error executing tool: ${e.message}`;
+                    }
+                });
+                
+                // Function to refresh tool list
+                async function refreshToolList() {
+                    toolList.innerHTML = '<div class="loading-indicator">Loading tools...</div>';
+                    
+                    try {
+                        const tools = await composioIntegration.refreshAvailableTools();
+                        
+                        if (tools && tools.length > 0) {
+                            toolList.innerHTML = '';
+                            
+                            tools.forEach(tool => {
+                                const toolItem = document.createElement('div');
+                                toolItem.className = 'tool-item';
+                                
+                                const toolName = document.createElement('div');
+                                toolName.className = 'tool-name';
+                                toolName.textContent = tool.name || tool.id;
+                                
+                                const toolDesc = document.createElement('div');
+                                toolDesc.className = 'tool-description';
+                                toolDesc.textContent = tool.description || 'No description available';
+                                
+                                toolItem.appendChild(toolName);
+                                toolItem.appendChild(toolDesc);
+                                
+                                // Add click handler to populate the tool execution form
+                                toolItem.addEventListener('click', () => {
+                                    toolNameInput.value = tool.name || tool.id;
+                                    
+                                    // If tool has a schema, create a template for parameters
+                                    if (tool.schema && tool.schema.parameters) {
+                                        const paramTemplate = {};
+                                        Object.keys(tool.schema.parameters).forEach(param => {
+                                            paramTemplate[param] = '';
+                                        });
+                                        toolParamsInput.value = JSON.stringify(paramTemplate, null, 2);
+                                    } else {
+                                        toolParamsInput.value = '{}';
+                                    }
+                                });
+                                
+                                toolList.appendChild(toolItem);
+                            });
+                        } else {
+                            toolList.innerHTML = '<div class="tool-list-empty">No tools available</div>';
+                        }
+                    } catch (e) {
+                        toolList.innerHTML = `<div class="tool-list-error">Error loading tools: ${e.message}</div>`;
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

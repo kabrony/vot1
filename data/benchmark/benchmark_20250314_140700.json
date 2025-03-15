@@ -1,0 +1,319 @@
+{
+  "storage": {
+    "single_operation": {
+      "min": 5.0067901611328125e-06,
+      "max": 1.5974044799804688e-05,
+      "mean": 7.033348083496094e-06,
+      "median": 5.602836608886719e-06
+    },
+    "batch_operations": {
+      "1": {
+        "total_time": 8.185704549153646e-06,
+        "per_memory": 8.185704549153646e-06
+      },
+      "10": {
+        "total_time": 5.547205607096354e-05,
+        "per_memory": 5.547205607096354e-06
+      },
+      "50": {
+        "total_time": 0.00031765302022298175,
+        "per_memory": 6.353060404459635e-06
+      },
+      "100": {
+        "total_time": 0.0005300045013427734,
+        "per_memory": 5.3000450134277345e-06
+      }
+    },
+    "concurrent_operations": {
+      "10": {
+        "total_time": 0.0002567768096923828,
+        "per_memory": 2.5677680969238282e-05
+      },
+      "50": {
+        "total_time": 0.0007126331329345703,
+        "per_memory": 1.4252662658691407e-05
+      },
+      "100": {
+        "total_time": 0.0011730194091796875,
+        "per_memory": 1.1730194091796876e-05
+      }
+    }
+  },
+  "retrieval": {
+    "direct_retrieval": {
+      "min": 2.384185791015625e-07,
+      "max": 3.337860107421875e-06,
+      "mean": 8.106231689453125e-07,
+      "median": 4.76837158203125e-07
+    },
+    "search_operations": {
+      "queries": [
+        {
+          "query": "TRILOGY BRAIN architecture",
+          "time": 0.00022840499877929688,
+          "result_count": 0
+        },
+        {
+          "query": "memory consolidation",
+          "time": 0.0001964569091796875,
+          "result_count": 0
+        },
+        {
+          "query": "neural network",
+          "time": 0.00019025802612304688,
+          "result_count": 0
+        },
+        {
+          "query": "blockchain technology",
+          "time": 0.00018858909606933594,
+          "result_count": 0
+        },
+        {
+          "query": "security protocol",
+          "time": 0.00018739700317382812,
+          "result_count": 0
+        }
+      ],
+      "mean_time": 0.00019822120666503906
+    },
+    "strategy_comparison": {
+      "semantic": {
+        "time": 1.239776611328125e-05,
+        "memory_count": 10
+      },
+      "temporal": {
+        "time": 6.866455078125e-05,
+        "memory_count": 10
+      },
+      "hybrid": {
+        "time": 1.2037293910980225,
+        "memory_count": "N/A"
+      }
+    }
+  },
+  "relationships": {
+    "create_relationship": {
+      "min": 4.76837158203125e-06,
+      "max": 3.457069396972656e-05,
+      "mean": 7.027073910361842e-06,
+      "median": 5.0067901611328125e-06
+    },
+    "get_relationships": {
+      "times": [
+        {
+          "time": 1.0251998901367188e-05,
+          "relationship_count": 4
+        },
+        {
+          "time": 4.291534423828125e-06,
+          "relationship_count": 3
+        },
+        {
+          "time": 3.5762786865234375e-06,
+          "relationship_count": 6
+        },
+        {
+          "time": 3.0994415283203125e-06,
+          "relationship_count": 4
+        },
+        {
+          "time": 2.86102294921875e-06,
+          "relationship_count": 3
+        },
+        {
+          "time": 2.86102294921875e-06,
+          "relationship_count": 3
+        },
+        {
+          "time": 2.86102294921875e-06,
+          "relationship_count": 3
+        },
+        {
+          "time": 2.86102294921875e-06,
+          "relationship_count": 6
+        },
+        {
+          "time": 3.0994415283203125e-06,
+          "relationship_count": 8
+        },
+        {
+          "time": 2.86102294921875e-06,
+          "relationship_count": 3
+        }
+      ],
+      "mean_time": 3.862380981445312e-06
+    },
+    "traverse_graph": {
+      "times": [
+        {
+          "depth": 1,
+          "time": 8.344650268554688e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 4.0531158447265625e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 2.1457672119140625e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 1,
+          "time": 1.9073486328125e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 2.1457672119140625e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 1.6689300537109375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 1,
+          "time": 2.1457672119140625e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 1.430511474609375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 1.1920928955078125e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 1,
+          "time": 1.430511474609375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 1.430511474609375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 1.430511474609375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 1,
+          "time": 1.430511474609375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 2,
+          "time": 1.6689300537109375e-06,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "depth": 3,
+          "time": 1.1920928955078125e-06,
+          "node_count": 1,
+          "edge_count": 0
+        }
+      ],
+      "mean_time": 2.2411346435546876e-06
+    }
+  },
+  "reflection": {
+    "reflection_depth": {
+      "brief": {
+        "time": 0.8132619857788086,
+        "success": true,
+        "memory_count": 10
+      },
+      "standard": {
+        "time": 2.065764904022217,
+        "success": true,
+        "memory_count": 10
+      },
+      "deep": {
+        "time": 0.7607569694519043,
+        "success": true,
+        "memory_count": 10
+      }
+    },
+    "memory_count_impact": {
+      "5": {
+        "time": 0.8840558528900146,
+        "per_memory": 0.17681117057800294
+      },
+      "10": {
+        "time": 1.5409016609191895,
+        "per_memory": 0.15409016609191895
+      }
+    }
+  },
+  "hybrid_processing": {
+    "memory_limit_impact": {
+      "5": {
+        "total_time": 2.8478569984436035,
+        "memory_count": 5,
+        "retrieval_time": 2.847843647003174,
+        "processing_time": 1.5781094937541926,
+        "overhead": -1.578096142313763
+      },
+      "10": {
+        "total_time": 1.182494878768921,
+        "memory_count": 5,
+        "retrieval_time": 1.1824829578399658,
+        "processing_time": 1.96809937443941,
+        "overhead": -1.9680874535104549
+      },
+      "20": {
+        "total_time": 2.1331427097320557,
+        "memory_count": 5,
+        "retrieval_time": 2.1331324577331543,
+        "processing_time": 1.1670371977561225,
+        "overhead": -1.167026945757221
+      }
+    },
+    "retrieval_strategy_comparison": {
+      "semantic": {
+        "total_time": 2.3438308238983154,
+        "memory_count": 5,
+        "retrieval_time": 2.343817710876465,
+        "processing_time": 2.849608988490081
+      },
+      "temporal": {
+        "total_time": 1.5317583084106445,
+        "memory_count": 5,
+        "retrieval_time": 1.5317416191101074,
+        "processing_time": 1.956561313211898
+      },
+      "hybrid": {
+        "total_time": 1.3767762184143066,
+        "memory_count": 5,
+        "retrieval_time": 1.3767638206481934,
+        "processing_time": 2.474800123900427
+      }
+    }
+  },
+  "memory_count": 10,
+  "total_time": 18.696035385131836,
+  "timestamp": 1741979220.5317268
+}

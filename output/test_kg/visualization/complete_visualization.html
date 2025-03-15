@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Graph Visualization</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      color: #fff;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas"></div>
+  <div id="loading">Loading...</div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script>
+  // Knowledge graph data
+  const graphData = {
+  "nodes": [
+    {
+      "id": "three-js",
+      "label": "THREE.js",
+      "type": "technology",
+      "properties": {
+        "description": "A popular JavaScript 3D library for WebGL rendering",
+        "version": "r146"
+      },
+      "group": "core",
+      "description": "THREE.js is a cross-browser JavaScript library and application programming interface used to create and display animated 3D computer graphics on a Web browser.",
+      "size": 8,
+      "source": "primary_research",
+      "visualProperties": {
+        "color": "#ff9900",
+        "texture": "metallic",
+        "shape": "sphere",
+        "initialPosition": [
+          0,
+          0,
+          0
+        ],
+        "highlightColor": "#ffcc00",
+        "labelVisibility": "always"
+      }
+    },
+    {
+      "id": "force-graph",
+      "label": "Force-directed Graph",
+      "type": "concept",
+      "properties": {
+        "description": "A graph layout technique using physics simulations"
+      },
+      "group": "core",
+      "description": "Force-directed graphs use physics simulations to layout nodes in an aesthetically pleasing way, with edges acting as springs and nodes exerting repulsive forces.",
+      "size": 7,
+      "source": "primary_research",
+      "visualProperties": {
+        "color": "#00cc66",
+        "texture": "diffuse",
+        "shape": "cube",
+        "initialPosition": [
+          -5,
+          5,
+          0
+        ],
+        "highlightColor": "#00ff99",
+        "labelVisibility": "onHover"
+      }
+    },
+    {
+      "id": "performance",
+      "label": "Performance Optimization",
+      "type": "process",
+      "properties": {
+        "techniques": "WebGL rendering, level-of-detail, web workers, spatial partitioning"
+      },
+      "group": "core",
+      "description": "Techniques for improving the performance of large and complex force-directed graph visualizations in THREE.js.",
+      "size": 6,
+      "source": "followup",
+      "visualProperties": {
+        "color": "#0099ff",
+        "texture": "glossy",
+        "shape": "cylinder",
+        "initialPosition": [
+          5,
+          -5,
+          0
+        ],
+        "highlightColor": "#66ccff",
+        "labelVisibility": "onSelect"
+      }
+    },
+    {
+      "id": "edge-bundling",
+      "label": "Edge Bundling",
+      "type": "technique",
+      "properties": {
+        "description": "Grouping and rendering related edges together"
+      },
+      "group": "visualization",
+      "description": "Edge bundling is a technique for visually grouping related edges in a graph to reduce visual clutter and improve readability.",
+      "size": 5,
+      "source": "primary_research",
+      "visualProperties": {
+        "color": "#cc00cc",
+        "texture": "emissive",
+        "shape": "custom",
+        "initialPosition": [
+          -5,
+          -5,
+          5
+        ],
+        "highlightColor": "#ff66ff",
+        "labelVisibility": "onHover"
+      }
+    },
+    {
+      "id": "interaction",
+      "label": "Interactive Features",
+      "type": "concept",
+      "properties": {
+        "examples": "Zooming, panning, filtering, tooltips"
+      },
+      "group": "visualization",
+      "description": "Interactive features that enhance the usability and exploration of force-directed graph visualizations in THREE.js.",
+      "size": 6,
+      "source": "primary_research",
+      "visualProperties": {
+        "color": "#ff6600",
+        "texture": "normal",
+        "shape": "sphere",
+        "initialPosition": [
+          5,
+          5,
+          -5
+        ],
+        "highlightColor": "#ffcc66",
+        "labelVisibility": "onSelect"
+      }
+    },
+    {
+      "id": "force-graph-lib",
+      "label": "Force Graph Libraries",
+      "type": "resource",
+      "properties": {
+        "libraries": "force-graph, 3d-force-graph, THREE-forcegraph"
+      },
+      "group": "libraries",
+      "description": "JavaScript libraries that provide high-level abstractions and utilities for creating force-directed graph visualizations in THREE.js.",
+      "size": 6,
+      "source": "followup",
+      "visualProperties": {
+        "color": "#339966",
+        "texture": "lambert",
+        "shape": "cube",
+        "initialPosition": [
+          0,
+          5,
+          5
+        ],
+        "highlightColor": "#66cc99",
+        "labelVisibility": "onHover"
+      }
+    },
+    {
+      "id": "webgl",
+      "label": "WebGL",
+      "type": "technology",
+      "properties": {
+        "description": "A JavaScript API for rendering 3D graphics in the browser"
+      },
+      "group": "core",
+      "description": "WebGL is a low-level graphics API that allows for hardware-accelerated 3D rendering in web browsers, enabling high-performance visualizations in THREE.js.",
+      "size": 5,
+      "source": "followup",
+      "visualProperties": {
+        "color": "#cc6600",
+        "texture": "phong",
+        "shape": "cylinder",
+        "initialPosition": [
+          -5,
+          0,
+          -5
+        ],
+        "highlightColor": "#ff9933",
+        "labelVisibility": "onHover"
+      }
+    },
+    {
+      "id": "web-workers",
+      "label": "Web Workers",
+      "type": "technology",
+      "properties": {
+        "description": "Background threads for parallelizing computations"
+      },
+      "group": "performance",
+      "description": "Web Workers are a browser feature that allows for running scripts in background threads, enabling offloading of computationally intensive tasks like physics simulations.",
+      "size": 4,
+      "source": "followup",
+      "visualProperties": {
+        "color": "#996633",
+        "texture": "basic",
+        "shape": "cube",
+        "initialPosition": [
+          0,
+          -5,
+          -5
+        ],
+        "highlightColor": "#cc9966",
+        "labelVisibility": "onSelect"
+      }
+    },
+    {
+      "id": "level-of-detail",
+      "label": "Level of Detail",
+      "type": "technique",
+      "properties": {
+        "description": "Displaying different levels of detail based on zoom/distance"
+      },
+      "group": "performance",
+      "description": "Level of Detail (LOD) techniques reduce the complexity of objects or geometry based on their distance from the camera, improving performance.",
+      "size": 4,
+      "source": "followup",
+      "visualProperties": {
+        "color": "#663399",
+        "texture": "standard",
+        "shape": "sphere",
+        "initialPosition": [
+          5,
+          0,
+          5
+        ],
+        "highlightColor": "#9966cc",
+        "labelVisibility": "onSelect"
+      }
+    },
+    {
+      "id": "spatial-partitioning",
+      "label": "Spatial Partitioning",
+      "type": "technique",
+      "properties": {
+        "description": "Dividing space into regions for efficient culling and traversal"
+      },
+      "group": "performance",
+      "description": "Spatial partitioning techniques, like octrees or bounding volume hierarchies, divide 3D space into regions for efficient culling and traversal of large graphs.",
+      "size": 4,
+      "source": "followup",
+      "visualProperties": {
+        "color": "#33cc99",
+        "texture": "toon",
+        "shape": "cube",
+        "initialPosition": [
+          -5,
+          5,
+          -5
+        ],
+        "highlightColor": "#66ffcc",
+        "labelVisibility": "onHover"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "three-js",
+      "target": "force-graph",
+      "label": "enables",
+      "properties": {
+        "description": "THREE.js provides the foundation for force-directed graph visualizations"
+      },
+      "weight": 8,
+      "description": "THREE.js is the underlying 3D library that enables the creation of force-directed graph visualizations.",
+      "visualProperties": {
+        "color": "#ffcc00",
+        "style": "solid",
+        "width": 3,
+        "curvature": 0.2,
+        "animated": false
+      }
+    },
+    {
+      "source": "force-graph",
+      "target": "performance",
+      "label": "requires",
+      "properties": {
+        "description": "Performance optimization is crucial for large and complex graphs"
+      },
+      "weight": 7,
+      "description": "Force-directed graph visualizations require various performance optimization techniques to handle large and complex graphs.",
+      "visualProperties": {
+        "color": "#99ff99",
+        "style": "dashed",
+        "width": 2,
+        "curvature": 0.4,
+        "animated": false
+      }
+    },
+    {
+      "source": "force-graph",
+      "target": "edge-bundling",
+      "label": "utilizes",
+      "properties": {
+        "description": "Edge bundling can improve readability of force-directed graphs"
+      },
+      "weight": 6,
+      "description": "Force-directed graph visualizations can utilize edge bundling techniques to reduce visual clutter and improve readability.",
+      "visualProperties": {
+        "color": "#cc99ff",
+        "style": "dotted",
+        "width": 2,
+        "curvature": 0.6,
+        "animated": true
+      }
+    },
+    {
+      "source": "force-graph",
+      "target": "interaction",
+      "label": "enhances",
+      "properties": {
+        "description": "Interactive features improve exploration and usability"
+      },
+      "weight": 7,
+      "description": "Interactive features like zooming, panning, filtering, and tooltips enhance the exploration and usability of force-directed graph visualizations.",
+      "visualProperties": {
+        "color": "#ff9933",
+        "style": "arrow",
+        "width": 3,
+        "curvature": 0.3,
+        "animated": false
+      }
+    },
+    {
+      "source": "force-graph-lib",
+      "target": "force-graph",
+      "label": "implements",
+      "properties": {
+        "description": "Libraries provide higher-level abstractions for force-directed graphs"
+      },
+      "weight": 6,
+      "description": "Libraries like force-graph, 3d-force-graph, and THREE-forcegraph implement force-directed graph visualizations with higher-level abstractions over raw THREE.js.",
+      "visualProperties": {
+        "color": "#66cc66",
+        "style": "solid",
+        "width": 2,
+        "curvature": 0.1,
+        "animated": false
+      }
+    },
+    {
+      "source": "webgl",
+      "target": "three-js",
+      "label": "powers",
+      "properties": {
+        "description": "THREE.js leverages WebGL for hardware-accelerated rendering"
+      },
+      "weight": 7,
+      "description": "THREE.js utilizes the WebGL API for hardware-accelerated 3D rendering in the browser, enabling high-performance visualizations.",
+      "visualProperties": {
+        "color": "#ff6666",
+        "style": "dashed",
+        "width": 2,
+        "curvature": 0.5,
+        "animated": false
+      }
+    },
+    {
+      "source": "web-workers",
+      "target": "performance",
+      "label": "improves",
+      "properties": {
+        "description": "Web Workers enable parallelizing computations for better performance"
+      },
+      "weight": 5,
+      "description": "Web Workers can improve the performance of force-directed graph visualizations by offloading computationally intensive tasks like physics simulations to background threads.",
+      "visualProperties": {
+        "color": "#cc9966",
+        "style": "dotted",
+        "width": 2,
+        "curvature": 0.3,
+        "animated": true
+      }
+    },
+    {
+      "source": "level-of-detail",
+      "target": "performance",
+      "label": "improves",
+      "properties": {
+        "description": "Level of Detail techniques can optimize rendering performance"
+      },
+      "weight": 6,
+      "description": "Level of Detail (LOD) techniques can improve the performance of force-directed graph visualizations by reducing the complexity of objects or geometry based on their distance from the camera.",
+      "visualProperties": {
+        "color": "#9966cc",
+        "style": "solid",
+        "width": 2,
+        "curvature": 0.2,
+        "animated": false
+      }
+    },
+    {
+      "source": "spatial-partitioning",
+      "target": "performance",
+      "label": "improves",
+      "properties": {
+        "description": "Spatial partitioning techniques enable efficient culling and traversal"
+      },
+      "weight": 6,
+      "description": "Spatial partitioning techniques like octrees or bounding volume hierarchies can improve the performance of force-directed graph visualizations by enabling efficient culling and traversal of large graphs.",
+      "visualProperties": {
+        "color": "#66ffcc",
+        "style": "dashed",
+        "width": 2,
+        "curvature": 0.4,
+        "animated": true
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": "core",
+      "label": "Core Concepts",
+      "description": "Key concepts and technologies related to force-directed graph visualization in THREE.js."
+    },
+    {
+      "id": "visualization",
+      "label": "Visualization Techniques",
+      "description": "Techniques and features for enhancing the visual representation and exploration of force-directed graphs."
+    },
+    {
+      "id": "performance",
+      "label": "Performance Optimization",
+      "description": "Techniques and approaches for improving the performance of force-directed graph visualizations."
+    },
+    {
+      "id": "libraries",
+      "label": "Libraries and Resources",
+      "description": "External libraries and resources that aid in the development of force-directed graph visualizations."
+    }
+  ],
+  "metadata": {
+    "topic": "THREE.js force-directed graph visualization",
+    "nodeCount": 10,
+    "edgeCount": 9,
+    "groupCount": 4,
+    "description": "This knowledge graph represents key concepts, techniques, and technologies related to force-directed graph visualization in THREE.js, with a focus on performance optimization, edge bundling, and interactive features.",
+    "visualization": {
+      "layout": "force",
+      "groups": {
+        "core": {
+          "color": "#ff9900"
+        },
+        "visualization": {
+          "color": "#cc00cc"
+        },
+        "performance": {
+          "color": "#0099ff"
+        },
+        "libraries": {
+          "color": "#339966"
+        }
+      },
+      "background": "#111111",
+      "defaultNodeSize": 2,
+      "defaultEdgeWidth": 1,
+      "physics": {
+        "gravity": -0.2,
+        "linkDistance": 50,
+        "charge": -200
+      }
+    },
+    "suggestedVisualization": "This force-directed graph should be visualized in THREE.js using a radial or hierarchical layout, with nodes grouped by category and color-coded accordingly. Edges could be animated and curved to highlight relationships. Interactive features like zooming, panning, and tooltips would enhance exploration. Performance optimizations like level-of-detail and spatial partitioning should be implemented for large graphs.",
+    "model": "claude-3-sonnet-20240229"
+  }
+};
+
+    // Knowledge Graph Data
+    const nodesData = [
+      // ... (node data)
+    ];
+    const edgesData = [
+      // ... (edge data)
+    ];
+    const groupsData = [
+      // ... (group data)
+    ];
+
+    // Visualization Options
+    const options = {
+      backgroundColor: '#111133',
+      defaultNodeSize: 5,
+      defaultEdgeWidth: 1,
+      highlightColor: '#ffffff',
+      useForceDirectedLayout: true,
+      useOrbitControls: true,
+      enableLabels: true,
+      colorByGroup: true,
+      animateEdges: true,
+      enableProgressiveLoading: true,
+      usePostprocessing: true,
+      enableInteraction: true,
+      useModernRendering: true,
+    };
+
+    // Three.js Scene Setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.getElementById('canvas').appendChild(renderer.domElement);
+
+    // Helpers
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Post-processing
+    const composer = new THREE.EffectComposer(renderer);
+    const renderPass = new THREE.RenderPass(scene, camera);
+    composer.addPass(renderPass);
+    const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    composer.addPass(bloomPass);
+
+    // Force-directed Graph Layout
+    const forceGraph = new ForceGraph();
+
+    // Node and Edge Materials
+    const nodeMaterials = {};
+    const edgeMaterials = {};
+
+    // Knowledge Graph Visualization
+    let nodes = [];
+    let edges = [];
+
+    // Initialization
+    function init() {
+      // Set up scene
+      scene.background = new THREE.Color(options.backgroundColor);
+      camera.position.z = 10;
+
+      // Create nodes and edges
+      createNodes();
+      createEdges();
+
+      // Initialize force-directed layout
+      forceGraph.init(nodes, edges, {
+        useWebWorkers: options.enableProgressiveLoading,
+        enablePointerInteraction: options.enableInteraction,
+        enableEdgeAnimation: options.animateEdges,
+      });
+
+      // Add event listeners
+      window.addEventListener('resize', onWindowResize, false);
+      window.addEventListener('mousemove', onMouseMove, false);
+      window.addEventListener('click', onMouseClick, false);
+
+      // Start rendering
+      animate();
+    }
+
+    // Create Node Objects
+    function createNodes() {
+      nodesData.forEach((nodeData) => {
+        const { id, label, group, visualProperties } = nodeData;
+        const { color, texture, shape, initialPosition, highlightColor, labelVisibility } = visualProperties;
+
+        // Create node material
+        const nodeMaterial = createNodeMaterial(color, texture);
+        nodeMaterials[id] = nodeMaterial;
+
+        // Create node geometry
+        const nodeGeometry = createNodeGeometry(shape, options.defaultNodeSize * nodeData.size);
+
+        // Create node object
+        const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+        node.position.set(...initialPosition);
+        node.userData = {
+          id,
+          label,
+          group,
+          highlightColor,
+          labelVisibility,
+        };
+        scene.add(node);
+        nodes.push(node);
+      });
+    }
+
+    // Create Edge Objects
+    function createEdges() {
+      edgesData.forEach((edgeData) => {
+        const { source, target, label, visualProperties } = edgeData;
+        const { color, style, width, curvature, animated } = visualProperties;
+
+        // Create edge material
+        const edgeMaterial = createEdgeMaterial(color, style, animated);
+        edgeMaterials[`${source}-${target}`] = edgeMaterial;
+
+        // Create edge geometry
+        const sourceNode = nodes.find((node) => node.userData.id === source);
+        const targetNode = nodes.find((node) => node.userData.id === target);
+        const edgeGeometry = createEdgeGeometry(sourceNode.position, targetNode.position, curvature, width);
+
+        // Create edge object
+        const edge = new THREE.Mesh(edgeGeometry, edgeMaterial);
+        edge.userData = {
+          label,
+          source,
+          target,
+        };
+        scene.add(edge);
+        edges.push(edge);
+      });
+    }
+
+    // Node Material Creation
+    function createNodeMaterial(color, texture) {
+      const nodeMaterial = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(color),
+        metalness: texture === 'metallic' ? 1 : 0,
+        roughness: texture === 'glossy' ? 0.2 : 0.8,
+      });
+      return nodeMaterial;
+    }
+
+    // Edge Material Creation
+    function createEdgeMaterial(color, style, animated) {
+      const edgeMaterial = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(color),
+        transparent: true,
+        opacity: animated ? 0.5 : 1,
+        depthWrite: false,
+      });
+      if (style === 'dashed') {
+        edgeMaterial.dashSize = 1;
+        edgeMaterial.gapSize = 0.5;
+      } else if (style === 'dotted') {
+        edgeMaterial.dashSize = 0.2;
+        edgeMaterial.gapSize = 0.2;
+      }
+      return edgeMaterial;
+    }
+
+    // Node Geometry Creation
+    function createNodeGeometry(shape, size) {
+      let nodeGeometry;
+      switch (shape) {
+        case 'sphere':
+          nodeGeometry = new THREE.SphereGeometry(size, 32, 32);
+          break;
+        case 'cube':
+          nodeGeometry = new THREE.BoxGeometry(size, size, size);
+          break;
+        case 'cylinder':
+          nodeGeometry = new THREE.CylinderGeometry(size, size, size * 2, 32);
+          break;
+        default:
+          nodeGeometry = new THREE.SphereGeometry(size, 32, 32);
+      }
+      return nodeGeometry;
+    }
+
+    // Edge Geometry Creation
+    function createEdgeGeometry(sourcePosition, targetPosition, curvature, width) {
+      const direction = new THREE.Vector3().subVectors(targetPosition, sourcePosition);
+      const edgeLength = direction.length();
+      const midPoint = new THREE.Vector3().addVectors(sourcePosition, targetPosition).multiplyScalar(0.5);
+      const curveOffset = direction.clone().cross(new THREE.Vector3(0, 1, 0)).multiplyScalar(curvature * edgeLength);
+      const curvePoints = [
+        sourcePosition,
+        sourcePosition.clone().add(curveOffset),
+        targetPosition.clone().sub(curveOffset),
+        targetPosition,
+      ];
+      const edgeGeometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(curvePoints), 64, width, 8, false);
+      return edgeGeometry;
+    }
+
+    // Window Resize Handler
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // Mouse Move Handler
+    function onMouseMove(event) {
+      event.preventDefault();
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      const intersects = raycaster.intersectObjects(nodes);
+      nodes.forEach((node) => {
+        const intersected = intersects.find((intersect) => intersect.object === node);
+        const { id, label, highlightColor, labelVisibility } = node.userData;
+
+        if (intersected) {
+          node.material.color.set(highlightColor);
+          if (labelVisibility === 'onHover') {
+            showLabel(node, label);
+          }
+        } else {
+          node.material.color.set(nodeMaterials[id].color);
+          if (labelVisibility === 'onHover') {
+            hideLabel(node);
+          }
+        }
+      });
+    }
+
+    // Mouse Click Handler
+    function onMouseClick(event) {
+      event.preventDefault();
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      const intersects = raycaster.intersectObjects(nodes);
+      intersects.forEach((intersect) => {
+        const node = intersect.object;
+        const { id, label, labelVisibility } = node.userData;
+
+        if (labelVisibility === 'onSelect') {
+          showLabel(node, label);
+        } else {
+          hideLabel(node);
+        }
+      });
+    }
+
+    // Label Creation and Display
+    function showLabel(node, label) {
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'label';
+      labelDiv.textContent = label;
+      labelDiv.style.color = node.material.color.getStyle();
+      const labelRenderer = new CSS3DRenderer();
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.domElement.style.position = 'absolute';
+      labelRenderer.domElement.style.top = '0px';
+      document.body.appendChild(labelRenderer.domElement);
+
+      const labelObject = new CSS3DObject(labelDiv);
+      labelObject.position.copy(node.position);
+      scene.add(labelObject);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        labelObject.quaternion.copy(camera.quaternion);
+        labelRenderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    function hideLabel(node) {
+      const labels = scene.children.filter((child) => child instanceof CSS3DObject);
+      labels.forEach((label) => {
+        scene.remove(label);
+      });
+    }
+
+    // Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Update force-directed layout
+      forceGraph.update();
+
+      // Update node and edge positions
+      nodes.forEach((node) => {
+        node.position.copy(forceGraph.getNodePosition(node.userData.id));
+      });
+      edges.forEach((edge) => {
+        const sourceNode = nodes.find((node) => node.userData.id === edge.userData.source);
+        const targetNode = nodes.find((node) => node.userData.id === edge.userData.target);
+        const edgeGeometry = createEdgeGeometry(
+          sourceNode.position,
+          targetNode.position,
+          edgeMaterials[`${edge.userData.source}-${edge.userData.target}`].curvature,
+          options.defaultEdgeWidth
+        );
+        edge.geometry.dispose();
+        edge.geometry = edgeGeometry;
+      });
+
+      // Render the scene
+      if (options.usePostprocessing) {
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
+      }
+    }
+
+    // Start the visualization
+    init();
+  </script>
+</body>
+</html>
