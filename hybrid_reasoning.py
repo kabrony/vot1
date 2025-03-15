@@ -69,6 +69,7 @@ class HybridReasoning:
         self.client = None
         if anthropic_available and self.api_key:
             try:
+                # Make sure to only pass supported parameters
                 self.client = anthropic.Anthropic(api_key=self.api_key)
                 logger.info(f"Initialized Claude client with model {self.model}")
             except Exception as e:

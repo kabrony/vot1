@@ -22,10 +22,15 @@ import time
 import logging
 import argparse
 import threading
+import asyncio
 import webbrowser
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Union, Callable
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(
@@ -309,12 +314,9 @@ class MemoryComponent(Component):
         
         if memory_available:
             try:
-                self.memory_bridge = ComposioMemoryBridge(
-                    memory_path=self.config["memory_path"]
-                )
+                self.memory_bridge = ComposioMemoryBridge()
                 self.memory_manager = MemoryManager(
-                    memory_bridge=self.memory_bridge,
-                    enable_reflection=self.config["enable_reflection"]
+                    memory_path=self.config["memory_path"]
                 )
             except Exception as e:
                 logger.error(f"Error initializing memory components: {str(e)}")
@@ -327,8 +329,9 @@ class MemoryComponent(Component):
             return False
         
         try:
-            # Initialize memory system
-            await self.memory_manager.initialize()
+            # Initialize memory system - handle the case where initialize method doesn't exist
+            if hasattr(self.memory_manager, 'initialize'):
+                await self.memory_manager.initialize()
             
             self.status = "active"
             return True
@@ -490,6 +493,38 @@ class AIAssistantComponent(Component):
                 "timestamp": datetime.now().isoformat()
             }
 
+class SupabaseComponent(Component):
+    """Supabase database component"""
+    
+    def __init__(self, component_id: str = "supabase", title: str = "Supabase Database"):
+        super().__init__(component_id, "database", title)
+        self.data = {
+            "project_ref": None,
+            "connected": False,
+            "tables": [],
+            "recent_queries": []
+        }
+    
+    def set_connection_status(self, connected: bool, project_ref: Optional[str] = None) -> None:
+        """Set connection status"""
+        self.data["connected"] = connected
+        if project_ref:
+            self.data["project_ref"] = project_ref
+    
+    def update_tables(self, tables: List[str]) -> None:
+        """Update available tables"""
+        self.data["tables"] = tables
+    
+    def add_query(self, query: str, results_count: int) -> None:
+        """Add a query to recent queries"""
+        self.data["recent_queries"].insert(0, {
+            "query": query,
+            "timestamp": time.time(),
+            "results_count": results_count
+        })
+        # Keep only the 10 most recent queries
+        self.data["recent_queries"] = self.data["recent_queries"][:10]
+
 class DashboardApp:
     """Unified dashboard application"""
     
@@ -587,6 +622,15 @@ class DashboardApp:
                 config=ai_config
             )
             self.components[ai_component.id] = ai_component
+        
+        # Add Supabase component if enabled
+        if os.environ.get('SUPABASE_ENABLED', 'false').lower() == 'true':
+            supabase_component = SupabaseComponent()
+            supabase_component.set_connection_status(
+                True, 
+                os.environ.get('SUPABASE_PROJECT_REF')
+            )
+            self.components[supabase_component.id] = supabase_component
     
     def initialize_flask_app(self):
         """Initialize Flask app and routes"""
@@ -689,6 +733,23 @@ class DashboardApp:
             return jsonify({
                 'status': 'error',
                 'error': 'Memory component not found'
+            }), 404
+        
+        @self.app.route('/api/supabase')
+        def get_supabase():
+            """API endpoint for Supabase data"""
+            # Find Supabase component
+            for component in self.components.values():
+                if component.type == "database":
+                    return jsonify({
+                        'status': 'success',
+                        'data': component.data,
+                        'timestamp': datetime.now().isoformat()
+                    })
+            
+            return jsonify({
+                'status': 'error',
+                'error': 'Supabase component not found'
             }), 404
         
         # SocketIO events
