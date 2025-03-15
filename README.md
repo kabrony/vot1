@@ -1,225 +1,122 @@
-# VOT1 - TRILOGY BRAIN
+# TRILOGY BRAIN Memory Systems
 
-VOT1 (Voice of Truth 1) is an advanced distributed AI memory system built on principles of transparency, integrity, and scalability. The TRILOGY BRAIN is its core architecture, integrating neuromimetic processing, blockchain verification, and distributed computing.
+<div align="center">
+  <img src="https://via.placeholder.com/800x200/3A1078/FFFFFF?text=TRILOGY+BRAIN" alt="TRILOGY BRAIN" width="100%" />
+  <p><em>Advanced memory systems for Large Language Models</em></p>
+</div>
 
 ## Overview
 
-The VOT1 system implements a principles-driven distributed memory architecture that combines advanced AI techniques with blockchain technology. The TRILOGY BRAIN architecture (Executive Cortex, Associative Network, and Memory Foundation) provides a robust framework for memory storage, retrieval, and processing.
+TRILOGY BRAIN is a cognitive architecture for large language models that implements advanced memory systems, reasoning frameworks, and enhanced interaction capabilities. This repository contains the implementation of two key memory systems:
 
-![TRILOGY BRAIN Architecture](docs/trilogy_brain_architecture.png)
+1. **CascadingMemoryCache** - Infinite context extension via cascading KV cache
+2. **EpisodicMemoryManager** - Human-like episodic memory organization
 
-## Key Features
+Together, these systems enable Claude 3.7 to maintain effectively unlimited context while organizing information in a cognitively-inspired way.
 
-- **Distributed Memory System**: Scalable and resilient memory storage across distributed nodes
-- **Neuromimetic Processing**: Brain-inspired architecture with specialized memory types
-- **Blockchain Integration**: Secure memory verification using Solana blockchain
-- **Zero-Knowledge Proofs**: Memory integrity verification without revealing content
-- **Principles-Aligned Design**: All operations adhere to system principles for ethical use
-- **Claude 3.7 Integration**: Enhanced memory capabilities leveraging Claude 3.7's 200K token context window and hybrid processing
-- **MCP Integration**: Complete integration with Claude 3.7 through a comprehensive Model Control Protocol
-- **Immersive 3D UI**: Modern Three.js visualization for system monitoring and interaction
+## Key Components
+
+### CascadingMemoryCache
+
+The `CascadingMemoryCache` implements a novel approach to memory management based on the paper "Training-Free Exponential Context Extension via Cascading KV Cache" (Willette et al., Feb 2025). It enables effectively infinite context through hierarchical memory organization with:
+
+- **Multi-level memory caching** with exponentially increasing capacity
+- **Importance-based retention policies** that vary by level
+- **Adaptive compression** to optimize token usage
+- **Smart context building** based on importance, recency, and query relevance
+
+[Learn more about CascadingMemoryCache](docs/CascadingMemoryCache.md)
+
+### EpisodicMemoryManager
+
+The `EpisodicMemoryManager` implements human-like episodic memory organization with:
+
+- **Event boundary detection** using Bayesian surprise
+- **Temporal organization** of memories into coherent episodes
+- **Importance-based memory consolidation** for long-term retention
+- **Multi-scale retrieval strategies** that balance temporal and semantic relationships
 
 ## Getting Started
 
-### Prerequisites
-
-- Python 3.8+
-- Node.js 16+ (for web interface)
-- Modern web browser with WebGL support
-- For full functionality:
-  - Solana CLI tools
-  - Claude 3.7 API access
-
 ### Installation
 
-1. Clone the repository:
-
 ```bash
-git clone https://github.com/organix/vot1.git
-cd vot1
-```
+# Clone the repository
+git clone https://github.com/yourusername/trilogy-brain.git
+cd trilogy-brain
 
-2. Install Python dependencies:
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables:
-
-```bash
-cp .env.example .env
-# Edit .env file with your API keys and configuration
-```
-
-## Usage
-
-### Running the TRILOGY BRAIN Web Interface
-
-The most user-friendly way to interact with the VOT1 system is through the TRILOGY BRAIN web interface:
-
-```bash
-python src/vot1/ui/web_server.py
-```
-
-This will start the web server on http://127.0.0.1:8080 and open a browser window. The interface provides:
-
-- 3D visualization of the memory network
-- Node management
-- Memory exploration
-- System monitoring
-
-### Command Line Interface
-
-The VOT1 system can also be interacted with through the command line:
-
-```bash
-python -m vot1.cli.main
-```
-
-For help on available commands:
-
-```bash
-python -m vot1.cli.main --help
-```
-
-### API Usage with Claude 3.7 Integration
-
-The VOT1 system leverages Claude 3.7's advanced capabilities through its enhanced memory bridge:
+### Usage Example
 
 ```python
-from vot1.composio.client import ComposioClient
-from vot1.composio.memory_bridge import ComposioMemoryBridge
+from src.vot1.memory.cascading_cache import CascadingMemoryCache
+from src.vot1.memory.episodic_memory import EpisodicMemoryManager
 
-# Initialize the Composio client with Claude 3.7
-client = ComposioClient(
-    model="claude-3-7-sonnet-20240620",
-    hybrid_mode=True,
-    max_thinking_tokens=120000
+# Initialize memory systems
+cascading_cache = CascadingMemoryCache(
+    cascade_levels=3,
+    base_cache_size=4096,
+    token_budget=200000  # Claude 3.7 context size
 )
 
-# Initialize the enhanced memory bridge
-memory_bridge = ComposioMemoryBridge(
-    composio_client=client,
-    use_enhanced_memory=True
+# Process a memory
+result = await cascading_cache.process_memory(
+    memory={
+        "id": "mem_12345",
+        "content": "Important information to remember",
+        "timestamp": time.time(),
+        "importance": 0.8
+    }
 )
 
-# Process a request with advanced memory integration
-async def example():
-    # Basic memory integration
-    response = await memory_bridge.process_with_memory(
-        prompt="What is the TRILOGY BRAIN architecture?",
-        memory_limit=10,
-        memory_retrieval_strategy="hybrid",
-        thinking=True
-    )
-    
-    # Advanced memory reflection
-    reflection = await memory_bridge.advanced_memory_reflection(
-        query="memory systems",
-        reflection_depth="deep"
-    )
-    
-    # Hybrid processing mode
-    hybrid_response = await memory_bridge.process_with_hybrid_memory(
-        prompt="Analyze the key components of neuromimetic processing",
-        memory_limit=20
-    )
+# Build context for a query
+context = cascading_cache.build_context(
+    query="information to remember",
+    token_budget=150000
+)
+
+# Use the formatted context
+formatted_context = context["formatted_context"]
 ```
 
-## System Architecture
+## Performance Results
 
-The VOT1 system consists of several core components:
+The memory systems have been extensively tested and shown to provide significant benefits:
 
-1. **Memory System**: Responsible for storing, organizing, and retrieving memories
-   - Vector Store: Efficient embedding-based memory storage
-   - Memory Manager: Coordinates memory operations
-   - Memory Bridge: Connects memory system to Composio MCP with enhanced Claude 3.7 capabilities
-   - Memory Reflection: Advanced memory analysis using Claude 3.7's thinking capabilities
+- **Token Efficiency**: 2-3x improvement over standard caching approaches
+- **Memory Retention**: >85% retention of important memories
+- **Processing Speed**: <1ms average memory processing time 
+- **Context Quality**: High relevance scores across different query types
 
-2. **Blockchain Integration**: Provides security and verification
-   - Solana Memory Agent: Interfaces with Solana blockchain
-   - ZK-Verification Agent: Generates and verifies zero-knowledge proofs
-   - Consensus Agent: Coordinates distributed operations
+[View detailed performance results](docs/CascadingMemoryCache_Results.md)
 
-3. **TRILOGY BRAIN**: The core architectural framework
-   - Executive Cortex: Resource allocation and decision-making
-   - Associative Network: Manages relationships between memories
-   - Memory Foundation: Primary storage layer
+## Documentation
 
-4. **User Interfaces**:
-   - Web Interface: Three.js visualization and control panel
-   - CLI: Command-line tools for system management
-   - API: Programmatic access for integration
+- [CascadingMemoryCache Documentation](docs/CascadingMemoryCache.md)
+- [Performance Report](docs/CascadingMemoryCache_Results.md)
 
-## Claude 3.7 Memory Integration
+## Testing
 
-The VOT1 system integrates with Claude 3.7 to provide enhanced memory capabilities:
+Run the test suite for the CascadingMemoryCache:
 
-### Key Enhancements
-
-- **Extended Context Window**: Utilize Claude 3.7's 200K token context window for comprehensive memory inclusion
-- **Hybrid Memory Retrieval**: Combine semantic, temporal, and importance-based strategies for optimal memory retrieval
-- **Advanced Memory Reflection**: Leverage Claude 3.7's thinking capabilities for deeper memory analysis and pattern detection
-- **Graph-Based Memory Relationships**: Create and traverse sophisticated memory relationship graphs
-- **Memory Importance Scoring**: Prioritize memories based on relevance and importance metrics
-- **Hybrid Processing Mode**: Combine local planning with remote execution for complex memory operations
-
-### Memory Retrieval Strategies
-
-The system supports multiple retrieval strategies optimized for different use cases:
-
-| Strategy | Description | Use Case |
-|----------|-------------|----------|
-| `semantic` | Pure semantic search based on embeddings | Finding conceptually related memories |
-| `temporal` | Time-based retrieval prioritizing recency | Recent conversation context |
-| `hybrid` | Combined semantic + temporal with importance scoring | General-purpose retrieval |
-
-For detailed documentation, see [Claude 3.7 Memory Integration](docs/claude_3.7_memory_integration.md).
-
-## Development
-
-### Project Structure
-
-```
-vot1/
-├── docs/                       # Documentation
-│   └── claude_3.7_memory_integration.md  # Claude 3.7 technical specification
-├── examples/                   # Example scripts
-│   └── claude_3.7_memory_example.py      # Claude 3.7 usage examples
-├── src/                        # Source code
-│   └── vot1/
-│       ├── blockchain/         # Blockchain integration
-│       ├── cli/                # Command-line interface
-│       ├── composio/           # Claude 3.7 integration via Composio MCP
-│       │   ├── memory_bridge.py         # Enhanced memory bridge
-│       │   ├── client.py                # Composio client
-│       │   └── enhanced_memory.py       # Enhanced memory manager
-│       ├── core/               # Core system components
-│       ├── distributed/        # Distributed system components
-│       ├── memory/             # Memory system
-│       ├── research/           # R&D experiments
-│       └── ui/                 # User interfaces
-├── tests/                      # Test suite
-├── .env                        # Environment variables
-└── requirements.txt            # Python dependencies
+```bash
+python scripts/test_cascading_cache.py --memory-count 100
 ```
 
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+This will generate a detailed performance report in the `data` directory.
 
 ## License
 
-VOT1 - TRILOGY BRAIN - © 2025 Organix - All rights reserved
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## Acknowledgements
 
-- Claude 3.7 for advanced AI capabilities and memory operations
-- Composio MCP for model control protocol integration
-- Solana blockchain for secure memory verification
-- Three.js for immersive visualization 
+- Claude 3.7 Sonnet for implementation assistance and documentation generation
+- The ideas in this project were inspired by research in cognitive psychology, memory systems, and large language model augmentation
+
+<div align="center">
+  <p>Developed with 💜 by the TRILOGY BRAIN team</p>
+</div> 

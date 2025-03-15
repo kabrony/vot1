@@ -1,0 +1,550 @@
+/**
+ * VOTai TRILOGY BRAIN - Modern UI Effects CSS
+ * Cyberpunk styling with modern UI influences from Perplexity and Cursor
+ */
+
+/* ===== Modern UI Variables ===== */
+:root {
+  /* Base colors */
+  --cursor-blue: #007acc;
+  --cursor-dark: #1e1e1e;
+  --perplexity-purple: #5436DA;
+  --perplexity-light: #F7F7F8;
+  
+  /* Cyberpunk neon colors */
+  --neon-pink: #ff2a6d;
+  --neon-blue: #00ccff;
+  --neon-purple: #7c3aed;
+  --neon-green: #05ffa1;
+  
+  /* Overlay and background */
+  --glass-bg: rgba(5, 0, 25, 0.7);
+  --glass-border: rgba(16, 165, 245, 0.3);
+  --glass-highlight: rgba(255, 42, 109, 0.2);
+  
+  /* Animations */
+  --glitch-timing: 0.05s;
+  --fade-timing: 0.3s;
+  --ripple-timing: 0.6s;
+}
+
+/* ===== Particle Background ===== */
+.particle-background {
+  position: relative;
+  overflow: hidden;
+}
+
+.particle-background canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.particle-background > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== Glass UI Effect (Popular in Modern Apps) ===== */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  box-shadow: 0 8px 32px rgba(16, 165, 245, 0.2);
+  border-color: var(--neon-blue);
+}
+
+/* Card with hover effect similar to Perplexity's cards */
+.modern-card {
+  background: var(--glass-bg);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 15px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--neon-purple);
+  box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.3);
+}
+
+.modern-card::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.modern-card:hover::after {
+  opacity: 1;
+}
+
+/* ===== Neon Text and Borders ===== */
+.neon-text {
+  color: var(--neon-blue);
+  text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+}
+
+.neon-text[data-glow-color="pink"] {
+  color: var(--neon-pink);
+  text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+}
+
+.neon-text[data-glow-color="purple"] {
+  color: var(--neon-purple);
+  text-shadow: 0 0 5px var(--neon-purple), 0 0 10px var(--neon-purple);
+}
+
+.neon-text[data-glow-color="green"] {
+  color: var(--neon-green);
+  text-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green);
+}
+
+.neon-border {
+  border: 2px solid var(--neon-blue);
+  box-shadow: 0 0 5px var(--neon-blue), inset 0 0 5px var(--neon-blue);
+}
+
+.neon-border[data-glow-color="pink"] {
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 5px var(--neon-pink), inset 0 0 5px var(--neon-pink);
+}
+
+.neon-border[data-glow-color="purple"] {
+  border-color: var(--neon-purple);
+  box-shadow: 0 0 5px var(--neon-purple), inset 0 0 5px var(--neon-purple);
+}
+
+.neon-border[data-glow-color="green"] {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 5px var(--neon-green), inset 0 0 5px var(--neon-green);
+}
+
+/* ===== Glitch Effect ===== */
+.cyber-glitch {
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-glitch::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: -1;
+}
+
+/* Only animate randomly, the JS will handle most animations */
+@keyframes glitch-animation {
+  0% {
+    clip: rect(49px, 9999px, 40px, 0);
+  }
+  5% {
+    clip: rect(75px, 9999px, 72px, 0);
+  }
+  10% {
+    clip: rect(96px, 9999px, 78px, 0);
+  }
+  15% {
+    clip: rect(9px, 9999px, 93px, 0);
+  }
+  20% {
+    clip: rect(40px, 9999px, 37px, 0);
+  }
+  25% {
+    clip: rect(65px, 9999px, 78px, 0);
+  }
+  30% {
+    clip: rect(89px, 9999px, 75px, 0);
+  }
+  35% {
+    clip: rect(1px, 9999px, 83px, 0);
+  }
+  40% {
+    clip: rect(84px, 9999px, 36px, 0);
+  }
+  45% {
+    clip: rect(44px, 9999px, 78px, 0);
+  }
+  50% {
+    clip: rect(16px, 9999px, 82px, 0);
+  }
+  55% {
+    clip: rect(7px, 9999px, 81px, 0);
+  }
+  60% {
+    clip: rect(68px, 9999px, 40px, 0);
+  }
+  65% {
+    clip: rect(72px, 9999px, 4px, 0);
+  }
+  70% {
+    clip: rect(95px, 9999px, 48px, 0);
+  }
+  75% {
+    clip: rect(20px, 9999px, 95px, 0);
+  }
+  80% {
+    clip: rect(20px, 9999px, 61px, 0);
+  }
+  85% {
+    clip: rect(77px, 9999px, 98px, 0);
+  }
+  90% {
+    clip: rect(33px, 9999px, 71px, 0);
+  }
+  95% {
+    clip: rect(8px, 9999px, 81px, 0);
+  }
+  100% {
+    clip: rect(99px, 9999px, 38px, 0);
+  }
+}
+
+/* ===== Ripple Effect ===== */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+  transform: translate3d(0, 0, 0);
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.4);
+  transform: scale(0);
+  animation: ripple-animation var(--ripple-timing) linear;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ===== Advanced Tooltip ===== */
+.advanced-tooltip {
+  position: absolute;
+  z-index: 9999;
+  background: var(--glass-bg);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 250px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
+}
+
+.advanced-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
+}
+
+/* ===== Typewriter Effect ===== */
+.typewriter {
+  visibility: hidden; /* Initially hidden, JS will make it visible */
+  display: inline-block;
+}
+
+.typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: currentColor;
+  margin-left: 2px;
+  animation: blink 1s infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ===== Parallax Effect ===== */
+.parallax {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* ===== Scroll Fade-in Effect ===== */
+.fade-in-view {
+  opacity: 0;
+  transform: translateY(50px);
+}
+
+/* ===== Terminal Style Console with Perplexity Influences ===== */
+.modern-terminal {
+  background: var(--cursor-dark);
+  color: #e0e0ff;
+  font-family: 'Share Tech Mono', monospace;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--neon-blue);
+  box-shadow: 0 0 15px rgba(0, 204, 255, 0.3);
+  overflow: hidden;
+}
+
+.modern-terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--neon-purple);
+  padding-bottom: 10px;
+}
+
+.modern-terminal-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.modern-terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.modern-terminal-dot.red {
+  background-color: #ff5f56;
+}
+
+.modern-terminal-dot.yellow {
+  background-color: #ffbd2e;
+}
+
+.modern-terminal-dot.green {
+  background-color: #27c93f;
+}
+
+.modern-terminal-content {
+  height: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
+  line-height: 1.5;
+}
+
+.modern-terminal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modern-terminal-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.modern-terminal-content::-webkit-scrollbar-thumb {
+  background: var(--neon-blue);
+  border-radius: 4px;
+}
+
+.modern-terminal-line {
+  margin-bottom: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.modern-terminal-line.success {
+  color: var(--neon-green);
+}
+
+.modern-terminal-line.error {
+  color: var(--neon-pink);
+}
+
+.modern-terminal-line.warning {
+  color: #ffbd2e;
+}
+
+.modern-terminal-input-line {
+  display: flex;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.modern-terminal-prompt {
+  color: var(--neon-green);
+  margin-right: 10px;
+}
+
+.modern-terminal-input {
+  background: transparent;
+  border: none;
+  color: white;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 16px;
+  flex-grow: 1;
+  outline: none;
+}
+
+/* ===== Cursor-style Intellisense Dropdown ===== */
+.intellisense-dropdown {
+  position: absolute;
+  background: var(--cursor-dark);
+  border: 1px solid var(--cursor-blue);
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  width: 300px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.intellisense-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.intellisense-item:hover,
+.intellisense-item.selected {
+  background: rgba(0, 122, 204, 0.2);
+}
+
+.intellisense-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.intellisense-label {
+  font-size: 14px;
+}
+
+.intellisense-detail {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: auto;
+}
+
+/* ===== Perplexity-style Loading Indicator ===== */
+.perplexity-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 24px;
+}
+
+.perplexity-loader__dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--perplexity-purple);
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: perplexity-loader 1.4s infinite ease-in-out both;
+}
+
+.perplexity-loader__dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.perplexity-loader__dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes perplexity-loader {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 768px) {
+  .modern-card {
+    padding: 15px;
+  }
+  
+  .intellisense-dropdown {
+    width: 90%;
+    max-width: 300px;
+  }
+}
+
+/* ===== Hover Effects ===== */
+.hover-lift {
+  transition: transform 0.2s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+.hover-glow {
+  transition: box-shadow 0.2s ease-out;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+
+/* Handle dark/light mode transitions */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cursor-dark: #1e1e1e;
+    --glass-bg: rgba(5, 0, 25, 0.7);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --cursor-dark: #f9f9f9;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+  }
+  
+  .modern-terminal {
+    background: #2d2d2d;
+  }
+  
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    color: #333;
+  }
+} 

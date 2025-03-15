@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRILOGY BRAIN - Distributed Memory System</title>
+    <link rel="icon" type="image/png" href="assets/favicon.svg">
+    <style>
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #0f0f1a;
+            color: #e4e4e4;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            grid-template-rows: 60px 1fr 30px;
+            grid-template-areas:
+                "header header"
+                "sidebar main"
+                "footer footer";
+            height: 100vh;
+        }
+        
+        /* Header */
+        .app-header {
+            grid-area: header;
+            background-color: #16162e;
+            border-bottom: 1px solid #2a2a4a;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        
+        .app-logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .app-logo img {
+            height: 36px;
+            margin-right: 10px;
+        }
+        
+        .app-logo h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e4e4e4;
+        }
+        
+        .app-logo h1 span {
+            color: #3498db;
+            font-weight: 800;
+        }
+        
+        .header-controls {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .header-controls button {
+            background: #2c2c54;
+            border: none;
+            color: #e4e4e4;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .header-controls button:hover {
+            background: #3c3c74;
+        }
+        
+        .network-status {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            gap: 8px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #2ecc71;
+            box-shadow: 0 0 8px #2ecc71;
+        }
+        
+        /* Sidebar */
+        .app-sidebar {
+            grid-area: sidebar;
+            background-color: #16162e;
+            border-right: 1px solid #2a2a4a;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+        
+        .sidebar-section {
+            padding: 0 15px;
+            margin-bottom: 25px;
+        }
+        
+        .sidebar-section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #6c7ae0;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .nav-item:hover {
+            background-color: #2a2a4a;
+        }
+        
+        .nav-item.active {
+            background-color: #3c3c74;
+        }
+        
+        .nav-item i {
+            margin-right: 10px;
+            font-size: 18px;
+            color: #6c7ae0;
+        }
+        
+        .nav-item span {
+            font-size: 14px;
+        }
+        
+        .node-list {
+            list-style: none;
+        }
+        
+        .node-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        
+        .node-item:hover {
+            background-color: #2a2a4a;
+        }
+        
+        .node-item:before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .node-item.online:before {
+            background-color: #2ecc71;
+        }
+        
+        .node-item.offline:before {
+            background-color: #7f8c8d;
+        }
+        
+        .node-item.error:before {
+            background-color: #e74c3c;
+        }
+        
+        .system-stats {
+            font-size: 13px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+        }
+        
+        /* Main content */
+        .app-main {
+            grid-area: main;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #trilogy-brain-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .overlay-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .overlay-controls button {
+            background: rgba(22, 22, 46, 0.7);
+            border: 1px solid #2a2a4a;
+            color: #e4e4e4;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .overlay-controls button:hover {
+            background: rgba(42, 42, 74, 0.9);
+        }
+        
+        /* Footer */
+        .app-footer {
+            grid-area: footer;
+            background-color: #16162e;
+            border-top: 1px solid #2a2a4a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 12px;
+            color: #6c7ae0;
+        }
+        
+        /* Utility classes */
+        .hidden {
+            display: none;
+        }
+        
+        /* Loading indicator */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 15, 26, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #16162e;
+            border-top: 5px solid #6c7ae0;
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Modal dialog */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: #16162e;
+            padding: 25px;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            position: relative;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c7ae0;
+            line-height: 1;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .modal-footer button {
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-cancel {
+            background: transparent;
+            border: 1px solid #6c7ae0;
+            color: #6c7ae0;
+        }
+        
+        .btn-primary {
+            background: #6c7ae0;
+            border: none;
+            color: white;
+        }
+        
+        /* Form elements */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 4px;
+            border: 1px solid #2a2a4a;
+            background-color: #1e1e3a;
+            color: #e4e4e4;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #6c7ae0;
+        }
+    </style>
+    <!-- Import icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <h2>Initializing TRILOGY BRAIN</h2>
+        <p>Connecting to distributed memory network...</p>
+    </div>
+    
+    <!-- Main application container -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="app-logo">
+                <img src="assets/trilogy-logo.svg" alt="TRILOGY BRAIN Logo">
+                <h1>TRILOGY <span>BRAIN</span></h1>
+            </div>
+            
+            <div class="header-controls">
+                <div class="network-status">
+                    <div class="status-indicator"></div>
+                    <span>Network Healthy</span>
+                </div>
+                
+                <button id="add-node-btn">
+                    <i class="fas fa-plus"></i> Add Node
+                </button>
+                
+                <button id="settings-btn">
+                    <i class="fas fa-cog"></i> Settings
+                </button>
+            </div>
+        </header>
+        
+        <!-- Sidebar -->
+        <aside class="app-sidebar">
+            <div class="sidebar-section">
+                <h3>Navigation</h3>
+                <div class="nav-item active" data-view="network-view">
+                    <i class="fas fa-network-wired"></i>
+                    <span>Network Visualization</span>
+                </div>
+                <div class="nav-item" data-view="memory-view">
+                    <i class="fas fa-brain"></i>
+                    <span>Memory Explorer</span>
+                </div>
+                <div class="nav-item" data-view="stats-view">
+                    <i class="fas fa-chart-line"></i>
+                    <span>System Analytics</span>
+                </div>
+                <div class="nav-item" data-view="logs-view">
+                    <i class="fas fa-list-alt"></i>
+                    <span>System Logs</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>Active Nodes</h3>
+                <ul class="node-list" id="node-list">
+                    <!-- Nodes will be populated dynamically -->
+                    <li class="node-item online" data-node-id="node_0">memory_node_0</li>
+                    <li class="node-item online" data-node-id="node_1">compute_node_0</li>
+                    <li class="node-item error" data-node-id="node_2">validator_node_0</li>
+                    <li class="node-item offline" data-node-id="node_3">gateway_node_0</li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>System Health</h3>
+                <div class="system-stats">
+                    <div class="stat-item">
+                        <span>Memory Nodes:</span>
+                        <span class="stat-value" id="memory-nodes-count">3/4</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Compute Nodes:</span>
+                        <span class="stat-value" id="compute-nodes-count">2/2</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Network Health:</span>
+                        <span class="stat-value" id="network-health">87%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Memory Objects:</span>
+                        <span class="stat-value" id="memory-objects">1,248</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Active Connections:</span>
+                        <span class="stat-value" id="active-connections">18</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main content area -->
+        <main class="app-main">
+            <!-- Network visualization view (default) -->
+            <div id="trilogy-brain-container"></div>
+            
+            <div class="overlay-controls">
+                <button id="reset-view-btn">
+                    <i class="fas fa-sync"></i> Reset View
+                </button>
+                <button id="toggle-rotation-btn">
+                    <i class="fas fa-redo"></i> Toggle Rotation
+                </button>
+                <button id="toggle-effects-btn">
+                    <i class="fas fa-magic"></i> Toggle Effects
+                </button>
+            </div>
+            
+            <!-- Other views (hidden by default) -->
+            <div id="memory-view" class="view-content hidden">
+                <h2>Memory Explorer</h2>
+                <p>Memory Explorer view is under development.</p>
+            </div>
+            
+            <div id="stats-view" class="view-content hidden">
+                <h2>System Analytics</h2>
+                <p>System Analytics view is under development.</p>
+            </div>
+            
+            <div id="logs-view" class="view-content hidden">
+                <h2>System Logs</h2>
+                <p>System Logs view is under development.</p>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div>TRILOGY BRAIN v1.0.0 | VOT1 Project</div>
+            <div>© 2025 Organix - All rights reserved</div>
+        </footer>
+    </div>
+    
+    <!-- Add Node Modal -->
+    <div id="add-node-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Node</h2>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="node-type">Node Type</label>
+                    <select id="node-type">
+                        <option value="memory">Memory Node</option>
+                        <option value="compute">Compute Node</option>
+                        <option value="coordinator">Coordinator Node</option>
+                        <option value="validator">Validator Node</option>
+                        <option value="gateway">Gateway Node</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="node-host">Host</label>
+                    <input type="text" id="node-host" value="localhost">
+                </div>
+                <div class="form-group">
+                    <label for="node-port">Port</label>
+                    <input type="number" id="node-port" value="8000">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="cancel-add-node">Cancel</button>
+                <button class="btn-primary" id="confirm-add-node">Add Node</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>System Settings</h2>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="heartbeat-interval">Heartbeat Interval (seconds)</label>
+                    <input type="number" id="heartbeat-interval" value="30">
+                </div>
+                <div class="form-group">
+                    <label for="sync-interval">Memory Sync Interval (seconds)</label>
+                    <input type="number" id="sync-interval" value="300">
+                </div>
+                <div class="form-group">
+                    <label for="auto-discovery">Enable Auto Discovery</label>
+                    <select id="auto-discovery">
+                        <option value="true">Enabled</option>
+                        <option value="false">Disabled</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="cancel-settings">Cancel</button>
+                <button class="btn-primary" id="save-settings">Save Settings</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Import Three.js and our visualization code -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/"
+        }
+    }
+    </script>
+    <script type="module">
+        import TrilogyBrainUI from './trilogy_brain_ui.js';
+        
+        // DOM Elements
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const addNodeBtn = document.getElementById('add-node-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const addNodeModal = document.getElementById('add-node-modal');
+        const settingsModal = document.getElementById('settings-modal');
+        const navItems = document.querySelectorAll('.nav-item');
+        const nodeItems = document.querySelectorAll('.node-item');
+        const resetViewBtn = document.getElementById('reset-view-btn');
+        const toggleRotationBtn = document.getElementById('toggle-rotation-btn');
+        const toggleEffectsBtn = document.getElementById('toggle-effects-btn');
+        
+        // System state
+        let autoRotate = false;
+        let effectsEnabled = true;
+        let trilogyBrainUI = null;
+        
+        // Initialize TRILOGY BRAIN UI
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Simulate loading delay for dramatic effect
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Initialize Three.js visualization
+                trilogyBrainUI = new TrilogyBrainUI({
+                    containerId: 'trilogy-brain-container',
+                    apiUrl: '/api',
+                    enableEffects: effectsEnabled,
+                    autoRotate: autoRotate
+                });
+                
+                // Update UI elements with data from the visualization
+                updateUIFromVisualization();
+                
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
+            } catch (error) {
+                console.error('Error initializing TRILOGY BRAIN UI:', error);
+                // Show error in loading overlay
+                loadingOverlay.innerHTML = `
+                    <div style="color: #e74c3c;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                        <h2>Error Initializing TRILOGY BRAIN</h2>
+                        <p>${error.message}</p>
+                        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #6c7ae0; border: none; border-radius: 4px; color: white; cursor: pointer;">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        });
+        
+        // Navigation
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // Remove active class from all nav items
+                navItems.forEach(navItem => {
+                    navItem.classList.remove('active');
+                });
+                
+                // Add active class to clicked item
+                item.classList.add('active');
+                
+                // Hide all views
+                document.querySelectorAll('.view-content').forEach(view => {
+                    view.classList.add('hidden');
+                });
+                
+                // Show selected view
+                const viewId = item.dataset.view;
+                if (viewId === 'network-view') {
+                    // Special case for the 3D network view
+                    document.getElementById('trilogy-brain-container').style.display = 'block';
+                    document.querySelector('.overlay-controls').style.display = 'flex';
+                } else {
+                    // Hide 3D view and controls
+                    document.getElementById('trilogy-brain-container').style.display = 'none';
+                    document.querySelector('.overlay-controls').style.display = 'none';
+                    
+                    // Show the selected view
+                    const viewElement = document.getElementById(viewId);
+                    if (viewElement) {
+                        viewElement.classList.remove('hidden');
+                    }
+                }
+            });
+        });
+        
+        // Node selection
+        nodeItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const nodeId = item.dataset.nodeId;
+                if (trilogyBrainUI && nodeId) {
+                    // Focus on the selected node in the visualization
+                    trilogyBrainUI.focusNode(nodeId);
+                    
+                    // Ensure network view is active
+                    document.querySelector('.nav-item[data-view="network-view"]').click();
+                }
+            });
+        });
+        
+        // Modal controls
+        addNodeBtn.addEventListener('click', () => {
+            addNodeModal.style.display = 'flex';
+        });
+        
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.style.display = 'flex';
+        });
+        
+        // Close modals when clicking the X or Cancel
+        document.querySelectorAll('.modal-close, .btn-cancel').forEach(element => {
+            element.addEventListener('click', () => {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            });
+        });
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        });
+        
+        // Add node form submission
+        document.getElementById('confirm-add-node').addEventListener('click', () => {
+            const nodeType = document.getElementById('node-type').value;
+            const nodeHost = document.getElementById('node-host').value;
+            const nodePort = document.getElementById('node-port').value;
+            
+            console.log(`Adding ${nodeType} node at ${nodeHost}:${nodePort}`);
+            
+            // TODO: Make actual API call to add the node
+            // For now, just close the modal
+            addNodeModal.style.display = 'none';
+            
+            // Show a temporary notification
+            showNotification(`Added new ${nodeType} node at ${nodeHost}:${nodePort}`);
+        });
+        
+        // Settings form submission
+        document.getElementById('save-settings').addEventListener('click', () => {
+            const heartbeatInterval = document.getElementById('heartbeat-interval').value;
+            const syncInterval = document.getElementById('sync-interval').value;
+            const autoDiscovery = document.getElementById('auto-discovery').value === 'true';
+            
+            console.log(`Saving settings: heartbeat=${heartbeatInterval}s, sync=${syncInterval}s, discovery=${autoDiscovery}`);
+            
+            // TODO: Make actual API call to save settings
+            // For now, just close the modal
+            settingsModal.style.display = 'none';
+            
+            // Show a temporary notification
+            showNotification('Settings saved successfully');
+        });
+        
+        // Visualization controls
+        resetViewBtn.addEventListener('click', () => {
+            if (trilogyBrainUI) {
+                // Reset camera position and rotation
+                trilogyBrainUI.controls.reset();
+            }
+        });
+        
+        toggleRotationBtn.addEventListener('click', () => {
+            if (trilogyBrainUI) {
+                autoRotate = !autoRotate;
+                trilogyBrainUI.setAutoRotate(autoRotate);
+                toggleRotationBtn.innerHTML = autoRotate ? 
+                    '<i class="fas fa-stop"></i> Stop Rotation' : 
+                    '<i class="fas fa-redo"></i> Start Rotation';
+            }
+        });
+        
+        toggleEffectsBtn.addEventListener('click', () => {
+            if (trilogyBrainUI) {
+                effectsEnabled = !effectsEnabled;
+                trilogyBrainUI.setEffects(effectsEnabled);
+                toggleEffectsBtn.innerHTML = effectsEnabled ? 
+                    '<i class="fas fa-magic"></i> Disable Effects' : 
+                    '<i class="fas fa-magic"></i> Enable Effects';
+            }
+        });
+        
+        // Update UI from visualization data
+        function updateUIFromVisualization() {
+            // This function would be called periodically to update UI elements
+            // based on the current state of the visualization
+            
+            // For now, we'll just use mock data
+            
+            // Update node list
+            const nodeList = document.getElementById('node-list');
+            nodeList.innerHTML = ''; // Clear existing nodes
+            
+            // Get node data from the visualization (mock for now)
+            const nodes = trilogyBrainUI ? Array.from(trilogyBrainUI.nodes.entries()) : [];
+            
+            if (nodes.length > 0) {
+                nodes.forEach(([nodeId, node]) => {
+                    const li = document.createElement('li');
+                    li.classList.add('node-item', node.data.status);
+                    li.dataset.nodeId = nodeId;
+                    li.textContent = `${node.data.node_type}_${nodeId}`;
+                    li.addEventListener('click', () => {
+                        if (trilogyBrainUI) {
+                            trilogyBrainUI.focusNode(nodeId);
+                            document.querySelector('.nav-item[data-view="network-view"]').click();
+                        }
+                    });
+                    nodeList.appendChild(li);
+                });
+            } else {
+                // Mock nodes if no real data
+                const mockNodeTypes = ['memory', 'compute', 'coordinator', 'validator', 'gateway'];
+                const mockStatuses = ['online', 'offline', 'error'];
+                
+                for (let i = 0; i < 5; i++) {
+                    const li = document.createElement('li');
+                    const type = mockNodeTypes[Math.floor(Math.random() * mockNodeTypes.length)];
+                    const status = mockStatuses[Math.floor(Math.random() * mockStatuses.length)];
+                    
+                    li.classList.add('node-item', status);
+                    li.dataset.nodeId = `node_${i}`;
+                    li.textContent = `${type}_node_${i}`;
+                    li.addEventListener('click', () => {
+                        if (trilogyBrainUI) {
+                            trilogyBrainUI.focusNode(`node_${i}`);
+                            document.querySelector('.nav-item[data-view="network-view"]').click();
+                        }
+                    });
+                    nodeList.appendChild(li);
+                }
+            }
+            
+            // Update stats
+            document.getElementById('memory-nodes-count').textContent = '3/4';
+            document.getElementById('compute-nodes-count').textContent = '2/2';
+            document.getElementById('network-health').textContent = '87%';
+            document.getElementById('memory-objects').textContent = '1,248';
+            document.getElementById('active-connections').textContent = '18';
+            
+            // Update network status indicator
+            const indicator = document.querySelector('.status-indicator');
+            const statusText = document.querySelector('.network-status span');
+            
+            // For demonstration, we'll just show a healthy status
+            indicator.style.backgroundColor = '#2ecc71';
+            indicator.style.boxShadow = '0 0 8px #2ecc71';
+            statusText.textContent = 'Network Healthy';
+        }
+        
+        // Show a temporary notification
+        function showNotification(message, duration = 3000) {
+            // Create notification element if it doesn't exist
+            let notification = document.getElementById('notification');
+            if (!notification) {
+                notification = document.createElement('div');
+                notification.id = 'notification';
+                notification.style.position = 'fixed';
+                notification.style.bottom = '20px';
+                notification.style.right = '20px';
+                notification.style.padding = '15px 20px';
+                notification.style.backgroundColor = 'rgba(22, 22, 46, 0.9)';
+                notification.style.color = 'white';
+                notification.style.borderRadius = '6px';
+                notification.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                notification.style.zIndex = '1000';
+                notification.style.transform = 'translateY(100px)';
+                notification.style.opacity = '0';
+                notification.style.transition = 'transform 0.3s, opacity 0.3s';
+                document.body.appendChild(notification);
+            }
+            
+            // Set message
+            notification.textContent = message;
+            
+            // Show notification
+            setTimeout(() => {
+                notification.style.transform = 'translateY(0)';
+                notification.style.opacity = '1';
+            }, 10);
+            
+            // Hide after duration
+            setTimeout(() => {
+                notification.style.transform = 'translateY(100px)';
+                notification.style.opacity = '0';
+            }, duration);
+        }
+        
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (trilogyBrainUI) {
+                trilogyBrainUI.dispose();
+            }
+        });
+    </script>
+</body>
+</html> 

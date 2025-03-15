@@ -1,0 +1,394 @@
+/* 
+ * VOTai TRILOGY BRAIN - Terminal Styles
+ * Cyberpunk styling for the terminal component
+ */
+
+.terminal-container {
+  border-top: 1px solid var(--panel-border);
+  background: var(--bg-dark);
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--text-primary);
+  position: relative;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-medium);
+  border-bottom: 1px solid var(--panel-border);
+  padding: 5px 10px;
+  cursor: default;
+  user-select: none;
+}
+
+.terminal-title {
+  color: var(--text-primary);
+  font-weight: bold;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+}
+
+.terminal-title::before {
+  content: '>';
+  color: var(--secondary);
+  margin-right: 5px;
+}
+
+.terminal-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.terminal-button {
+  background: var(--bg-light);
+  color: var(--text-secondary);
+  border: 1px solid var(--primary);
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-family: 'Share Tech Mono', monospace;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.terminal-button:hover {
+  background: var(--primary);
+  color: var(--text-bright);
+  box-shadow: 0 0 5px var(--primary-glow);
+}
+
+.terminal-button:active {
+  transform: translateY(1px);
+}
+
+.terminal-content {
+  background: rgba(5, 0, 19, 0.9);
+  padding: 10px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--secondary) var(--bg-dark);
+  height: calc(100% - 84px); /* Account for header and input */
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.terminal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.terminal-content::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+.terminal-content::-webkit-scrollbar-thumb {
+  background-color: var(--secondary);
+  border-radius: 3px;
+}
+
+.terminal-line {
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  position: relative;
+  opacity: 0;
+  animation: fade-in 0.1s forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.terminal-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -3px;
+  height: 100%;
+  width: 1px;
+  background: linear-gradient(to bottom, 
+    rgba(16, 165, 245, 0), 
+    rgba(16, 165, 245, 0.4) 50%, 
+    rgba(16, 165, 245, 0));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.terminal-line:hover::before {
+  opacity: 1;
+}
+
+.terminal-input-container {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  background: var(--bg-medium);
+  border-top: 1px solid var(--panel-border);
+  position: relative;
+}
+
+.terminal-prompt {
+  color: var(--secondary);
+  margin-right: 8px;
+  white-space: nowrap;
+  font-weight: bold;
+}
+
+.terminal-input {
+  background: transparent;
+  border: none;
+  color: var(--text-bright);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.85rem;
+  flex: 1;
+  outline: none;
+  caret-color: var(--secondary);
+}
+
+.terminal-input::placeholder {
+  color: var(--text-disabled);
+  opacity: 0.5;
+}
+
+/* Terminal text elements */
+
+.terminal-time {
+  color: var(--text-secondary);
+  margin-right: 8px;
+  opacity: 0.7;
+}
+
+.terminal-agent {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.terminal-message {
+  color: var(--text-primary);
+}
+
+.terminal-user-command {
+  color: var(--secondary);
+  font-weight: bold;
+}
+
+.terminal-command-help {
+  color: var(--secondary);
+  font-weight: bold;
+  display: inline-block;
+}
+
+.terminal-help-desc {
+  color: var(--text-secondary);
+}
+
+.terminal-stat-name {
+  color: var(--text-secondary);
+  display: inline-block;
+}
+
+.terminal-stat-value {
+  color: var(--text-bright);
+  font-weight: bold;
+}
+
+/* Terminal info levels */
+
+.terminal-info {
+  color: var(--status-info);
+  font-weight: bold;
+}
+
+.terminal-success {
+  color: var(--status-success);
+  font-weight: bold;
+}
+
+.terminal-warning {
+  color: var(--status-warning);
+  font-weight: bold;
+}
+
+.terminal-error {
+  color: var(--status-error);
+  font-weight: bold;
+}
+
+/* Memory styling */
+
+.memory-id {
+  color: var(--primary);
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.memory-level {
+  color: var(--secondary);
+  margin-right: 5px;
+}
+
+.memory-importance, .memory-relevance {
+  color: var(--accent);
+  margin-right: 5px;
+}
+
+.memory-detail {
+  color: var(--text-secondary);
+  margin-left: 15px;
+  position: relative;
+}
+
+.memory-detail::before {
+  content: '│';
+  position: absolute;
+  left: -10px;
+  color: var(--secondary);
+  opacity: 0.5;
+}
+
+/* Token styling */
+
+.token-name {
+  color: var(--secondary);
+  font-weight: bold;
+  display: inline-block;
+}
+
+.token-balance {
+  color: var(--text-primary);
+  display: inline-block;
+}
+
+.token-value {
+  color: var(--status-success);
+}
+
+.token-reward {
+  color: var(--status-success);
+  font-weight: bold;
+}
+
+.token-spend {
+  color: var(--status-error);
+  font-weight: bold;
+}
+
+.token-time {
+  color: var(--text-secondary);
+  margin-right: 8px;
+  opacity: 0.7;
+}
+
+/* Status styling */
+
+.component-name {
+  color: var(--text-secondary);
+  display: inline-block;
+}
+
+.status-online {
+  color: var(--status-success);
+  font-weight: bold;
+  display: inline-block;
+}
+
+.status-offline {
+  color: var(--status-error);
+  font-weight: bold;
+  display: inline-block;
+}
+
+/* Scan line effect */
+.terminal-content::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(
+    transparent 50%, 
+    rgba(58, 16, 120, 0.03) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+}
+
+/* Blinking cursor */
+.terminal-input-container::after {
+  content: '█';
+  position: absolute;
+  right: 10px;
+  bottom: 5px;
+  color: var(--secondary);
+  opacity: 0;
+  animation: blink 1s infinite;
+  pointer-events: none;
+}
+
+@keyframes blink {
+  0%, 49% {
+    opacity: 0;
+  }
+  50%, 100% {
+    opacity: 1;
+  }
+}
+
+/* Glitch effect on error messages */
+.terminal-error {
+  position: relative;
+  animation: glitch-text 0.4s linear 1;
+}
+
+@keyframes glitch-text {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 1px);
+  }
+  40% {
+    transform: translate(-1px, -1px);
+  }
+  60% {
+    transform: translate(1px, 1px);
+  }
+  80% {
+    transform: translate(1px, -1px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+/* Terminal typewriter effect */
+@keyframes typewriter {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+/* Ghost cursor animation */
+@keyframes ghost-cursor {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Memory selection highlight */
+.terminal-line.selected {
+  background: rgba(58, 16, 120, 0.3);
+  border-left: 2px solid var(--secondary);
+  padding-left: 5px;
+}
+
+/* Command history indicator */
+.terminal-input-container.has-history::before {
+  content: '↑';
+  position: absolute;
+  right: 20px;
+  bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  opacity: 0.5;
+} 

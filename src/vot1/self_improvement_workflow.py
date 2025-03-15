@@ -23,6 +23,7 @@ import time
 import asyncio
 import argparse
 import sys
+import subprocess
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Union, Tuple, Set
 
@@ -44,19 +45,24 @@ try:
     from vot1.memory import MemoryManager, VectorStore
     from vot1.owl_reasoning import OWLReasoningEngine
     from vot1.perplexity_client import PerplexityClient
+    from vot1.utils.branding import print_logo, print_branded_message, format_status, get_logo
 except ImportError as e:
     logger.error(f"Failed to import VOT1 modules: {e}")
     logger.error("Please ensure VOT1 is properly installed")
     sys.exit(1)
 
+# Claude 3.7 Sonnet configuration
+CLAUDE_MODEL = "claude-3-7-sonnet-20240708"
+CLAUDE_MAX_THINKING_TOKENS = 15000  # Maximum thinking tokens for Claude 3.7 Sonnet
 
 class SelfImprovementWorkflow:
     """
-    Orchestrates self-improvement workflows for VOT1 agents.
+    Implements a self-improvement workflow for VOT1 system components.
     
-    This class provides capabilities for agents to analyze, enhance, and improve
-    their own code, particularly focusing on the THREE.js visualization module
-    and other core components.
+    This class provides methods for improving THREE.js visualizations,
+    enhancing memory systems, and refining agent capabilities. It leverages
+    a hybrid approach combining Claude 3.7 Sonnet and Perplexity for optimal
+    reasoning and code generation.
     """
     
     def __init__(
@@ -67,7 +73,7 @@ class SelfImprovementWorkflow:
         github_repo: Optional[str] = None,
         github_owner: Optional[str] = None,
         vector_model: str = "sentence-transformers/all-mpnet-base-v2",
-        max_thinking_tokens: int = 4096,
+        max_thinking_tokens: int = CLAUDE_MAX_THINKING_TOKENS,
         use_perplexity: bool = True,
         workspace_dir: Optional[str] = None
     ):
@@ -75,79 +81,65 @@ class SelfImprovementWorkflow:
         Initialize the self-improvement workflow.
         
         Args:
-            memory_manager: Memory manager instance or None to create a new one
-            owl_engine: OWL reasoning engine or None to create a new one
-            github_token: GitHub API token for repository integration
+            memory_manager: Memory manager instance for context
+            owl_engine: OWL reasoning engine for semantic analysis
+            github_token: GitHub access token for repository operations
             github_repo: GitHub repository name
             github_owner: GitHub repository owner
-            vector_model: Model name for vector embeddings
-            max_thinking_tokens: Maximum tokens to use for thinking stream
-            use_perplexity: Whether to use Perplexity for web searches
+            vector_model: Embedding model for vector search
+            max_thinking_tokens: Maximum tokens for Claude's thinking process
+            use_perplexity: Whether to use Perplexity for web research
             workspace_dir: Directory containing the codebase
         """
-        # Set up workspace directory
-        self.workspace_dir = Path(workspace_dir or os.getcwd())
-        logger.info(f"Using workspace directory: {self.workspace_dir}")
+        logger.info(format_status("info", "Initializing VOTai Self-Improvement Workflow"))
+        print_logo()
         
-        # Initialize memory management
-        if memory_manager is None:
-            vector_store = VectorStore(
-                model_name=vector_model,
-                storage_path=str(self.workspace_dir / "memory" / "vector_store.db")
-            )
-            self.memory_manager = MemoryManager(
-                vector_store=vector_store,
-                memory_path=str(self.workspace_dir / "memory")
-            )
-            logger.info("Initialized new memory manager")
-        else:
-            self.memory_manager = memory_manager
-            logger.info("Using provided memory manager")
-        
-        # Initialize OWL reasoning engine
-        if owl_engine is None:
-            ontology_path = str(self.workspace_dir / "owl" / "vot1_ontology.owl")
-            self.owl_engine = OWLReasoningEngine(
-                ontology_path=ontology_path,
-                memory_manager=self.memory_manager,
-                embedding_model=vector_model
-            )
-            logger.info(f"Initialized new OWL reasoning engine with ontology: {ontology_path}")
-        else:
-            self.owl_engine = owl_engine
-            logger.info("Using provided OWL reasoning engine")
-        
-        # Set up GitHub integration
-        self.github_token = github_token or os.environ.get("GITHUB_TOKEN")
-        self.github_repo = github_repo or os.environ.get("GITHUB_REPO")
-        self.github_owner = github_owner or os.environ.get("GITHUB_OWNER")
-        self.github_enabled = bool(self.github_token and self.github_repo and self.github_owner)
-        
-        if self.github_enabled:
-            logger.info(f"GitHub integration enabled for {self.github_owner}/{self.github_repo}")
-        else:
-            logger.warning("GitHub integration not configured or missing credentials")
-        
-        # Initialize MCP for multiple AI models
-        tools = self._create_tool_definitions()
+        # Initialize MCP with Claude 3.7 Sonnet
         self.mcp = VotModelControlProtocol(
-            primary_provider=VotModelControlProtocol.PROVIDER_ANTHROPIC,
-            primary_model="claude-3-7-sonnet-20240620",  # Latest Sonnet model
-            secondary_provider=VotModelControlProtocol.PROVIDER_PERPLEXITY,
-            secondary_model="pplx-70b-online",  # Latest Perplexity model
-            tools=tools,
-            memory_manager=self.memory_manager,
-            execution_mode=VotModelControlProtocol.MODE_STREAMING,
-            config={
-                "max_thinking_tokens": max_thinking_tokens,
-                "use_hybrid_approach": True,
-                "enable_web_search": use_perplexity
-            }
+            model_name=CLAUDE_MODEL,
+            max_thinking_tokens=max_thinking_tokens,
+            use_hybrid_reasoning=True
         )
-        logger.info(f"Initialized VotModelControlProtocol with max thinking tokens: {max_thinking_tokens}")
         
-        # Register tool handlers
+        # Configure memory systems
+        self.memory_manager = memory_manager or MemoryManager(
+            vector_store=VectorStore(model_name=vector_model),
+            memory_path="memory/self_improvement"
+        )
+        
+        # Configure OWL reasoning
+        self.owl_engine = owl_engine or OWLReasoningEngine()
+        
+        # GitHub configuration
+        self.github_token = github_token or os.getenv("GITHUB_TOKEN")
+        self.github_repo = github_repo or os.getenv("GITHUB_REPO", "vot1")
+        self.github_owner = github_owner or os.getenv("GITHUB_OWNER")
+        
+        # Perplexity integration for web research
+        self.use_perplexity = use_perplexity
+        if self.use_perplexity:
+            self.perplexity = PerplexityClient(
+                api_key=os.getenv("PERPLEXITY_API_KEY"),
+                model_name="pplx-70b-online" # Latest model with web search
+            )
+        
+        # Workspace directory
+        self.workspace_dir = workspace_dir or os.getcwd()
+        
+        # Tool definitions and handlers
+        self.tools = self._create_tool_definitions()
         self._register_tool_handlers()
+        
+        # Track improvement statistics
+        self.stats = {
+            "files_improved": 0,
+            "code_changes": 0,
+            "visualization_improvements": 0,
+            "memory_enhancements": 0,
+            "start_time": time.time()
+        }
+        
+        logger.info(format_status("success", "VOTai Self-Improvement Workflow initialized"))
     
     def _create_tool_definitions(self) -> List[Dict[str, Any]]:
         """Create tool definitions for the MCP."""
@@ -243,8 +235,6 @@ class SelfImprovementWorkflow:
             Dictionary with search results
         """
         # Implementation of codebase search
-        import subprocess
-        
         results = []
         extensions = ' '.join([f'--include="*.{ext.lstrip(".")}"' for ext in file_types])
         
@@ -414,15 +404,13 @@ class SelfImprovementWorkflow:
         Returns:
             Dictionary with commit results
         """
-        if not self.github_enabled:
+        if not self.github_token:
             return {
                 "success": False,
-                "error": "GitHub integration not enabled"
+                "error": "GitHub token not available"
             }
         
         try:
-            import subprocess
-            
             # Verify all files exist
             for file in files:
                 if not (self.workspace_dir / file).exists():
@@ -449,7 +437,11 @@ class SelfImprovementWorkflow:
                 "success": True,
                 "commit_message": commit_message,
                 "files": files,
-                "repository": f"{self.github_owner}/{self.github_repo}"
+                "repository": f"{self.github_owner}/{self.github_repo}",
+                "commit_sha": subprocess.check_output(
+                    f"git -C {self.workspace_dir} log -1 --pretty=%H",
+                    shell=True, text=True
+                ).strip()
             }
         except Exception as e:
             logger.error(f"Error committing changes: {e}")
@@ -668,100 +660,124 @@ class SelfImprovementWorkflow:
         """
         Run the complete self-improvement workflow.
         
+        This method orchestrates the full workflow:
+        1. Enhance THREE.js visualizations
+        2. Improve memory system components
+        3. Integrate OWL reasoning capabilities
+        4. Create self-improvement agents
+        5. Commit changes to GitHub
+        
         Returns:
             Dictionary with workflow results
         """
-        results = {}
+        print_branded_message("Starting VOTai Self-Improvement Workflow", "small")
         
         try:
-            # Step 1: Integrate OWL reasoning
-            logger.info("Step 1: Integrating OWL reasoning")
-            results["owl_integration"] = await self.integrate_owl_reasoning()
-            
+            # Step 1: Enhance THREE.js visualizations
+            viz_results = await self.improve_three_js_visualization()
+            if viz_results.get("success", False):
+                self.stats["visualization_improvements"] += 1
+                
             # Step 2: Enhance memory system
-            logger.info("Step 2: Enhancing memory system")
-            results["memory_enhancement"] = await self.enhance_memory_system()
-            
-            # Step 3: Improve THREE.js visualization
-            logger.info("Step 3: Improving THREE.js visualization")
-            results["three_js_improvement"] = await self.improve_three_js_visualization()
+            memory_results = await self.enhance_memory_system()
+            if memory_results.get("success", False):
+                self.stats["memory_enhancements"] += 1
+                
+            # Step 3: Integrate OWL reasoning
+            owl_results = await self.integrate_owl_reasoning()
             
             # Step 4: Create self-improvement agent
-            logger.info("Step 4: Creating self-improvement agent")
-            results["self_improvement_agent"] = await self.create_self_improvement_agent()
+            agent_results = await self.create_self_improvement_agent()
             
-            # Step 5: Commit changes to GitHub if enabled
-            if self.github_enabled:
-                logger.info("Step 5: Committing changes to GitHub")
-                commit_result = self._handle_commit_changes(
-                    commit_message="VOT1 Self-Improvement: Enhanced OWL, Memory, and Visualization",
-                    files=[
-                        "src/vot1/owl_reasoning.py",
-                        "src/vot1/memory.py",
-                        "src/vot1/dashboard/static/js/three-visualization.js",
-                        "src/vot1/self_improvement_workflow.py"
-                    ]
-                )
-                results["github_commit"] = commit_result
+            # Step 5: Commit changes to GitHub if token is available
+            if self.github_token:
+                files_changed = [
+                    result.get("file_path") 
+                    for result in [viz_results, memory_results, owl_results, agent_results] 
+                    if result.get("success", False) and result.get("file_path")
+                ]
+                
+                if files_changed:
+                    commit_message = f"VOTai Self-Improvement: {self.stats['files_improved']} files enhanced [Automated]"
+                    commit_results = self._handle_commit_changes(commit_message, files_changed)
+                    logger.info(format_status("success", f"Changes committed to GitHub: {commit_results.get('commit_sha', 'Unknown')}"))
             
-            logger.info("Self-improvement workflow completed successfully")
-            results["success"] = True
+            # Compile workflow results
+            workflow_duration = time.time() - self.stats["start_time"]
+            results = {
+                "success": True,
+                "visualization_results": viz_results,
+                "memory_results": memory_results,
+                "owl_results": owl_results,
+                "agent_results": agent_results,
+                "stats": {
+                    **self.stats,
+                    "duration": workflow_duration,
+                    "files_improved": self.stats["files_improved"]
+                },
+                "timestamp": time.time()
+            }
+            
+            # Log workflow completion
+            print_branded_message(
+                f"Workflow completed in {workflow_duration:.2f}s | "
+                f"Files improved: {self.stats['files_improved']} | "
+                f"Code changes: {self.stats['code_changes']}",
+                "minimal"
+            )
+            
             return results
-        
+            
         except Exception as e:
-            logger.error(f"Error during self-improvement workflow: {e}")
-            results["success"] = False
-            results["error"] = str(e)
-            return results
+            logger.error(f"Error in workflow: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "stats": self.stats
+            }
 
 
 async def main():
-    """Main function to run the self-improvement workflow."""
-    parser = argparse.ArgumentParser(description="Run VOT1 self-improvement workflow")
+    """Main entry point for the self-improvement workflow."""
+    print_logo()
+    print_branded_message("VOTai Self-Improvement System", "small")
     
-    parser.add_argument("--memory-path", type=str, default="memory",
-                      help="Path to the memory storage directory")
-    parser.add_argument("--owl-path", type=str, default="owl/vot1_ontology.owl",
-                      help="Path to the OWL ontology file")
-    parser.add_argument("--github-token", type=str,
-                      help="GitHub API token (or set GITHUB_TOKEN env var)")
-    parser.add_argument("--github-repo", type=str,
-                      help="GitHub repository name (or set GITHUB_REPO env var)")
-    parser.add_argument("--github-owner", type=str,
-                      help="GitHub repository owner (or set GITHUB_OWNER env var)")
-    parser.add_argument("--max-thinking-tokens", type=int, default=4096,
-                      help="Maximum tokens to use for thinking stream")
-    parser.add_argument("--no-perplexity", action="store_true",
-                      help="Disable Perplexity integration")
-    parser.add_argument("--workflow", type=str, choices=["all", "owl", "memory", "three-js", "agent"],
-                      default="all", help="Which workflow to run")
+    parser = argparse.ArgumentParser(description="VOTai Self-Improvement Workflow")
+    parser.add_argument("--workspace", type=str, help="Path to workspace directory")
+    parser.add_argument("--memory-path", type=str, default="memory/self_improvement", help="Path to memory storage")
+    parser.add_argument("--github-token", type=str, help="GitHub token for repository operations")
+    parser.add_argument("--github-repo", type=str, help="GitHub repository name")
+    parser.add_argument("--github-owner", type=str, help="GitHub repository owner")
+    parser.add_argument("--no-perplexity", action="store_true", help="Disable Perplexity integration")
+    parser.add_argument("--thinking-tokens", type=int, default=CLAUDE_MAX_THINKING_TOKENS, help="Maximum thinking tokens")
     
     args = parser.parse_args()
     
-    # Create the workflow instance
+    # Initialize the workflow
     workflow = SelfImprovementWorkflow(
         github_token=args.github_token,
         github_repo=args.github_repo,
         github_owner=args.github_owner,
-        max_thinking_tokens=args.max_thinking_tokens,
-        use_perplexity=not args.no_perplexity
+        max_thinking_tokens=args.thinking_tokens,
+        use_perplexity=not args.no_perplexity,
+        workspace_dir=args.workspace,
     )
     
-    # Run the selected workflow
-    if args.workflow == "all":
-        results = await workflow.run_full_workflow()
-    elif args.workflow == "owl":
-        results = await workflow.integrate_owl_reasoning()
-    elif args.workflow == "memory":
-        results = await workflow.enhance_memory_system()
-    elif args.workflow == "three-js":
-        results = await workflow.improve_three_js_visualization()
-    elif args.workflow == "agent":
-        results = await workflow.create_self_improvement_agent()
+    # Run the workflow
+    results = await workflow.run_full_workflow()
     
-    # Print results summary
-    print(json.dumps(results, indent=2))
-
+    # Output summary
+    if results.get("success", False):
+        print_branded_message("Self-Improvement Summary:", "minimal")
+        stats = results.get("stats", {})
+        print(f"- Duration: {stats.get('duration', 0):.2f}s")
+        print(f"- Files improved: {stats.get('files_improved', 0)}")
+        print(f"- Visualization improvements: {stats.get('visualization_improvements', 0)}")
+        print(f"- Memory enhancements: {stats.get('memory_enhancements', 0)}")
+    else:
+        print_branded_message(f"Workflow failed: {results.get('error', 'Unknown error')}", "minimal")
+    
+    return results
 
 if __name__ == "__main__":
     asyncio.run(main()) 

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TRILOGY BRAIN Memory Benchmark Report</title>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        :root {
+            --primary: #3A1078;
+            --secondary: #4E31AA;
+            --tertiary: #2F58CD;
+            --accent: #3795BD;
+            --neutral-dark: #2C3333;
+            --neutral-medium: #596263;
+            --neutral-light: #E8F9FD;
+            --success: #59CE8F;
+            --warning: #E8AB5C;
+            --error: #E64848;
+            --info: #3795BD;
+        }
+        body { font-family: 'Roboto', 'Segoe UI', sans-serif; margin: 0; padding: 0; color: var(--neutral-dark); line-height: 1.6; }
+        .container { width: 90%; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 2rem 0; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        header .container { display: flex; justify-content: space-between; align-items: center; }
+        .header-logo { font-size: 2.5rem; font-weight: bold; margin: 0; }
+        .header-subtitle { opacity: 0.9; margin-top: 0.5rem; }
+        h1 { color: var(--primary); margin-top: 2rem; font-size: 2.2rem; }
+        h2 { color: var(--secondary); margin-top: 2rem; font-size: 1.8rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; }
+        h3 { color: var(--tertiary); margin-top: 1.5rem; font-size: 1.5rem; }
+        .chart-container { margin: 2rem 0; background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .chart { width: 100%; max-width: 100%; height: auto; border-radius: 4px; }
+        .summary-card { background: var(--neutral-light); padding: 1.5rem; border-radius: 8px; margin: 2rem 0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .summary-card h2 { margin-top: 0; color: var(--primary); }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+        .metric-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; }
+        .metric-value { font-size: 2rem; font-weight: bold; color: var(--primary); margin: 0.5rem 0; }
+        .metric-label { font-size: 1rem; color: var(--neutral-medium); }
+        table { border-collapse: collapse; width: 100%; margin: 1.5rem 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: var(--neutral-light); color: var(--primary); font-weight: 600; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .recommendations { background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 1.5rem; border-radius: 8px; margin: 2rem 0; border-left: 5px solid var(--accent); }
+        .commandments { background: linear-gradient(135deg, var(--neutral-light), #f0f4f8); padding: 1.5rem; border-radius: 8px; margin: 2rem 0; border-left: 5px solid var(--tertiary); }
+        .commandment-item { margin-bottom: 0.8rem; }
+        footer { background: var(--neutral-dark); color: white; padding: 2rem 0; margin-top: 3rem; text-align: center; }
+        footer a { color: var(--accent); text-decoration: none; }
+        @media (max-width: 768px) {
+            header .container { flex-direction: column; text-align: center; }
+            .metric-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class='container'>
+            <div>
+                <h1 class='header-logo'>TRILOGY BRAIN</h1>
+                <p class='header-subtitle'>Memory Benchmark Report</p>
+            </div>
+            <div>Generated: 2025-03-14 16:38:39</div>
+        </div>
+    </header>
+    <div class='container'>
+        <div class='summary-card'>
+            <h2>Benchmark Summary</h2>
+            <div class='metric-grid'>
+                <div class='metric-card'>
+                    <div class='metric-label'>Total Memories</div>
+                    <div class='metric-value'>10</div>
+                </div>
+                <div class='metric-card'>
+                    <div class='metric-label'>Total Runtime</div>
+                    <div class='metric-value'>88.06s</div>
+                </div>
+                <div class='metric-card'>
+                    <div class='metric-label'>Model</div>
+                    <div class='metric-value'>claude-3-7-sonnet</div>
+                </div>
+                <div class='metric-card'>
+                    <div class='metric-label'>Agent Health</div>
+                    <div class='metric-value'>100.0%</div>
+                </div>
+            </div>
+        </div>
+        <div class='chart-container'>
+            <h2>Storage Single Op 20250314 163812</h2>
+            <img class='chart' src='storage_single_op_20250314_163812.png' alt='Storage Single Op 20250314 163812'>
+        </div>
+        <div class='chart-container'>
+            <h2>Retrieval Direct 20250314 163816</h2>
+            <img class='chart' src='retrieval_direct_20250314_163816.png' alt='Retrieval Direct 20250314 163816'>
+        </div>
+        <div class='chart-container'>
+            <h2>Retrieval Strategies 20250314 163816</h2>
+            <img class='chart' src='retrieval_strategies_20250314_163816.png' alt='Retrieval Strategies 20250314 163816'>
+        </div>
+        <div class='chart-container'>
+            <h2>Relationship Operations 20250314 163826</h2>
+            <img class='chart' src='relationship_operations_20250314_163826.png' alt='Relationship Operations 20250314 163826'>
+        </div>
+        <div class='chart-container'>
+            <h2>Reflection Depth 20250314 163834</h2>
+            <img class='chart' src='reflection_depth_20250314_163834.png' alt='Reflection Depth 20250314 163834'>
+        </div>
+        <div class='chart-container'>
+            <h2>Reflection Memory Count 20250314 163834</h2>
+            <img class='chart' src='reflection_memory_count_20250314_163834.png' alt='Reflection Memory Count 20250314 163834'>
+        </div>
+        <div class='chart-container'>
+            <h2>Hybrid Memory Limit 20250314 163835</h2>
+            <img class='chart' src='hybrid_memory_limit_20250314_163835.png' alt='Hybrid Memory Limit 20250314 163835'>
+        </div>
+        <div class='chart-container'>
+            <h2>Hybrid Strategies 20250314 163835</h2>
+            <img class='chart' src='hybrid_strategies_20250314_163835.png' alt='Hybrid Strategies 20250314 163835'>
+        </div>
+        <div class='chart-container'>
+            <h2>Hybrid Thinking Token Limits 20250314 163836</h2>
+            <img class='chart' src='hybrid_thinking_token_limits_20250314_163836.png' alt='Hybrid Thinking Token Limits 20250314 163836'>
+        </div>
+        <div class='chart-container'>
+            <h2>Hybrid Thinking Complexity 20250314 163836</h2>
+            <img class='chart' src='hybrid_thinking_complexity_20250314_163836.png' alt='Hybrid Thinking Complexity 20250314 163836'>
+        </div>
+        <div class='chart-container'>
+            <h2>Hybrid Thinking Integration 20250314 163836</h2>
+            <img class='chart' src='hybrid_thinking_integration_20250314_163836.png' alt='Hybrid Thinking Integration 20250314 163836'>
+        </div>
+        <div class='chart-container'>
+            <h2>Performance Summary 20250314 163839</h2>
+            <img class='chart' src='performance_summary_20250314_163839.png' alt='Performance Summary 20250314 163839'>
+        </div>
+        <div class='recommendations'>
+            <h2>Performance Recommendations</h2>
+            <ul>
+                <li>Sequential processing is efficient for memory storage operations</li>
+                <li>Sequential processing is efficient for memory storage operations</li>
+                <li>Sequential processing is efficient for memory storage operations</li>
+                <li>The 'semantic' retrieval strategy is most efficient (0.0000s)</li>
+                <li>Optimal memory limit for hybrid processing is around 5 memories</li>
+                <li>Optimal thinking token limit is around 2000 tokens for efficiency (2588.08 tokens/s)</li>
+                <li>Iterative memory-thinking integration provides better results despite -24.6% longer processing time</li>
+            </ul>
+        </div>
+    </div>
+    <footer>
+        <div class='container'>
+            <p>TRILOGY BRAIN Memory Benchmark Report &copy; 2025 • Generated by DataViz Agent</p>
+        </div>
+    </footer>
+</body>
+</html>

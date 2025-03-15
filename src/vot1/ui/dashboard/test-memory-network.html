@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Network Visualization Test</title>
+    
+    <!-- External libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    
+    <!-- Custom stylesheets -->
+    <link rel="stylesheet" href="css/cyberpunk.css">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            background-color: #050019; 
+            color: #e0e0ff;
+            margin: 0;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        #visualization-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        #control-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(5, 0, 25, 0.7);
+            border: 1px solid #3a1078;
+            padding: 15px;
+            box-shadow: 0 0 20px rgba(16, 165, 245, 0.3);
+            z-index: 1000;
+            width: 300px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        h2 {
+            color: #00ccff;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #e0e0ff;
+        }
+        button {
+            background: #3a1078;
+            color: #e0e0ff;
+            border: 1px solid #00ccff;
+            padding: 5px 15px;
+            margin: 5px 0;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            width: 100%;
+        }
+        button:hover {
+            background: #00ccff;
+            color: #050019;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #3a1078;
+            min-height: 100px;
+            font-size: 0.9em;
+            color: #e0e0ff;
+            overflow-y: auto;
+            max-height: 150px;
+        }
+        .loader {
+            border: 3px solid rgba(16, 165, 245, 0.3);
+            border-top: 3px solid #00ccff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="visualization-container"></div>
+    
+    <div id="control-panel">
+        <h2>Memory Network Controls</h2>
+        
+        <div class="control-group">
+            <button id="generate-btn">Generate Demo Data</button>
+            <button id="clear-btn">Clear Visualization</button>
+        </div>
+        
+        <div class="control-group">
+            <label>Node Count: <span id="node-count-value">50</span></label>
+            <input type="range" id="node-count" min="10" max="200" value="50">
+        </div>
+        
+        <div class="control-group">
+            <label>Glow Intensity: <span id="glow-intensity-value">1.0</span></label>
+            <input type="range" id="glow-intensity" min="0" max="2" step="0.1" value="1.0">
+        </div>
+        
+        <div class="control-group">
+            <label>Rotation Speed: <span id="rotation-speed-value">0.0005</span></label>
+            <input type="range" id="rotation-speed" min="0" max="0.002" step="0.0001" value="0.0005">
+        </div>
+        
+        <div id="status">Ready to test memory network visualization...</div>
+        <div class="loader" id="loader"></div>
+    </div>
+    
+    <script>
+        // Global variables
+        let visualization = null;
+        let nodeCount = 50;
+        let glowIntensity = 1.0;
+        let rotationSpeed = 0.0005;
+        
+        // Event listeners
+        document.getElementById('node-count').addEventListener('input', function(e) {
+            nodeCount = parseInt(e.target.value);
+            document.getElementById('node-count-value').textContent = nodeCount;
+        });
+        
+        document.getElementById('glow-intensity').addEventListener('input', function(e) {
+            glowIntensity = parseFloat(e.target.value);
+            document.getElementById('glow-intensity-value').textContent = glowIntensity.toFixed(1);
+            if (visualization) {
+                visualization.updateGlowIntensity(glowIntensity);
+            }
+        });
+        
+        document.getElementById('rotation-speed').addEventListener('input', function(e) {
+            rotationSpeed = parseFloat(e.target.value);
+            document.getElementById('rotation-speed-value').textContent = rotationSpeed.toFixed(4);
+            if (visualization) {
+                visualization.updateRotationSpeed(rotationSpeed);
+            }
+        });
+        
+        document.getElementById('generate-btn').addEventListener('click', generateDemoData);
+        document.getElementById('clear-btn').addEventListener('click', clearVisualization);
+        
+        // Status logging
+        function log(message) {
+            const status = document.getElementById('status');
+            const timestamp = new Date().toLocaleTimeString();
+            status.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            status.scrollTop = status.scrollHeight;
+        }
+        
+        // Show/hide loader
+        function toggleLoader(show) {
+            document.getElementById('loader').style.display = show ? 'block' : 'none';
+        }
+        
+        // Initialize visualization
+        function initVisualization() {
+            try {
+                const container = document.getElementById('visualization-container');
+                
+                // Create a simple test implementation of the MemoryNetworkVisualization
+                class TestMemoryVisualization {
+                    constructor(container) {
+                        this.container = container;
+                        this.scene = new THREE.Scene();
+                        this.scene.background = new THREE.Color(0x050019);
+                        
+                        // Set up camera
+                        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                        this.camera.position.z = 100;
+                        
+                        // Set up renderer
+                        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                        this.renderer.setSize(window.innerWidth, window.innerHeight);
+                        this.container.appendChild(this.renderer.domElement);
+                        
+                        // Set up controls
+                        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                        this.controls.enableDamping = true;
+                        this.controls.dampingFactor = 0.05;
+                        
+                        // Add ambient light
+                        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                        this.scene.add(ambientLight);
+                        
+                        // Keep track of objects
+                        this.nodes = [];
+                        this.links = [];
+                        
+                        // Memory level colors
+                        this.memoryLevels = {
+                            'L1': { color: 0xff1a8c, size: 1.5 },  // Hot pink for L1
+                            'L2': { color: 0x00ccff, size: 1.2 },  // Cyan for L2
+                            'L3': { color: 0x7c3aed, size: 1.0 }   // Purple for L3
+                        };
+                        
+                        // Start animation
+                        this.animate();
+                        
+                        // Window resize handler
+                        window.addEventListener('resize', this.onWindowResize.bind(this));
+                        
+                        log("Memory visualization initialized");
+                    }
+                    
+                    onWindowResize() {
+                        this.camera.aspect = window.innerWidth / window.innerHeight;
+                        this.camera.updateProjectionMatrix();
+                        this.renderer.setSize(window.innerWidth, window.innerHeight);
+                    }
+                    
+                    animate() {
+                        requestAnimationFrame(this.animate.bind(this));
+                        
+                        // Rotate nodes
+                        this.nodes.forEach(node => {
+                            node.rotation.x += 0.01;
+                            node.rotation.y += 0.01;
+                        });
+                        
+                        this.controls.update();
+                        this.renderer.render(this.scene, this.camera);
+                    }
+                    
+                    setData(data) {
+                        this.clearVisualization();
+                        
+                        // Create nodes
+                        if (data.memories) {
+                            log(`Creating ${data.memories.length} memory nodes...`);
+                            
+                            data.memories.forEach(memory => {
+                                this.addNode(memory);
+                            });
+                            
+                            // Create links between nodes
+                            data.memories.forEach(memory => {
+                                if (memory.connections) {
+                                    memory.connections.forEach(conn => {
+                                        this.addLink(memory.id, conn.targetId, conn.strength);
+                                    });
+                                }
+                            });
+                        }
+                    }
+                    
+                    addNode(memory) {
+                        // Determine color based on cache level
+                        const levelInfo = this.memoryLevels[memory.cacheLevel] || this.memoryLevels.L3;
+                        
+                        // Create geometry
+                        const geometry = new THREE.SphereGeometry(levelInfo.size, 16, 16);
+                        
+                        // Create material
+                        const material = new THREE.MeshBasicMaterial({
+                            color: levelInfo.color,
+                            transparent: true,
+                            opacity: 0.7
+                        });
+                        
+                        // Create mesh
+                        const node = new THREE.Mesh(geometry, material);
+                        
+                        // Position randomly
+                        node.position.x = (Math.random() - 0.5) * 100;
+                        node.position.y = (Math.random() - 0.5) * 100;
+                        node.position.z = (Math.random() - 0.5) * 100;
+                        
+                        // Store memory data and add to scene
+                        node.userData = memory;
+                        node.name = memory.id;
+                        
+                        this.scene.add(node);
+                        this.nodes.push(node);
+                        
+                        return node;
+                    }
+                    
+                    addLink(sourceId, targetId, strength) {
+                        // Find nodes
+                        const sourceNode = this.nodes.find(node => node.name === sourceId);
+                        const targetNode = this.nodes.find(node => node.name === targetId);
+                        
+                        if (!sourceNode || !targetNode) return null;
+                        
+                        // Create line geometry
+                        const points = [sourceNode.position, targetNode.position];
+                        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                        
+                        // Create line material
+                        const material = new THREE.LineBasicMaterial({
+                            color: 0x2196f3,
+                            transparent: true,
+                            opacity: Math.min(0.2 + strength * 0.5, 0.7)
+                        });
+                        
+                        // Create line
+                        const line = new THREE.Line(geometry, material);
+                        line.userData = { sourceId, targetId, strength };
+                        
+                        this.scene.add(line);
+                        this.links.push(line);
+                        
+                        return line;
+                    }
+                    
+                    clearVisualization() {
+                        // Remove all nodes
+                        this.nodes.forEach(node => {
+                            this.scene.remove(node);
+                            node.geometry.dispose();
+                            node.material.dispose();
+                        });
+                        
+                        // Remove all links
+                        this.links.forEach(link => {
+                            this.scene.remove(link);
+                            link.geometry.dispose();
+                            link.material.dispose();
+                        });
+                        
+                        this.nodes = [];
+                        this.links = [];
+                        
+                        log("Visualization cleared");
+                    }
+                    
+                    updateGlowIntensity(intensity) {
+                        log(`Setting glow intensity to ${intensity}`);
+                        // In this test implementation, we'll just change the opacity of nodes
+                        this.nodes.forEach(node => {
+                            node.material.opacity = Math.min(0.5 + intensity * 0.25, 1.0);
+                        });
+                    }
+                    
+                    updateRotationSpeed(speed) {
+                        log(`Setting rotation speed to ${speed}`);
+                        // This would normally update the rotation speed
+                        // For the test, we'll just log it
+                    }
+                }
+                
+                // Create instance
+                visualization = new TestMemoryVisualization(container);
+                
+                log("Test visualization initialized successfully");
+                return true;
+            } catch (error) {
+                log(`Error initializing visualization: ${error.message}`);
+                console.error(error);
+                return false;
+            }
+        }
+        
+        // Generate demo data
+        function generateDemoData() {
+            toggleLoader(true);
+            
+            try {
+                // Check if visualization is initialized
+                if (!visualization) {
+                    if (!initVisualization()) {
+                        log("Failed to initialize visualization");
+                        toggleLoader(false);
+                        return;
+                    }
+                }
+                
+                // Generate memory data
+                const memories = [];
+                const cacheLevels = ['L1', 'L2', 'L3'];
+                
+                for (let i = 0; i < nodeCount; i++) {
+                    // Random cache level
+                    const cacheLevel = cacheLevels[Math.floor(Math.random() * 3)];
+                    
+                    // Random importance based on level
+                    let importance;
+                    switch (cacheLevel) {
+                        case 'L1': importance = 0.7 + Math.random() * 0.3; break;
+                        case 'L2': importance = 0.4 + Math.random() * 0.3; break;
+                        case 'L3': importance = Math.random() * 0.4; break;
+                    }
+                    
+                    // Create memory
+                    const memory = {
+                        id: `mem-${i}`,
+                        text: `Test memory ${i}`,
+                        cacheLevel: cacheLevel,
+                        importance: importance,
+                        timestamp: Date.now() - Math.random() * 86400000, // Random time in last 24h
+                        tokenCount: 10 + Math.floor(Math.random() * 90)
+                    };
+                    
+                    memories.push(memory);
+                }
+                
+                // Add connections (more likely between important memories)
+                memories.forEach(memory => {
+                    // Number of connections based on importance
+                    const connCount = Math.floor(memory.importance * 5);
+                    
+                    if (connCount > 0) {
+                        memory.connections = [];
+                        
+                        for (let i = 0; i < connCount; i++) {
+                            // Select random target (not self)
+                            let targetIndex;
+                            do {
+                                targetIndex = Math.floor(Math.random() * memories.length);
+                            } while (memories[targetIndex].id === memory.id);
+                            
+                            memory.connections.push({
+                                targetId: memories[targetIndex].id,
+                                strength: 0.3 + Math.random() * 0.7
+                            });
+                        }
+                    }
+                });
+                
+                // Set data to visualization
+                visualization.setData({ memories });
+                
+                log(`Generated ${memories.length} memories with connections`);
+            } catch (error) {
+                log(`Error generating data: ${error.message}`);
+                console.error(error);
+            } finally {
+                toggleLoader(false);
+            }
+        }
+        
+        // Clear visualization
+        function clearVisualization() {
+            if (visualization) {
+                visualization.clearVisualization();
+            }
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log("Page loaded. Ready to test visualization");
+        });
+    </script>
+</body>
+</html> 

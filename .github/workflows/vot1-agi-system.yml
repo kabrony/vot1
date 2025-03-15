@@ -1,0 +1,212 @@
+name: VOT1 AGI System Workflow
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      deploy_type:
+        description: 'Deployment type'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - staging
+          - production
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+      
+      - name: Run tests
+        run: |
+          pytest src/vot1/tests/ --cov=src/vot1 --cov-report=xml
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_MCP_URL: ${{ secrets.COMPOSIO_MCP_URL }}
+          VOT1_MEMORY_PATH: 'test_memory'
+          VOT1_ENVIRONMENT: 'testing'
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: coverage.xml
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build wheel setuptools
+      
+      - name: Build package
+        run: |
+          python -m build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/
+
+  memory-system-test:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Test memory system
+        run: |
+          python src/vot1/tests/test_memory_bridge.py
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_MCP_URL: ${{ secrets.COMPOSIO_MCP_URL }}
+          VOT1_MEMORY_PATH: 'test_memory'
+          VOT1_ENVIRONMENT: 'testing'
+
+  composio-integration:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Test Composio MCP connection
+        run: |
+          python -c "
+          import asyncio
+          import os
+          from vot1.composio.client import ComposioClient
+          
+          async def test_connection():
+              client = ComposioClient(
+                  api_key=os.environ.get('COMPOSIO_API_KEY'),
+                  mcp_url=os.environ.get('COMPOSIO_MCP_URL')
+              )
+              connected = await client.test_connection()
+              assert connected, 'Failed to connect to Composio MCP'
+              print('Successfully connected to Composio MCP')
+              await client.close()
+          
+          asyncio.run(test_connection())
+          "
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_MCP_URL: ${{ secrets.COMPOSIO_MCP_URL }}
+
+  deploy-staging:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_type != 'test'
+    runs-on: ubuntu-latest
+    needs: [build, memory-system-test, composio-integration]
+    environment: staging
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+      
+      - name: Set up environment
+        run: |
+          echo "Setting up staging environment"
+          # Add staging deployment logic here
+      
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment"
+          # Add deployment script here
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_MCP_URL: ${{ secrets.COMPOSIO_MCP_URL }}
+          VOT1_MEMORY_PATH: ${{ secrets.VOT1_MEMORY_PATH }}
+          VOT1_API_KEY: ${{ secrets.VOT1_API_KEY }}
+
+  deploy-production:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_type == 'production'
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+      
+      - name: Set up environment
+        run: |
+          echo "Setting up production environment"
+          # Add production deployment logic here
+      
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment"
+          # Add deployment script here
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_MCP_URL: ${{ secrets.COMPOSIO_MCP_URL }}
+          VOT1_MEMORY_PATH: ${{ secrets.VOT1_MEMORY_PATH }}
+          VOT1_API_KEY: ${{ secrets.VOT1_API_KEY }}
+
+  # Future blockchain integration tests - placeholder job
+  blockchain-integration:
+    if: false  # Disabled until implementation
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up environment for blockchain testing
+        run: echo "Setting up blockchain testing environment"
+      
+      - name: Test Phantom Wallet integration
+        run: echo "Testing Phantom Wallet integration"
+        
+      - name: Test Helius.dev API integration
+        run: echo "Testing Helius.dev integration"
+        
+      - name: Test ZK proof systems
+        run: echo "Testing ZK proof systems" 

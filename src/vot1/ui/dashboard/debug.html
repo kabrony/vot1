@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOTai TRILOGY BRAIN - Debug Mode</title>
+    
+    <!-- External libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Debug Mode Scripts -->
+    <script>
+        // Enable verbose console output
+        window.DEBUG_MODE = true;
+        
+        // Global error handler
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("Error:", message, "at", source, "line:", lineno, "column:", colno, "error:", error);
+            
+            // Add to error log if it exists
+            const errorLog = document.getElementById('error-log');
+            if (errorLog) {
+                const timestamp = new Date().toLocaleTimeString();
+                errorLog.innerHTML += `<div class="error-item">[${timestamp}] ${message} at ${source.split('/').pop()} line ${lineno}</div>`;
+                errorLog.scrollTop = errorLog.scrollHeight;
+            }
+            
+            return false; // Let other handlers run
+        };
+        
+        // Track script loading
+        window.loadedScripts = [];
+        function trackScriptLoad(scriptName) {
+            window.loadedScripts.push({
+                name: scriptName,
+                time: new Date().toLocaleTimeString()
+            });
+            console.log(`Script loaded: ${scriptName}`);
+            
+            // Update UI if it exists
+            updateScriptLoadStatus();
+        }
+        
+        function updateScriptLoadStatus() {
+            const statusEl = document.getElementById('script-status');
+            if (statusEl && window.loadedScripts.length > 0) {
+                statusEl.innerHTML = window.loadedScripts.map(script => 
+                    `<div class="script-item">[${script.time}] Loaded: ${script.name}</div>`
+                ).join('');
+            }
+        }
+    </script>
+    
+    <!-- Custom stylesheets -->
+    <link rel="stylesheet" href="css/cyberpunk.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/terminal.css">
+    <link rel="stylesheet" href="css/modern-effects.css">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Debug panel styles */
+        #debug-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(5, 0, 19, 0.9);
+            border-top: 1px solid var(--secondary);
+            padding: 10px;
+            z-index: 9999;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--text-primary);
+            height: 30px;
+            transition: height 0.3s;
+            overflow: hidden;
+        }
+        
+        #debug-panel.expanded {
+            height: 300px;
+            overflow-y: auto;
+        }
+        
+        #debug-toggle {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            cursor: pointer;
+            background: var(--primary);
+            color: var(--text-bright);
+            border: none;
+            padding: 3px 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+        }
+        
+        .debug-section {
+            margin: 10px 0;
+        }
+        
+        .debug-section h3 {
+            color: var(--secondary);
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 3px;
+        }
+        
+        .error-item {
+            color: var(--status-error);
+            margin: 3px 0;
+            font-size: 12px;
+        }
+        
+        .script-item {
+            color: var(--text-secondary);
+            margin: 3px 0;
+            font-size: 12px;
+        }
+        
+        .action-button {
+            background: var(--bg-medium);
+            color: var(--text-primary);
+            border: 1px solid var(--secondary);
+            margin: 5px;
+            padding: 3px 10px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+        }
+        
+        .action-button:hover {
+            background: var(--secondary);
+            color: var(--text-bright);
+        }
+    </style>
+</head>
+<body>
+    <!-- Original Dashboard HTML from index.html -->
+    <header class="dashboard-header">
+        <div class="logo">
+            <img src="assets/votai-logo.png" alt="VOTai" class="logo-img">
+            <span class="logo-text">TRILOGY<span class="highlight">BRAIN</span></span>
+        </div>
+        <div class="system-status">
+            <div class="status-indicator online">SYSTEM ONLINE</div>
+            <div class="status-action-buttons">
+                <button class="cyber-button" id="connect-wallet">
+                    <span class="cyber-button__glitch"></span>
+                    <span class="cyber-button__text">CONNECT WALLET</span>
+                </button>
+                <button class="cyber-button" id="toggle-view">
+                    <span class="cyber-button__glitch"></span>
+                    <span class="cyber-button__text">TOGGLE VIEW</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-content">
+        <aside class="left-sidebar">
+            <h2 class="panel-title">PERFORMANCE METRICS</h2>
+            <div class="metrics-panel">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">MEMORY USAGE</span>
+                        <span class="metric-value">67<span class="unit">%</span></span>
+                    </div>
+                    <div class="metric-chart">
+                        <canvas id="memoryUsageChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">TOKEN PROCESSING</span>
+                        <span class="metric-value">1.2<span class="unit">K/s</span></span>
+                    </div>
+                    <div class="metric-chart">
+                        <canvas id="tokenProcessingChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">CACHE HIT RATE</span>
+                        <span class="metric-value">89<span class="unit">%</span></span>
+                    </div>
+                    <div class="metric-chart">
+                        <canvas id="cacheHitChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">ZK VERIFICATIONS</span>
+                        <span class="metric-value">42<span class="unit">/min</span></span>
+                    </div>
+                    <div class="metric-chart">
+                        <canvas id="zkVerificationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <h2 class="panel-title">VISUALIZATION CONTROLS</h2>
+                <div class="control-group">
+                    <label for="vis-mode">MODE</label>
+                    <select id="vis-mode" class="cyber-select">
+                        <option value="network">MEMORY NETWORK</option>
+                        <option value="clusters">MEMORY CLUSTERS</option>
+                        <option value="importance">IMPORTANCE HEATMAP</option>
+                        <option value="temporal">TEMPORAL VIEW</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="detail-level">DETAIL LEVEL</label>
+                    <input type="range" id="detail-level" min="1" max="5" value="3" class="cyber-slider">
+                    <div class="slider-labels">
+                        <span>MIN</span>
+                        <span>MAX</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <section class="main-panel">
+            <div id="three-container" class="memory-visualization"></div>
+            <div class="terminal-container">
+                <div class="terminal-header">
+                    <div class="terminal-title">SYSTEM CONSOLE</div>
+                    <div class="terminal-controls">
+                        <button id="clear-console" class="terminal-button">CLEAR</button>
+                        <button id="toggle-console" class="terminal-button">HIDE</button>
+                    </div>
+                </div>
+                <div id="system-console" class="terminal-content"></div>
+                <div class="terminal-input-container">
+                    <span class="terminal-prompt">VOTai@TRILOGY:~$</span>
+                    <input type="text" id="terminal-command" class="terminal-input" placeholder="Enter command... (type 'help' for available commands)">
+                </div>
+            </div>
+        </section>
+
+        <aside class="right-sidebar">
+            <div class="system-status">
+                <h2 class="panel-title">SYSTEM STATUS</h2>
+                <div class="status-panel">
+                    <div class="status-item">
+                        <div class="title">MEMORY CASCADES</div>
+                        <div class="value status-online">OPERATIONAL</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="title">CONNECTED AGENTS</div>
+                        <div class="value">12</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="title">VOTai TOKENS</div>
+                        <div class="value">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-model-status">
+                <h2 class="panel-title">CONNECTED AI MODELS</h2>
+                <div class="ai-model-panel">
+                    <div class="model-item">
+                        <div class="model-name">CLAUDE 3.7</div>
+                        <div class="model-status online">CONNECTED</div>
+                        <div class="model-details">
+                            <div class="detail-item">
+                                <span class="label">CONTEXT</span>
+                                <span class="value">200K</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">TPM</span>
+                                <span class="value">18.5K</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="token-economy">
+                <h2 class="panel-title">TOKEN ECONOMY</h2>
+                <canvas id="tokenEconomyChart"></canvas>
+            </div>
+
+            <div class="ipfs-status">
+                <h2 class="panel-title">IPFS STATUS</h2>
+                <div class="ipfs-panel">
+                    <div class="status-item">
+                        <div class="title">PEERS</div>
+                        <div class="value">32</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="title">STORED MEMORIES</div>
+                        <div class="value">2.4K</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="title">GATEWAY</div>
+                        <div class="value status-online">ONLINE</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <footer class="dashboard-footer">
+        <div class="footer-stats">
+            <div class="footer-stat">
+                <span class="label">UPTIME</span>
+                <span class="value">3d 12h 47m</span>
+            </div>
+            <div class="footer-stat">
+                <span class="label">MEMORY OPS</span>
+                <span class="value">87.5K</span>
+            </div>
+            <div class="footer-stat">
+                <span class="label">ACTIVE NODES</span>
+                <span class="value">18/24</span>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            © 2024 VOTai TRILOGY BRAIN - Powered by <a href="https://villageofthousands.io" target="_blank">VillageOfThousands.io</a>
+        </div>
+    </footer>
+    
+    <!-- Debug Panel -->
+    <div id="debug-panel">
+        <button id="debug-toggle">EXPAND DEBUG</button>
+        <h2>VOTai TRILOGY BRAIN - Debug Mode</h2>
+        
+        <div class="debug-controls">
+            <button class="action-button" id="check-deps">Check Dependencies</button>
+            <button class="action-button" id="reinit-components">Reinitialize Components</button>
+            <button class="action-button" id="test-components">Test Components</button>
+            <button class="action-button" id="apply-fixes">Apply Bugfixes</button>
+        </div>
+        
+        <div class="debug-section">
+            <h3>Script Loading Status</h3>
+            <div id="script-status"></div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>Component Status</h3>
+            <div id="component-status"></div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>Error Log</h3>
+            <div id="error-log"></div>
+        </div>
+    </div>
+    
+    <!-- Debug Helper Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize debug panel
+            const debugPanel = document.getElementById('debug-panel');
+            const debugToggle = document.getElementById('debug-toggle');
+            
+            debugToggle.addEventListener('click', function() {
+                debugPanel.classList.toggle('expanded');
+                debugToggle.textContent = debugPanel.classList.contains('expanded') ? 'COLLAPSE DEBUG' : 'EXPAND DEBUG';
+            });
+            
+            // Setup debug action buttons
+            document.getElementById('check-deps').addEventListener('click', function() {
+                updateComponentStatus();
+            });
+            
+            document.getElementById('reinit-components').addEventListener('click', function() {
+                // Reinitialize components
+                try {
+                    if (window.dashboardCharts) {
+                        updateStatus('Reinitializing Charts...');
+                        window.dashboardCharts = new DashboardCharts();
+                    }
+                    
+                    if (window.terminalInterface) {
+                        updateStatus('Reinitializing Terminal...');
+                        window.terminalInterface = new TerminalInterface();
+                    }
+                    
+                    if (window.dashboard) {
+                        updateStatus('Reinitializing Dashboard...');
+                        window.dashboard = new TrilogyDashboard();
+                    }
+                    
+                    updateStatus('Components reinitialized.');
+                    updateComponentStatus();
+                } catch (e) {
+                    updateStatus('Error reinitializing: ' + e.message, true);
+                }
+            });
+            
+            document.getElementById('test-components').addEventListener('click', function() {
+                testComponents();
+            });
+            
+            document.getElementById('apply-fixes').addEventListener('click', function() {
+                applyFixes();
+            });
+            
+            // Function to update component status display
+            function updateComponentStatus() {
+                const statusEl = document.getElementById('component-status');
+                if (!statusEl) return;
+                
+                const components = [
+                    { name: 'THREE.js', loaded: !!window.THREE },
+                    { name: 'Chart.js', loaded: !!window.Chart },
+                    { name: 'GSAP', loaded: !!window.gsap },
+                    { name: 'OrbitControls', loaded: !!(window.THREE && window.THREE.OrbitControls) },
+                    { name: 'MemoryNetworkVisualization', loaded: !!window.MemoryNetworkVisualization },
+                    { name: 'DashboardCharts', loaded: !!window.dashboardCharts },
+                    { name: 'TerminalInterface', loaded: !!window.terminalInterface },
+                    { name: 'TrilogyDashboard', loaded: !!window.dashboard }
+                ];
+                
+                statusEl.innerHTML = components.map(comp => 
+                    `<div class="component-item" style="color: ${comp.loaded ? 'var(--status-success)' : 'var(--status-error)'}">
+                        ${comp.name}: ${comp.loaded ? 'LOADED' : 'NOT LOADED'}
+                    </div>`
+                ).join('');
+            }
+            
+            // Function to update status
+            function updateStatus(message, isError = false) {
+                const errorLog = document.getElementById('error-log');
+                if (errorLog) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    errorLog.innerHTML += `<div class="${isError ? 'error-item' : 'script-item'}">[${timestamp}] ${message}</div>`;
+                    errorLog.scrollTop = errorLog.scrollHeight;
+                }
+                console.log(message);
+            }
+            
+            // Function to test components
+            function testComponents() {
+                updateStatus('Testing components...');
+                
+                // Test Charts
+                if (window.Chart) {
+                    try {
+                        const testCanvas = document.createElement('canvas');
+                        testCanvas.style.display = 'none';
+                        document.body.appendChild(testCanvas);
+                        
+                        const ctx = testCanvas.getContext('2d');
+                        const testChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: ['Test'],
+                                datasets: [{
+                                    label: 'Test',
+                                    data: [1],
+                                    borderColor: '#ff2a6d'
+                                }]
+                            }
+                        });
+                        
+                        updateStatus('Chart.js test successful');
+                        testChart.destroy();
+                        document.body.removeChild(testCanvas);
+                    } catch (e) {
+                        updateStatus('Chart.js test failed: ' + e.message, true);
+                    }
+                }
+                
+                // Test Terminal
+                if (window.terminalInterface) {
+                    try {
+                        window.terminalInterface.logSystem('Test message from debug panel');
+                        updateStatus('Terminal test successful');
+                    } catch (e) {
+                        updateStatus('Terminal test failed: ' + e.message, true);
+                    }
+                }
+                
+                // Report
+                updateStatus('Component tests completed');
+            }
+            
+            // Function to apply fixes
+            function applyFixes() {
+                updateStatus('Applying fixes...');
+                
+                // Fix visualization file reference
+                if (!window.MemoryNetworkVisualization) {
+                    updateStatus('Fixing memory visualization reference...');
+                    // This is already handled by dashboard-fix.js
+                }
+                
+                // Update component status
+                setTimeout(updateComponentStatus, 1000);
+                
+                updateStatus('Fixes applied. Check console for details.');
+            }
+            
+            // Initialize component status
+            setTimeout(updateComponentStatus, 1000);
+            
+            // Expand debug panel initially
+            debugPanel.classList.add('expanded');
+        });
+    </script>
+    
+    <!-- Bug fixing script -->
+    <script src="js/dashboard-fix.js" onload="trackScriptLoad('dashboard-fix.js')"></script>
+    
+    <!-- Modern UI Effects -->
+    <script src="js/modern-ui.js" onload="trackScriptLoad('modern-ui.js')"></script>
+    
+    <!-- Memory Integration -->
+    <script src="js/memory-integration.js" onload="trackScriptLoad('memory-integration.js')"></script>
+    
+    <!-- Load core components -->
+    <script src="js/memory-network.js" onload="trackScriptLoad('memory-network.js')"></script>
+    <script src="js/terminal.js" onload="trackScriptLoad('terminal.js')"></script>
+    <script src="js/charts.js" onload="trackScriptLoad('charts.js')"></script>
+    <script src="js/dashboard.js" onload="trackScriptLoad('dashboard.js')"></script>
+</body>
+</html> 
