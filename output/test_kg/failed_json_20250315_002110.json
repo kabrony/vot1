@@ -1,0 +1,449 @@
+{
+  \"nodes\": [,
+    {
+      \"id\": \"threejs\",
+      \"label\": \"THREE.js\",
+      \"type\": \"technology\",
+      \"properties\": {
+        \"version\": \"latest\",
+        \"website\": \"https://threejs.org/\",
+        \"language\": \"JavaScript\"
+      },
+      \"group\": \"core_technologies\",
+      \"description\": \"JavaScript 3D library for creating and displaying animated 3D computer graphics in a web browser\",
+      \"size\": 10,
+      \"source\": \"primary_research\",
+      \"visualProperties\": {
+        \"color\": \"#049EF4\",
+        \"texture\": \"glossy\",
+        \"shape\": \"sphere\",
+        \"initialPosition\": [0, 0, 0],
+        \"highlightColor\": \"#00BBFF\",
+        \"labelVisibility\": \"always\"
+      }
+    },
+    {
+      \"id\": \"force_directed_graph\",
+      \"label\": \"Force-Directed Graph\",
+      \"type\": \"concept\",
+      \"properties\": {
+        \"algorithm\": \"force simulation\",
+        \"dimensionality\": \"2D/3D\"
+      },
+      \"group\": \"graph_visualization\",
+      \"description\": \"Visualization technique using physics simulations to determine node positions\",
+      \"size\": 9,
+      \"source\": \"primary_research\",
+      \"visualProperties\": {
+        \"color\": \"#E91E63\",
+        \"texture\": \"standard\",
+        \"shape\": \"sphere\",
+        \"initialPosition\": [5, 0, 0],
+        \"highlightColor\": \"#FF4081\",
+        \"labelVisibility\": \"always\"
+      }
+    },
+    {
+      \"id\": \"physics_simulation\",
+      \"label\": \"Physics Simulation\",
+      \"type\": \"concept\",
+      \"properties\": {
+        \"forces\": \"attraction, repulsion, gravity\",
+        \"parameters\": \"linkDistance, charge, gravity\"
+      },
+      \"group\": \"simulation\",
+      \"description\": \"Simulation of physical forces between nodes to create balanced layouts\",
+      \"size\": 8,
+      \"source\": \"primary_research\",
+      \"visualProperties\": {
+        \"color\": \"#4CAF50\",
+        \"texture\": \"standard\",
+        \"shape\": \"sphere\",
+        \"initialPosition\": [8, 2, 0],
+        \"highlightColor\": \"#69F0AE\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"webgl\",
+      \"label\": \"WebGL\",
+      \"type\": \"technology\",
+      \"properties\": {
+        \"type\": \"rendering API\",
+        \"hardware\": \"GPU accelerated\"
+      },
+      \"group\": \"core_technologies\",
+      \"description\": \"Web Graphics Library for rendering interactive 2D and 3D graphics\",
+      \"size\": 7,
+      \"source\": \"followup\",
+      \"visualProperties\": {
+        \"color\": \"#FF9800\",
+        \"texture\": \"glossy\",
+        \"shape\": \"cube\",
+        \"initialPosition\": [-5, 2, 0],
+        \"highlightColor\": \"#FFB74D\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"performance_optimization\",
+      \"label\": \"Performance Optimization\",
+      \"type\": \"concept\",
+      \"properties\": {
+        \"importance\": \"critical for large graphs\",
+        \"techniques\": \"multiple\"
+      },
+      \"group\": \"optimization\",
+      \"description\": \"Techniques to improve rendering and simulation speed for force-directed graphs\",
+      \"size\": 8,
+      \"source\": \"primary_research\",
+      \"visualProperties\": {
+        \"color\": \"#9C27B0\",
+        \"texture\": \"standard\",
+        \"shape\": \"cube\",
+        \"initialPosition\": [3, -5, 0],
+        \"highlightColor\": \"#CE93D8\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"force_graph_lib\",
+      \"label\": \"force-graph\",
+      \"type\": \"technology\",
+      \"properties\": {
+        \"level\": \"high-level library\",
+        \"dimensionality\": \"2D\"
+      },
+      \"group\": \"libraries\",
+      \"description\": \"2D force-directed graph library for THREE.js\",
+      \"size\": 6,
+      \"source\": \"followup\",
+      \"visualProperties\": {
+        \"color\": \"#3F51B5\",
+        \"texture\": \"standard\",
+        \"shape\": \"cylinder\",
+        \"initialPosition\": [-8, -3, 0],
+        \"highlightColor\": \"#7986CB\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"3d_force_graph_lib\",
+      \"label\": \"3d-force-graph\",
+      \"type\": \"technology\",
+      \"properties\": {
+        \"level\": \"high-level library\",
+        \"dimensionality\": \"3D\"
+      },
+      \"group\": \"libraries\",
+      \"description\": \"3D force-directed graph library for THREE.js\",
+      \"size\": 7,
+      \"source\": \"followup\",
+      \"visualProperties\": {
+        \"color\": \"#2196F3\",
+        \"texture\": \"standard\",
+        \"shape\": \"cylinder\",
+        \"initialPosition\": [-10, -5, 2],
+        \"highlightColor\": \"#64B5F6\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"three_forcegraph\",
+      \"label\": \"THREE-forcegraph\",
+      \"type\": \"technology\",
+      \"properties\": {
+        \"level\": \"high-level library\",
+        \"dimensionality\": \"3D\"
+      },
+      \"group\": \"libraries\",
+      \"description\": \"Force-directed graph visualization component for THREE.js\",
+      \"size\": 6,
+      \"source\": \"followup\",
+      \"visualProperties\": {
+        \"color\": \"#00BCD4\",
+        \"texture\": \"standard\",
+        \"shape\": \"cylinder\",
+        \"initialPosition\": [-8, -7, 1],
+        \"highlightColor\": \"#4DD0E1\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"edge_bundling\",
+      \"label\": \"Edge Bundling\",
+      \"type\": \"technique\",
+      \"properties\": {
+        \"purpose\": \"reduce visual clutter\",
+        \"method\": \"combine similar edges\"
+      },
+      \"group\": \"visualization_techniques\",
+      \"description\": \"Technique to combine similar edges to reduce visual complexity\",
+      \"size\": 6,
+      \"source\": \"primary_research\",
+      \"visualProperties\": {
+        \"color\": \"#FFC107\",
+        \"texture\": \"standard\",
+        \"shape\": \"sphere\",
+        \"initialPosition\": [7, 7, 0],
+        \"highlightColor\": \"#FFD54F\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"interactive_features\",
+      \"label\": \"Interactive Features\",
+      \"type\": \"concept\",
+      \"properties\": {
+        \"types\": \"click, hover, zoom, drag\",
+        \"purpose\": \"user engagement\"
+      },
+      \"group\": \"user_experience\",
+      \"description\": \"Interactive elements enabling user exploration of the graph\",
+      \"size\": 7,
+      \"source\": \"primary_research\",
+      \"visualProperties\": {
+        \"color\": \"#673AB7\",
+        \"texture\": \"glossy\",
+        \"shape\": \"sphere\",
+        \"initialPosition\": [0, 8, 2],
+        \"highlightColor\": \"#9575CD\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"webworkers\",
+      \"label\": \"Web Workers\",
+      \"type\": \"technology\",
+      \"properties\": {
+        \"usage\": \"offload physics calculations\",
+        \"benefit\": \"prevent UI blocking\"
+      },
+      \"group\": \"optimization\",
+      \"description\": \"Background threads for running physics calculations without blocking the UI\",
+      \"size\": 5,
+      \"source\": \"followup\",
+      \"visualProperties\": {
+        \"color\": \"#795548\",
+        \"texture\": \"standard\",
+        \"shape\": \"cube\",
+        \"initialPosition\": [4, -8, 1],
+        \"highlightColor\": \"#A1887F\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"spatial_partitioning\",
+      \"label\": \"Spatial Partitioning\",
+      \"type\": \"technique\",
+      \"properties\": {
+        \"methods\": \"octree, quadtree\",
+        \"purpose\": \"optimize collision detection\"
+      },
+      \"group\": \"optimization\",
+      \"description\": \"Technique to divide space into regions for efficient collision detection and rendering\",
+      \"size\": 6,
+      \"source\": \"followup\",
+      \"visualProperties\": {
+        \"color\": \"#607D8B\",
+        \"texture\": \"standard\",
+        \"shape\": \"cube\",
+        \"initialPosition\": [8, -7, 3],
+        \"highlightColor\": \"#90A4AE\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"level_of_detail\",
+      \"label\": \"Level of Detail\",
+      \"type\": \"technique\",
+      \"properties\": {
+        \"purpose\": \"optimize performance\",
+        \"method\": \"simplify distant objects\"
+      },
+      \"group\": \"optimization\",
+      \"description\": \"Technique to adjust detail level based on distance or importance\",
+      \"size\": 6,
+      \"source\": \"followup\",
+      \"visualProperties\": {
+        \"color\": \"#8BC34A\",
+        \"texture\": \"standard\",
+        \"shape\": \"cube\",
+        \"initialPosition\": [2, -10, 2],
+        \"highlightColor\": \"#AED581\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"graph_data_structure\",
+      \"label\": \"Graph Data Structure\",
+      \"type\": \"concept\",
+      \"properties\": {
+        \"elements\": \"nodes, edges\",
+        \"formats\": \"JSON, CSV, GraphML\"
+      },
+      \"group\": \"data\",
+      \"description\": \"Data structure representing nodes and their relationships\",
+      \"size\": 7,
+      \"source\": \"analysis\",
+      \"visualProperties\": {
+        \"color\": \"#FF5722\",
+        \"texture\": \"standard\",
+        \"shape\": \"sphere\",
+        \"initialPosition\": [-5, 7, 1],
+        \"highlightColor\": \"#FF8A65\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"camera_controls\",
+      \"label\": \"Camera Controls\",
+      \"type\": \"feature\",
+      \"properties\": {
+        \"types\": \"orbit, trackball, fly\",
+        \"purpose\": \"navigation\"
+      },
+      \"group\": \"user_experience\",
+      \"description\": \"Controls for navigating and viewing the 3D graph from different perspectives\",
+      \"size\": 5,
+      \"source\": \"analysis\",
+      \"visualProperties\": {
+        \"color\": \"#9E9E9E\",
+        \"texture\": \"glossy\",
+        \"shape\": \"cube\",
+        \"initialPosition\": [-2, 10, 3],
+        \"highlightColor\": \"#BDBDBD\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"node_styling\",
+      \"label\": \"Node Styling\",
+      \"type\": \"feature\",
+      \"properties\": {
+        \"aspects\": \"color, size, texture, shape\",
+        \"purpose\": \"visual encoding\"
+      },
+      \"group\": \"visualization_techniques\",
+      \"description\": \"Visual styling of nodes to encode data attributes\",
+      \"size\": 6,
+      \"source\": \"analysis\",
+      \"visualProperties\": {
+        \"color\": \"#CDDC39\",
+        \"texture\": \"standard\",
+        \"shape\": \"sphere\",
+        \"initialPosition\": [10, 5, 0],
+        \"highlightColor\": \"#D4E157\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"edge_styling\",
+      \"label\": \"Edge Styling\",
+      \"type\": \"feature\",
+      \"properties\": {
+        \"aspects\": \"color, width, style\",
+        \"purpose\": \"relationship encoding\"
+      },
+      \"group\": \"visualization_techniques\",
+      \"description\": \"Visual styling of edges to encode relationship attributes\",
+      \"size\": 5,
+      \"source\": \"analysis\",
+      \"visualProperties\": {
+        \"color\": \"#FF9800\",
+        \"texture\": \"standard\",
+        \"shape\": \"cylinder\",
+        \"initialPosition\": [12, 3, 0],
+        \"highlightColor\": \"#FFB74D\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"raycasting\",
+      \"label\": \"Raycasting\",
+      \"type\": \"technique\",
+      \"properties\": {
+        \"purpose\": \"object selection\",
+        \"implementation\": \"THREE.Raycaster\"
+      },
+      \"group\": \"interaction\",
+      \"description\": \"Technique for detecting objects under mouse cursor in 3D space\",
+      \"size\": 6,
+      \"source\": \"analysis\",
+      \"visualProperties\": {
+        \"color\": \"#F44336\",
+        \"texture\": \"standard\",
+        \"shape\": \"cylinder\",
+        \"initialPosition\": [0, 12, 1],
+        \"highlightColor\": \"#EF9A9A\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"shader_materials\",
+      \"label\": \"Shader Materials\",
+      \"type\": \"technology\",
+      \"properties\": {
+        \"purpose\": \"custom rendering\",
+        \"type\": \"GLSL programs\"
+      },
+      \"group\": \"rendering\",
+      \"description\": \"Custom GPU programs for specialized visual effects\",
+      \"size\": 6,
+      \"source\": \"analysis\",
+      \"visualProperties\": {
+        \"color\": \"#673AB7\",
+        \"texture\": \"glossy\",
+        \"shape\": \"cube\",
+        \"initialPosition\": [-9, 5, 4],
+        \"highlightColor\": \"#9575CD\",
+        \"labelVisibility\": \"onHover\"
+      }
+    },
+    {
+      \"id\": \"particles\",
+      \"label\": \"Particle Systems\",
+      \"type\": \"technique\",
+      \"properties\": {
+        \"purpose\": \"visual effects\",
+        \"implementation\": \"THREE.Points\"
+      },
+      \"group\": \"rendering\",
+      \"description\": \"System for rendering large numbers of small sprites or geometries\",
+      \"size\": 5,
+      \"source\": \"analysis\",
+      \"visualProperties\": {
+        \"color\": \"#2196F3\",
+        \"texture\": \"glossy\",
+        \"shape\": \"sphere\",
+        \"initialPosition\": [-12, 0, 5],
+        \"highlightColor\": \"#64B5F6\",
+        \"labelVisibility\": \"onHover\"
+      }
+    }
+  ],
+  \"edges\": [
+    {
+      \"source\": \"threejs\",
+      \"target\": \"force_directed_graph\",
+      \"label\": \"enables\",
+      \"properties\": {
+        \"context\": \"3D visualization context\"
+      },
+      \"weight\": 9,
+      \"description\": \"THREE.js provides the rendering environment for force-directed graphs\",
+      \"visualProperties\": {
+        \"color\": \"#FFFFFF\",
+        \"style\": \"solid\",
+        \"width\": 3,
+        \"curvature\": 0.1,
+        \"animated\": false
+      }
+    },
+    {
+      \"source\": \"force_directed_graph\",
+      \"target\": \"physics_simulation\",
+      \"label\": \"uses\",
+      \"properties\": {
+        \"dependency\": \"critical\"
+      }

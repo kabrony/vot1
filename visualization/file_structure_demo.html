@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VOT1 File Structure Visualization</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #080808;
+      color: #f0f0f0;
+      overflow: hidden;
+    }
+    
+    #visualization-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      z-index: 1;
+    }
+    
+    #info-panel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 300px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border: 1px solid #00ffff;
+      border-radius: 5px;
+      padding: 15px;
+      color: #ffffff;
+      font-size: 14px;
+      z-index: 2;
+      transition: transform 0.3s ease;
+      transform: translateX(0);
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    }
+    
+    #info-panel.hidden {
+      transform: translateX(320px);
+    }
+    
+    #info-panel h2 {
+      margin-top: 0;
+      color: #00ffff;
+      font-size: 18px;
+      border-bottom: 1px solid #00ffff;
+      padding-bottom: 5px;
+    }
+    
+    #info-panel p {
+      margin: 5px 0;
+    }
+    
+    #info-content {
+      margin-top: 10px;
+      max-height: 60vh;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+    
+    #control-panel {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border: 1px solid #ff00ff;
+      border-radius: 5px;
+      padding: 10px;
+      z-index: 2;
+      box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+    }
+    
+    button {
+      background-color: #222;
+      color: #fff;
+      border: 1px solid #ff00ff;
+      border-radius: 3px;
+      padding: 5px 10px;
+      margin: 5px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    button:hover {
+      background-color: #ff00ff;
+      color: #000;
+    }
+    
+    #stats {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: #00ff00;
+      font-family: monospace;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 12px;
+      z-index: 2;
+    }
+    
+    #toggle-panel {
+      position: absolute;
+      top: 20px;
+      right: 335px;
+      background-color: #000;
+      color: #00ffff;
+      border: 1px solid #00ffff;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      line-height: 28px;
+      cursor: pointer;
+      z-index: 3;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+      font-weight: bold;
+    }
+    
+    /* Loading spinner */
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      text-align: center;
+      color: #00ffff;
+      font-size: 18px;
+    }
+    
+    .spinner {
+      border: 4px solid rgba(0, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #00ffff;
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 15px auto;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Tooltip */
+    #tooltip {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      z-index: 3;
+      pointer-events: none;
+      display: none;
+      border: 1px solid #00ffff;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+    
+    /* Cyberpunk flair */
+    .glow {
+      text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff;
+    }
+    
+    .magenta-glow {
+      text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff;
+    }
+    
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #111;
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #00ffff;
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00cccc;
+    }
+  </style>
+</head>
+<body>
+  <div id="visualization-container"></div>
+  
+  <div id="toggle-panel">i</div>
+  
+  <div id="info-panel">
+    <h2 class="glow">File Structure</h2>
+    <div id="info-content">
+      <p>Click on a node to view details.</p>
+      <div id="selected-info"></div>
+    </div>
+  </div>
+  
+  <div id="control-panel">
+    <button id="reset-camera">Reset View</button>
+    <button id="toggle-grid">Toggle Grid</button>
+    <button id="toggle-particles">Toggle Particles</button>
+    <button id="refresh-data">Refresh Data</button>
+  </div>
+  
+  <div id="stats">FPS: 0 | Nodes: 0</div>
+  
+  <div id="tooltip"></div>
+  
+  <div id="loading">
+    <div class="spinner"></div>
+    Loading File Structure...
+  </div>
+  
+  <!-- Include Three.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+  
+  <!-- Include our visualizer -->
+  <script src="file_structure_3d.js"></script>
+  
+  <script>
+    // Global variables
+    let visualizer;
+    let gridVisible = true;
+    let particlesVisible = true;
+    let infoPanelVisible = true;
+    
+    // DOM elements
+    const container = document.getElementById('visualization-container');
+    const infoPanel = document.getElementById('info-panel');
+    const selectedInfo = document.getElementById('selected-info');
+    const resetBtn = document.getElementById('reset-camera');
+    const gridBtn = document.getElementById('toggle-grid');
+    const particlesBtn = document.getElementById('toggle-particles');
+    const refreshBtn = document.getElementById('refresh-data');
+    const toggleBtn = document.getElementById('toggle-panel');
+    const statsEl = document.getElementById('stats');
+    const tooltipEl = document.getElementById('tooltip');
+    const loadingEl = document.getElementById('loading');
+    
+    // Utility function to format file sizes
+    function formatBytes(bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes';
+      
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+    
+    // Initialize the visualization
+    async function initVisualization() {
+      try {
+        // Fetch file structure data from API
+        const response = await fetch('/api/file-structure');
+        if (!response.ok) throw new Error('Failed to fetch data');
+        
+        const data = await response.json();
+        if (data.status !== 'success') throw new Error(data.message || 'API error');
+        
+        // Create visualization with the fetched data
+        visualizer = new FileStructureVisualizer({
+          container: container,
+          data: data.data,
+          theme: {
+            background: 0x080808,
+            folderColor: 0x00ffff,
+            fileColors: {
+              '.js': 0xff00ff,
+              '.py': 0x00ffaa,
+              '.html': 0xff8800,
+              '.css': 0x0088ff,
+              '.json': 0xffff00,
+              '.md': 0x88ff00,
+              '.txt': 0xffffff,
+              '.jpg': 0xff0088,
+              '.png': 0x00ff88,
+              '.svg': 0x8800ff,
+              '.git': 0x880000,
+              'default': 0x7f7f7f
+            },
+            gridColor: 0x222222,
+            particleColor: 0x0088ff
+          },
+          nodeSize: 1.2,
+          nodeSpacing: 6,
+          maxNodesPerLevel: 500,
+          onNodeClick: handleNodeClick,
+          onNodeHover: handleNodeHover
+        });
+        
+        // Hide loading indicator
+        loadingEl.style.display = 'none';
+        
+        // Start stats update
+        updateStats();
+        
+      } catch (error) {
+        console.error('Error initializing visualization:', error);
+        loadingEl.innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    }
+    
+    // Handle node click events
+    function handleNodeClick(item, node) {
+      if (!item) return;
+      
+      let html = `<h3 class="magenta-glow">${item.name}</h3>`;
+      html += `<p><strong>Type:</strong> ${item.type}</p>`;
+      html += `<p><strong>Path:</strong> ${item.path}</p>`;
+      
+      if (item.type === 'file' && item.size !== undefined) {
+        html += `<p><strong>Size:</strong> ${formatBytes(item.size)}</p>`;
+      }
+      
+      if (item.type === 'folder' && item.children) {
+        html += `<p><strong>Contains:</strong> ${item.children.length} items</p>`;
+        
+        // Count files and folders
+        const folders = item.children.filter(child => child.type === 'folder').length;
+        const files = item.children.length - folders;
+        
+        html += `<p>${folders} folder${folders !== 1 ? 's' : ''}, ${files} file${files !== 1 ? 's' : ''}</p>`;
+      }
+      
+      selectedInfo.innerHTML = html;
+    }
+    
+    // Handle node hover events
+    function handleNodeHover(item, node) {
+      if (!item) {
+        tooltipEl.style.display = 'none';
+        return;
+      }
+      
+      // Update tooltip content
+      tooltipEl.textContent = item.name;
+      tooltipEl.style.display = 'block';
+      
+      // Position tooltip near mouse
+      document.addEventListener('mousemove', moveTooltip);
+    }
+    
+    // Move tooltip with mouse
+    function moveTooltip(e) {
+      tooltipEl.style.left = (e.clientX + 15) + 'px';
+      tooltipEl.style.top = (e.clientY + 15) + 'px';
+    }
+    
+    // Update performance stats
+    function updateStats() {
+      if (!visualizer) return;
+      
+      const stats = visualizer.getStats();
+      statsEl.textContent = `FPS: ${stats.fps} | Nodes: ${stats.visibleNodes}/${stats.totalNodes}`;
+      
+      requestAnimationFrame(updateStats);
+    }
+    
+    // Event listeners for controls
+    resetBtn.addEventListener('click', () => {
+      if (visualizer) visualizer.resetCamera();
+    });
+    
+    gridBtn.addEventListener('click', () => {
+      if (!visualizer) return;
+      
+      gridVisible = !gridVisible;
+      visualizer.toggleGrid(gridVisible);
+      gridBtn.textContent = gridVisible ? 'Hide Grid' : 'Show Grid';
+    });
+    
+    particlesBtn.addEventListener('click', () => {
+      if (!visualizer) return;
+      
+      particlesVisible = !particlesVisible;
+      visualizer.toggleParticles(particlesVisible);
+      particlesBtn.textContent = particlesVisible ? 'Hide Particles' : 'Show Particles';
+    });
+    
+    refreshBtn.addEventListener('click', async () => {
+      if (visualizer) {
+        loadingEl.style.display = 'block';
+        visualizer.dispose();
+        await initVisualization();
+      }
+    });
+    
+    toggleBtn.addEventListener('click', () => {
+      infoPanelVisible = !infoPanelVisible;
+      infoPanel.classList.toggle('hidden', !infoPanelVisible);
+      toggleBtn.textContent = infoPanelVisible ? 'i' : '←';
+    });
+    
+    // Start visualization when page loads
+    window.addEventListener('load', initVisualization);
+  </script>
+</body>
+</html> 

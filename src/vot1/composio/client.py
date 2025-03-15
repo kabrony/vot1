@@ -1,304 +1,570 @@
 """
-Composio Client for TRILOGY BRAIN
+VOTai Composio Client
 
-This module provides a client for interacting with the Composio MCP (Memory-Cognitive Processing).
-It handles communication with Claude 3.7 Sonnet and other models.
+This module provides integration with the Composio tool ecosystem,
+enabling VOTai to discover, manage, and execute external tools.
 """
 
 import os
 import json
 import time
 import asyncio
-import random
-from typing import Dict, List, Any, Optional, Union
+import logging
+import httpx
+from typing import Dict, List, Any, Optional, Union, Tuple
 
 try:
-    # Try absolute imports first (for installed package)
+    # Absolute imports (for installed package)
+    from vot1.utils.branding import format_status
     from vot1.utils.logging import get_logger
 except ImportError:
-    # Fall back to relative imports (for development)
+    # Relative imports (for development)
+    from src.vot1.utils.branding import format_status
     from src.vot1.utils.logging import get_logger
 
-# Configure logging
 logger = get_logger(__name__)
 
 class ComposioClient:
     """
-    Client for interacting with Composio MCP (Memory-Cognitive Processing).
+    Client for interacting with the Composio API to discover and execute tools.
     
-    This class provides methods for:
-    1. Processing requests with Claude 3.7 Sonnet and other models
-    2. Hybrid processing with thinking steps
-    3. Managing model parameters and contexts
+    This client provides:
+    - Tool discovery and management
+    - Tool execution with parameter validation
+    - Tool monitoring and statistics
+    - Integration with VOTai memory system
     """
+    
+    # API endpoints
+    BASE_URL = "https://api.composio.dev/v1"
+    TOOLS_PATH = "/tools"
+    EXECUTE_PATH = "/execute"
+    INTEGRATIONS_PATH = "/integrations"
     
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model_name: str = "claude-3-7-sonnet",
-        temperature: float = 0.7,
-        top_p: float = 0.9,
-        max_tokens: int = 4000,
-        simulate_delay: bool = True
+        integration_id: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        timeout: int = 60,
+        max_retries: int = 3,
+        max_concurrent_executions: int = 5,
+        cache_ttl: int = 300,
+        memory_bridge: Optional[Any] = None
     ):
         """
         Initialize the Composio client.
         
         Args:
-            api_key: API key for the model provider
-            model_name: Model to use for processing
-            temperature: Temperature parameter for response generation
-            top_p: Top-p parameter for nucleus sampling
-            max_tokens: Maximum number of tokens in the response
-            simulate_delay: Whether to simulate processing delay in testing
+            api_key: Composio API key (defaults to COMPOSIO_API_KEY env var)
+            integration_id: Integration ID (defaults to COMPOSIO_INTEGRATION_ID env var)
+            endpoint: Custom API endpoint (defaults to BASE_URL)
+            timeout: Request timeout in seconds
+            max_retries: Maximum number of retries on failure
+            max_concurrent_executions: Maximum concurrent tool executions
+            cache_ttl: Time-to-live for tool cache in seconds
+            memory_bridge: Memory bridge instance for tool execution records
         """
-        # For testing, we'll use environment variable or parameter
-        self.api_key = api_key or os.environ.get("COMPOSIO_API_KEY", "test_key")
+        self.api_key = api_key or os.environ.get("COMPOSIO_API_KEY")
+        self.integration_id = integration_id or os.environ.get("COMPOSIO_INTEGRATION_ID")
+        self.endpoint = endpoint or self.BASE_URL
+        self.timeout = timeout
+        self.max_retries = max_retries
+        self.max_concurrent_executions = max_concurrent_executions
+        self.cache_ttl = cache_ttl
+        self.memory_bridge = memory_bridge
         
-        # Model configuration
-        self.model_name = model_name
-        self.temperature = temperature
-        self.top_p = top_p
-        self.max_tokens = max_tokens
+        # Tool cache
+        self._tool_cache = {}
+        self._tool_cache_timestamp = 0
         
-        # Claude 3.7 specific capabilities
-        self.hybrid_thinking_enabled = model_name.startswith("claude-3-7")
-        self.max_context_tokens = 200000 if model_name.startswith("claude-3-7") else 100000
+        # Semaphore for concurrent executions
+        self._execution_semaphore = asyncio.Semaphore(max_concurrent_executions)
         
-        # For testing, simulate processing delay
-        self.simulate_delay = simulate_delay
+        # Statistics
+        self.stats = {
+            "tool_executions": 0,
+            "successful_executions": 0,
+            "failed_executions": 0,
+            "cached_tool_lookups": 0,
+            "api_requests": 0,
+            "start_time": time.time()
+        }
         
-        logger.info(f"ComposioClient initialized with model: {model_name}")
+        # Validate configuration
+        if not self.api_key:
+            logger.warning(format_status("warning", "No Composio API key provided, some features will be limited"))
+        
+        if not self.integration_id:
+            logger.warning(format_status("warning", "No Composio integration ID provided, some features will be limited"))
+        
+        logger.info(format_status("info", "Composio client initialized"))
     
-    async def test_connection(self) -> Dict[str, Any]:
+    async def list_tools(self, force_refresh: bool = False) -> List[Dict[str, Any]]:
         """
-        Test the connection to the model provider.
+        Get a list of available tools from Composio.
         
+        Args:
+            force_refresh: Whether to bypass the cache and fetch fresh data
+            
         Returns:
-            Dictionary with connection test results
+            List of available tools
         """
-        # For testing, simulate successful connection
-        if self.simulate_delay:
-            await asyncio.sleep(0.5)
+        # Check if we can use cached tools
+        current_time = time.time()
+        if (
+            not force_refresh and 
+            self._tool_cache and 
+            (current_time - self._tool_cache_timestamp) < self.cache_ttl
+        ):
+            self.stats["cached_tool_lookups"] += 1
+            return list(self._tool_cache.values())
+        
+        # Need to fetch tools
+        if not self.api_key:
+            return []
+        
+        self.stats["api_requests"] += 1
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        url = f"{self.endpoint}{self.TOOLS_PATH}"
+        if self.integration_id:
+            url += f"?integration_id={self.integration_id}"
+        
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, headers=headers)
+                response.raise_for_status()
+                tools = response.json()
+                
+                # Update cache
+                self._tool_cache = {tool["id"]: tool for tool in tools}
+                self._tool_cache_timestamp = current_time
+                
+                logger.info(format_status("success", f"Retrieved {len(tools)} tools from Composio"))
+                
+                return tools
+                
+        except Exception as e:
+            logger.error(f"Error retrieving tools from Composio: {str(e)}")
+            return []
+    
+    async def get_tool(self, tool_id: str, force_refresh: bool = False) -> Optional[Dict[str, Any]]:
+        """
+        Get details of a specific tool.
+        
+        Args:
+            tool_id: The ID of the tool to retrieve
+            force_refresh: Whether to bypass the cache and fetch fresh data
+            
+        Returns:
+            Tool details or None if not found
+        """
+        # Check cache first
+        if not force_refresh and tool_id in self._tool_cache:
+            return self._tool_cache[tool_id]
+        
+        # Fetch individual tool
+        if not self.api_key:
+            return None
+        
+        self.stats["api_requests"] += 1
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        url = f"{self.endpoint}{self.TOOLS_PATH}/{tool_id}"
+        
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, headers=headers)
+                response.raise_for_status()
+                tool = response.json()
+                
+                # Update cache
+                self._tool_cache[tool_id] = tool
+                
+                return tool
+                
+        except Exception as e:
+            logger.error(f"Error retrieving tool {tool_id} from Composio: {str(e)}")
+            return None
+    
+    async def get_tool_definition(self, tool_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a tool definition in Claude-compatible format.
+        
+        Args:
+            tool_id: The ID of the tool
+            
+        Returns:
+            Tool definition for Claude or None if tool not found
+        """
+        tool = await self.get_tool(tool_id)
+        if not tool:
+            return None
+        
+        # Create Claude-compatible tool definition
+        params = {}
+        required = []
+        
+        for param in tool.get("parameters", []):
+            param_id = param.get("id", "")
+            param_info = {
+                "type": self._map_param_type(param.get("type", "string")),
+                "description": param.get("description", "")
+            }
+            
+            # Add enum values for select type
+            if param.get("type") == "select" and "options" in param:
+                param_info["enum"] = [opt.get("value") for opt in param["options"]]
+            
+            # Add required parameters
+            if param.get("required", False):
+                required.append(param_id)
+            
+            params[param_id] = param_info
+        
+        # Define Claude-compatible tool
+        tool_def = {
+            "name": tool.get("id", "unknown-tool"),
+            "description": tool.get("description", ""),
+            "input_schema": {
+                "type": "object",
+                "properties": params,
+                "required": required
+            }
+        }
+        
+        return tool_def
+    
+    async def execute_tool(
+        self,
+        tool_id: str,
+        parameters: Dict[str, Any],
+        timeout: Optional[int] = None,
+        store_in_memory: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Execute a Composio tool with the given parameters.
+        
+        Args:
+            tool_id: The ID of the tool to execute
+            parameters: The parameters for the tool
+            timeout: Custom timeout for this execution
+            store_in_memory: Whether to store execution in memory
+            
+        Returns:
+            Tool execution result
+        """
+        if not self.api_key:
+            return {
+                "success": False,
+                "error": "No API key provided"
+            }
+        
+        self.stats["tool_executions"] += 1
+        execution_start = time.time()
+        
+        # Get tool definition for validation
+        tool = await self.get_tool(tool_id)
+        if not tool:
+            self.stats["failed_executions"] += 1
+            return {
+                "success": False,
+                "error": f"Tool '{tool_id}' not found"
+            }
+        
+        # Validate parameters
+        validation_result = self._validate_parameters(tool, parameters)
+        if not validation_result["valid"]:
+            self.stats["failed_executions"] += 1
+            return {
+                "success": False,
+                "error": f"Parameter validation failed: {validation_result['error']}"
+            }
+        
+        # Prepare request
+        self.stats["api_requests"] += 1
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "tool_id": tool_id,
+            "parameters": parameters
+        }
+        
+        if self.integration_id:
+            payload["integration_id"] = self.integration_id
+        
+        url = f"{self.endpoint}{self.EXECUTE_PATH}"
+        execution_timeout = timeout or self.timeout
+        
+        try:
+            # Limit concurrent executions
+            async with self._execution_semaphore:
+                async with httpx.AsyncClient(timeout=execution_timeout) as client:
+                    # Execute with retry logic
+                    for attempt in range(self.max_retries):
+                        try:
+                            response = await client.post(url, json=payload, headers=headers)
+                            response.raise_for_status()
+                            
+                            result_data = response.json()
+                            
+                            # Process successful result
+                            execution_time = time.time() - execution_start
+                            
+                            result = {
+                                "success": True,
+                                "data": result_data.get("result"),
+                                "tool_id": tool_id,
+                                "execution_time": execution_time,
+                                "timestamp": time.time()
+                            }
+                            
+                            self.stats["successful_executions"] += 1
+                            
+                            # Store in memory if requested
+                            if store_in_memory and self.memory_bridge:
+                                await self._store_execution_in_memory(tool_id, parameters, result)
+                            
+                            logger.info(format_status("success", f"Tool '{tool_id}' executed successfully in {execution_time:.2f}s"))
+                            
+                            return result
+                            
+                        except httpx.HTTPError as e:
+                            # Handle rate limiting or temporary errors
+                            if e.response and e.response.status_code in (429, 500, 503, 504):
+                                if attempt < self.max_retries - 1:
+                                    await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                                    continue
+                            
+                            # Re-raise for other errors or after max retries
+                            raise
+                    
+                    # Should never reach here due to exception, but just in case
+                    raise Exception("Maximum retries exceeded")
+                    
+        except Exception as e:
+            self.stats["failed_executions"] += 1
+            
+            error_result = {
+                "success": False,
+                "error": str(e),
+                "tool_id": tool_id,
+                "execution_time": time.time() - execution_start,
+                "timestamp": time.time()
+            }
+            
+            logger.error(f"Error executing tool '{tool_id}': {str(e)}")
+            
+            # Store error in memory
+            if store_in_memory and self.memory_bridge:
+                await self._store_execution_error(tool_id, parameters, error_result)
+            
+            return error_result
+    
+    async def search_tools(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Search for tools based on a query.
+        
+        Args:
+            query: Search query for tools
+            limit: Maximum number of results
+            
+        Returns:
+            List of matching tools
+        """
+        # First, ensure we have tools loaded
+        tools = await self.list_tools()
+        if not tools:
+            return []
+        
+        # Simple search implementation
+        matches = []
+        query = query.lower()
+        
+        for tool in tools:
+            score = 0
+            
+            # Match name (higher weight)
+            if query in tool.get("name", "").lower():
+                score += 3
+            
+            # Match description
+            if query in tool.get("description", "").lower():
+                score += 2
+            
+            # Match category
+            if query in tool.get("category", "").lower():
+                score += 1
+            
+            # Match tags
+            for tag in tool.get("tags", []):
+                if query in tag.lower():
+                    score += 1
+            
+            if score > 0:
+                matches.append((score, tool))
+        
+        # Sort by score and return top matches
+        matches.sort(key=lambda x: x[0], reverse=True)
+        return [match[1] for match in matches[:limit]]
+    
+    async def _store_execution_in_memory(
+        self,
+        tool_id: str,
+        parameters: Dict[str, Any],
+        result: Dict[str, Any]
+    ) -> None:
+        """Store tool execution in memory bridge"""
+        if not self.memory_bridge:
+            return
+        
+        try:
+            # Create tool execution memory
+            execution_data = {
+                "tool_id": tool_id,
+                "parameters": parameters,
+                "result": result.get("data"),
+                "success": True,
+                "execution_time": result.get("execution_time", 0),
+                "timestamp": result.get("timestamp", time.time())
+            }
+            
+            # Store in memory
+            await self.memory_bridge.store_memory(
+                content=json.dumps(execution_data),
+                memory_type="tool_execution",
+                metadata={
+                    "tool_id": tool_id,
+                    "success": True,
+                    "execution_time": result.get("execution_time", 0)
+                }
+            )
+        except Exception as e:
+            logger.error(f"Error storing tool execution in memory: {str(e)}")
+    
+    async def _store_execution_error(
+        self,
+        tool_id: str,
+        parameters: Dict[str, Any],
+        error_result: Dict[str, Any]
+    ) -> None:
+        """Store tool execution error in memory bridge"""
+        if not self.memory_bridge:
+            return
+        
+        try:
+            # Create tool execution error memory
+            execution_data = {
+                "tool_id": tool_id,
+                "parameters": parameters,
+                "error": error_result.get("error", "Unknown error"),
+                "success": False,
+                "execution_time": error_result.get("execution_time", 0),
+                "timestamp": error_result.get("timestamp", time.time())
+            }
+            
+            # Store in memory
+            await self.memory_bridge.store_memory(
+                content=json.dumps(execution_data),
+                memory_type="tool_execution_error",
+                metadata={
+                    "tool_id": tool_id,
+                    "success": False,
+                    "error": error_result.get("error", "Unknown error")
+                }
+            )
+        except Exception as e:
+            logger.error(f"Error storing tool execution error in memory: {str(e)}")
+    
+    def _validate_parameters(self, tool: Dict[str, Any], parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate parameters against tool definition.
+        
+        Args:
+            tool: Tool definition
+            parameters: Parameters to validate
+            
+        Returns:
+            Validation result with valid status and error message
+        """
+        tool_parameters = tool.get("parameters", [])
+        
+        # Check required parameters
+        for param in tool_parameters:
+            param_id = param.get("id", "")
+            if param.get("required", False) and param_id not in parameters:
+                return {
+                    "valid": False,
+                    "error": f"Missing required parameter: {param_id}"
+                }
+        
+        # Validate parameter types
+        for param_id, param_value in parameters.items():
+            # Find parameter definition
+            param_def = next((p for p in tool_parameters if p.get("id") == param_id), None)
+            if not param_def:
+                continue  # Skip validation for unknown parameters
+            
+            param_type = param_def.get("type", "string")
+            
+            # Validate by type
+            if param_type == "number" and not isinstance(param_value, (int, float)):
+                return {
+                    "valid": False,
+                    "error": f"Parameter '{param_id}' must be a number"
+                }
+            elif param_type == "boolean" and not isinstance(param_value, bool):
+                return {
+                    "valid": False,
+                    "error": f"Parameter '{param_id}' must be a boolean"
+                }
+            elif param_type == "select":
+                options = [opt.get("value") for opt in param_def.get("options", [])]
+                if param_value not in options:
+                    return {
+                        "valid": False,
+                        "error": f"Parameter '{param_id}' must be one of: {', '.join(options)}"
+                    }
         
         return {
-            "success": True,
-            "model": self.model_name,
-            "max_context_tokens": self.max_context_tokens,
-            "hybrid_thinking_enabled": self.hybrid_thinking_enabled
+            "valid": True
         }
     
-    async def process_request(
-        self,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        include_thinking: bool = False,
-        max_thinking_tokens: int = 10000,
-        model_name: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Process a request with the model.
-        
-        Args:
-            prompt: User prompt to process
-            system_prompt: System prompt to set context
-            temperature: Temperature parameter for response generation
-            max_tokens: Maximum number of tokens in the response
-            include_thinking: Whether to include thinking process in the response
-            max_thinking_tokens: Maximum number of tokens for thinking process
-            model_name: Override the default model for this request
-            
-        Returns:
-            Dictionary with the processed response and metadata
-        """
-        # Use default values if not provided
-        actual_temp = temperature if temperature is not None else self.temperature
-        actual_max_tokens = max_tokens if max_tokens is not None else self.max_tokens
-        actual_model = model_name if model_name is not None else self.model_name
-        
-        # For testing, simulate processing time
-        if self.simulate_delay:
-            # More complex prompts take longer
-            complexity_factor = min(1.5, len(prompt) / 500)
-            base_delay = 1.0 if actual_model.startswith("claude-3-7") else 0.8
-            
-            if include_thinking and actual_model.startswith("claude-3-7"):
-                # Thinking adds more time
-                thinking_time = base_delay * complexity_factor * (max_thinking_tokens / 5000)
-                await asyncio.sleep(thinking_time)
-                generation_time = base_delay * complexity_factor
-                await asyncio.sleep(generation_time)
-                total_time = thinking_time + generation_time
-            else:
-                total_time = base_delay * complexity_factor
-                await asyncio.sleep(total_time)
-                thinking_time = 0
-                generation_time = total_time
-        
-        # For testing, generate a simulated response
-        content = f"This is a simulated response from {actual_model} with temperature {actual_temp}."
-        
-        # Generate additional content for longer responses
-        for _ in range(5):
-            content += f"\n\nThe TRILOGY BRAIN system provides advanced memory capabilities."
-            content += f"\nThis response was generated using a maximum of {actual_max_tokens} tokens."
-        
-        # Add thinking details if requested
-        thinking = ""
-        if include_thinking and actual_model.startswith("claude-3-7"):
-            thinking = f"Thinking process for prompt: {prompt}\n\n"
-            thinking += "1. First, I need to understand what the user is asking...\n"
-            thinking += "2. Let me consider the relevant context and knowledge...\n"
-            thinking += "3. I'll structure my response to be clear and comprehensive...\n"
-            
-            # Add more detailed thinking for longer thinking
-            for i in range(10):
-                thinking += f"\nStep {i+4}: Considering alternative approaches and evaluating options...\n"
-                thinking += "- Option A: Focus on technical details\n"
-                thinking += "- Option B: Focus on high-level concepts\n"
-                thinking += "- Option C: Balance technical and conceptual information\n"
-                thinking += f"I'll go with Option {'ABC'[i % 3]} for this section."
-        
-        # Build the response
-        response = {
-            "content": content,
-            "model": actual_model,
-            "success": True,
-            "performance": {
-                "processing_time": total_time if self.simulate_delay else 0.5,
-                "tokens_used": len(content) // 4,  # Rough approximation
-                "prompt_tokens": len(prompt) // 4,  # Rough approximation
-                "completion_tokens": len(content) // 4,  # Rough approximation
-            }
+    def _map_param_type(self, composio_type: str) -> str:
+        """Map Composio parameter type to JSON Schema type"""
+        type_mapping = {
+            "string": "string",
+            "textarea": "string",
+            "number": "number",
+            "boolean": "boolean",
+            "select": "string"
         }
         
-        # Add thinking if requested
-        if include_thinking and actual_model.startswith("claude-3-7"):
-            response["thinking"] = thinking
-            response["performance"]["thinking_time"] = thinking_time if self.simulate_delay else 0.3
-            response["performance"]["generation_time"] = generation_time if self.simulate_delay else 0.2
-            response["performance"]["thinking_tokens"] = len(thinking) // 4  # Rough approximation
-        
-        return response
+        return type_mapping.get(composio_type, "string")
     
-    async def process_hybrid(
-        self,
-        prompt: str,
-        context: Optional[Union[str, Dict[str, Any], List[Dict[str, Any]]]] = None,
-        system_prompt: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        include_thinking: bool = False,
-        max_thinking_tokens: int = 10000,
-        model_name: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Process a request with hybrid thinking using Claude 3.7.
+    def get_stats(self) -> Dict[str, Any]:
+        """Get client statistics"""
+        current_time = time.time()
+        uptime = current_time - self.stats["start_time"]
         
-        Args:
-            prompt: User prompt to process
-            context: Memory context to include
-            system_prompt: System prompt to set context
-            temperature: Temperature parameter for response generation
-            max_tokens: Maximum number of tokens in the response
-            include_thinking: Whether to include thinking process in the response
-            max_thinking_tokens: Maximum number of tokens for thinking process
-            model_name: Override the default model for this request
-            
-        Returns:
-            Dictionary with the processed response and metadata
-        """
-        # Check if hybrid mode is supported
-        actual_model = model_name if model_name is not None else self.model_name
-        if not self.hybrid_thinking_enabled and not actual_model.startswith("claude-3-7"):
-            logger.warning(f"Hybrid processing not supported by {actual_model}, falling back to standard processing")
-            return await self.process_request(
-                prompt=prompt,
-                system_prompt=system_prompt,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                include_thinking=include_thinking,
-                model_name=actual_model
-            )
-        
-        # Format context if provided
-        context_str = ""
-        if context:
-            if isinstance(context, str):
-                context_str = context
-            elif isinstance(context, dict):
-                context_str = json.dumps(context, indent=2)
-            elif isinstance(context, list):
-                if all(isinstance(item, dict) for item in context):
-                    context_str = "\n\n".join([json.dumps(item, indent=2) for item in context])
-                else:
-                    context_str = "\n\n".join(str(item) for item in context)
-        
-        # Combine prompt and context
-        hybrid_prompt = f"{prompt}"
-        if context_str:
-            hybrid_prompt = f"Context:\n{context_str}\n\n{prompt}"
-        
-        # For testing, simulate more complex processing
-        if self.simulate_delay:
-            # Hybrid processing takes longer
-            complexity_factor = min(2.0, len(hybrid_prompt) / 500)
-            base_delay = 1.5
-            
-            # Thinking phase + Generation phase
-            thinking_time = base_delay * complexity_factor * (max_thinking_tokens / 5000)
-            await asyncio.sleep(thinking_time)
-            generation_time = base_delay * complexity_factor
-            await asyncio.sleep(generation_time)
-            total_time = thinking_time + generation_time
-        
-        # Generate hybrid response
-        content = f"This is a simulated hybrid response from {actual_model}."
-        content += f"\n\nThe response integrates memory context with {len(context_str) if context_str else 0} characters."
-        
-        # Add additional details for a richer response
-        for _ in range(5):
-            content += f"\n\nThe TRILOGY BRAIN hybrid processing allows for more nuanced responses."
-            content += f"\nThis leverages Claude 3.7's enhanced reasoning capabilities."
-        
-        # Generate thinking process if requested
-        thinking = ""
-        if include_thinking:
-            thinking = f"Hybrid thinking process for context-enriched prompt:\n\n"
-            thinking += "1. Analyzing the provided context to identify relevant information...\n"
-            thinking += "2. Evaluating the connections between context and user query...\n"
-            thinking += "3. Formulating a comprehensive response strategy...\n"
-            
-            # Add detailed thinking steps
-            for i in range(8):
-                thinking += f"\nPhase {i+4}: Integrating context data point {i+1}...\n"
-                thinking += f"- Relevance score: {random.uniform(0.5, 0.95):.2f}\n"
-                thinking += f"- Connection strength: {random.uniform(0.3, 0.9):.2f}\n"
-                thinking += f"- Semantic similarity: {random.uniform(0.4, 0.85):.2f}\n"
-                thinking += "- This information suggests that...\n"
-        
-        # Build response
-        response = {
-            "content": content,
-            "model": actual_model,
-            "success": True,
-            "hybrid_mode": True,
-            "context_included": bool(context_str),
-            "performance": {
-                "processing_time": total_time if self.simulate_delay else 0.8,
-                "tokens_used": len(content) // 4 + len(thinking) // 4,  # Rough approximation
-                "prompt_tokens": len(hybrid_prompt) // 4,  # Rough approximation
-                "completion_tokens": len(content) // 4,  # Rough approximation
-            }
-        }
-        
-        # Add thinking details
-        if include_thinking:
-            response["thinking"] = thinking
-            response["performance"]["thinking_time"] = thinking_time if self.simulate_delay else 0.5
-            response["performance"]["generation_time"] = generation_time if self.simulate_delay else 0.3
-            response["performance"]["thinking_tokens"] = len(thinking) // 4  # Rough approximation
-        
-        return response 
+        return {
+            **self.stats,
+            "uptime": uptime,
+            "executions_per_minute": (self.stats["tool_executions"] / (uptime / 60)) if uptime > 0 else 0,
+            "success_rate": (self.stats["successful_executions"] / self.stats["tool_executions"]) if self.stats["tool_executions"] > 0 else 0,
+            "cache_size": len(self._tool_cache),
+            "cache_age": current_time - self._tool_cache_timestamp
+        } 

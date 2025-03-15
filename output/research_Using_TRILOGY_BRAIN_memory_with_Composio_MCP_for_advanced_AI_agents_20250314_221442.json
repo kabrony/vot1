@@ -1,0 +1,33 @@
+{
+  "topic": "Using TRILOGY BRAIN memory with Composio MCP for advanced AI agents",
+  "focus": "Implementation architecture",
+  "timestamp": "2025-03-14T22:14:42.572356",
+  "session_id": "session_20250314221442_a3924839",
+  "status": "in_progress",
+  "web_research": {
+    "error": "Perplexity client not initialized"
+  },
+  "code_search": [
+    {
+      "error": "GitHub not configured"
+    }
+  ],
+  "hybrid_thinking": {
+    "error": "Claude client not initialized"
+  },
+  "final_report": {
+    "title": "Research Report: Using TRILOGY BRAIN memory with Composio MCP for advanced AI agents",
+    "focus": "Implementation architecture",
+    "date": "2025-03-14",
+    "summary": "No hybrid thinking available.",
+    "web_research_summary": "...",
+    "code_examples": [
+      {
+        "name": "Unknown",
+        "language": "Unknown",
+        "snippet": ""
+      }
+    ],
+    "report_id": "d980d31a104a1699e77dc4564bd614ba"
+  }
+}

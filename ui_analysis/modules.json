@@ -1,0 +1,86 @@
+{
+  "hybrid_reasoning": {
+    "path": "hybrid_reasoning.py",
+    "imports": [
+      "os",
+      "sys",
+      "json",
+      "asyncio",
+      "logging",
+      "typing.Dict",
+      "typing.List",
+      "typing.Any",
+      "typing.Optional",
+      "typing.Union",
+      "datetime.datetime",
+      "dotenv.load_dotenv",
+      "anthropic",
+      "asyncio",
+      "traceback"
+    ],
+    "classes": [
+      "HybridReasoning"
+    ],
+    "functions": [],
+    "size": 12939,
+    "line_count": 346
+  },
+  "json_fixer": {
+    "path": "json_fixer.py",
+    "imports": [
+      "os",
+      "sys",
+      "json",
+      "re",
+      "asyncio",
+      "logging",
+      "typing.Dict",
+      "typing.List",
+      "typing.Any",
+      "typing.Optional",
+      "typing.Union",
+      "datetime.datetime",
+      "pathlib.Path",
+      "dotenv.load_dotenv",
+      "anthropic",
+      "asyncio",
+      "traceback",
+      "traceback",
+      "traceback",
+      "traceback"
+    ],
+    "classes": [
+      "JSONFixer"
+    ],
+    "functions": [],
+    "size": 19485,
+    "line_count": 542
+  },
+  "memory_troubleshooter": {
+    "path": "memory_troubleshooter.py",
+    "imports": [
+      "os",
+      "sys",
+      "re",
+      "inspect",
+      "asyncio",
+      "logging",
+      "importlib",
+      "json",
+      "typing.Dict",
+      "typing.List",
+      "typing.Any",
+      "typing.Optional",
+      "typing.Union",
+      "datetime.datetime",
+      "pathlib.Path",
+      "asyncio"
+    ],
+    "classes": [
+      "MemorySystemTroubleshooter"
+    ],
+    "functions": [],
+    "size": 27222,
+    "line_count": 711
+  }
+}

@@ -1,150 +1,243 @@
 """
-VOTai Branding Module
+VOTai Branding Utilities
 
-This module provides branding elements for VOTai, including ASCII art logo,
-color schemes, and formatting utilities for consistent visual identity.
+This module provides branding-related utility functions to maintain
+consistent visual identity and messaging across the VOTai system.
 """
 
-import sys
-from typing import Dict, List, Optional, Union, Literal
+import os
+import datetime
+from typing import Dict, Any, Optional, List, Union
 
-# ANSI color codes for terminal output
-COLORS = {
-    "reset": "\033[0m",
-    "black": "\033[30m",
-    "red": "\033[31m",
-    "green": "\033[32m",
-    "yellow": "\033[33m",
-    "blue": "\033[34m",
-    "magenta": "\033[35m",
-    "cyan": "\033[36m",
-    "white": "\033[37m",
-    "bright_black": "\033[90m",
-    "bright_red": "\033[91m",
-    "bright_green": "\033[92m",
-    "bright_yellow": "\033[93m",
-    "bright_blue": "\033[94m",
-    "bright_magenta": "\033[95m",
-    "bright_cyan": "\033[96m",
-    "bright_white": "\033[97m",
-    "bg_black": "\033[40m",
-    "bg_red": "\033[41m",
-    "bg_green": "\033[42m",
-    "bg_yellow": "\033[43m",
-    "bg_blue": "\033[44m",
-    "bg_magenta": "\033[45m",
-    "bg_cyan": "\033[46m",
-    "bg_white": "\033[47m",
-    "bold": "\033[1m",
-    "underline": "\033[4m",
-    "italic": "\033[3m"
+# VOTai branding constants
+BRAND_NAME = "VOTai"
+BRAND_VERSION = "2025.1"
+BRAND_COLOR_PRIMARY = "#6E56CF"  # Main brand color
+BRAND_COLOR_SECONDARY = "#4DC0B5"  # Secondary brand color
+BRAND_COLOR_ACCENT = "#F6AD55"  # Accent color
+
+# Status colors
+STATUS_COLORS = {
+    "success": "#10B981",  # Green
+    "error": "#EF4444",    # Red
+    "warning": "#F59E0B",  # Amber
+    "info": "#3B82F6",     # Blue
+    "debug": "#9CA3AF",    # Gray
 }
 
-# VOTai brand colors
-BRAND_COLORS = {
-    "primary": COLORS["bright_cyan"],
-    "secondary": COLORS["bright_magenta"],
-    "accent": COLORS["bright_yellow"],
-    "success": COLORS["bright_green"],
-    "warning": COLORS["bright_yellow"],
-    "error": COLORS["bright_red"],
-    "info": COLORS["bright_blue"],
-    "neutral": COLORS["bright_white"]
+# Unicode symbols for status indicators
+STATUS_SYMBOLS = {
+    "success": "✓",
+    "error": "✗",
+    "warning": "⚠",
+    "info": "ℹ",
+    "debug": "⚙",
+    "loading": "⟳",
+    "pending": "…",
 }
 
-# VOTai ASCII Art Logo (Large)
-VOTAI_LOGO_LARGE = f"""{BRAND_COLORS["primary"]}
-▌   ▌ ▞▀▖▀▛▘▗▜   ▗▀▚   ▝▀▘
-▐  ▌  ▙▄▘ ▌ ▄▐  ▐▄▐▘    ▌  
- ▐▐   ▌   ▌ ▌▐   ▌▐    ▌   
- ▌▐   ▌   ▌ ▗▟   ▌▝▙  ▝▄▞   
-
-▀▛▘▐▄▄▌▝▀▖▗▜    ▐   ▝▀▖▞▀▖▗▀▚
- ▌ ▌ ▐  ▗ ▄▐    ▌ ▄  ▞ ▛▀ ▐▄▐▘
- ▌ ▌ ▐  ▄ ▌▐   ▗▟ ▌  ▌ ▌  ▌▐ 
- ▘ ▐▄▄▌▝▄▞▗▟    ▌ ▐▄ ▝▄▌  ▌▝▙{COLORS["reset"]}
-"""
-
-# VOTai ASCII Art Logo (Small)
-VOTAI_LOGO_SMALL = f"""{BRAND_COLORS["primary"]}
-▌ ▌▞▀▖▀▛▘▗▀▚▝▀▘
-▐▌▌▙▄▘ ▌ ▐▄▐▘▌ 
-▝▌▐▌   ▌  ▌▐ ▌ 
- ▌▐▌   ▌  ▌▝▙▝▄▞{COLORS["reset"]}
-"""
-
-# VOTai ASCII Art Logo (Minimal)
-VOTAI_LOGO_MINIMAL = f"""{BRAND_COLORS["primary"]}
-V▪O▪T▪a▪i
-▄▄▄▄▄▄▄▄▄{COLORS["reset"]}
-"""
-
-def get_logo(size: Literal["large", "small", "minimal"] = "small") -> str:
-    """Get VOTai ASCII logo in specified size
-
-    Args:
-        size: Size of logo ("large", "small", or "minimal")
-
-    Returns:
-        ASCII art logo as string
+def format_status(status_type: str, message: str) -> str:
     """
-    if size == "large":
-        return VOTAI_LOGO_LARGE
-    elif size == "small":
-        return VOTAI_LOGO_SMALL
-    else:
-        return VOTAI_LOGO_MINIMAL
-
-def color_text(text: str, color: str) -> str:
-    """Apply color to text
-
+    Format a status message with appropriate styling.
+    
     Args:
-        text: Text to colorize
-        color: Color name from COLORS dict
-
+        status_type: Type of status (success, error, warning, info, debug)
+        message: The message to format
+        
     Returns:
-        Colored text
+        Formatted status message with symbol
     """
-    if color not in COLORS:
-        return text
-    return f"{COLORS[color]}{text}{COLORS['reset']}"
+    symbol = STATUS_SYMBOLS.get(status_type, "")
+    return f"{symbol} {message}"
 
-def format_header(text: str, logo_size: Literal["large", "small", "minimal", "none"] = "small") -> str:
-    """Format text as header with logo
-
+def get_branded_header(title: str, width: int = 80) -> str:
+    """
+    Generate a branded header with the given title.
+    
     Args:
-        text: Header text
-        logo_size: Size of logo to include
-
+        title: The title to display in the header
+        width: Width of the header in characters
+        
     Returns:
-        Formatted header
+        Branded header string
     """
-    logo = "" if logo_size == "none" else get_logo(logo_size)
-    header = f"{logo}\n{BRAND_COLORS['secondary']}{text}{COLORS['reset']}"
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    header = f"{'=' * width}\n"
+    header += f"{BRAND_NAME} v{BRAND_VERSION} | {title}\n"
+    header += f"Generated: {now}\n"
+    header += f"{'-' * width}\n"
+    
     return header
 
-def format_status(status: str, message: str) -> str:
-    """Format status message with appropriate color
-
+def get_branded_footer(width: int = 80) -> str:
+    """
+    Generate a branded footer.
+    
     Args:
-        status: Status type (success, warning, error, info)
-        message: Status message
-
+        width: Width of the footer in characters
+        
     Returns:
-        Formatted status message
+        Branded footer string
     """
-    status_color = BRAND_COLORS.get(status.lower(), BRAND_COLORS["neutral"])
-    return f"{status_color}[{status.upper()}]{COLORS['reset']} {message}"
+    return f"{'-' * width}\n© {datetime.datetime.now().year} {BRAND_NAME} | Powered by VOTai\n{'=' * width}"
 
-def print_logo() -> None:
-    """Print VOTai logo to console with standard size"""
-    print(get_logo("small"))
-
-def print_branded_message(message: str, logo_size: Literal["large", "small", "minimal", "none"] = "minimal") -> None:
-    """Print a branded message with logo
-
+def format_result_block(title: str, content: str, status: str = "info") -> str:
+    """
+    Format a result block with branded styling.
+    
     Args:
-        message: Message to print
-        logo_size: Size of logo to include
+        title: Block title
+        content: Block content
+        status: Status type for styling (success, error, warning, info)
+        
+    Returns:
+        Formatted result block
     """
-    print(format_header(message, logo_size)) 
+    symbol = STATUS_SYMBOLS.get(status, "")
+    separator = "-" * 50
+    
+    return f"{symbol} {title}\n{separator}\n{content}\n{separator}\n"
+
+def format_tool_result(tool_name: str, result: Dict[str, Any], success: bool = True) -> str:
+    """
+    Format the result of a tool execution with branded styling.
+    
+    Args:
+        tool_name: Name of the tool
+        result: Result data dictionary
+        success: Whether the execution was successful
+        
+    Returns:
+        Formatted tool result string
+    """
+    status = "success" if success else "error"
+    symbol = STATUS_SYMBOLS.get(status, "")
+    
+    header = f"{symbol} {tool_name} Result:"
+    if not success:
+        return f"{header}\nError: {result.get('error', 'Unknown error')}"
+    
+    content = str(result.get('data', ''))
+    if len(content) > 1000:
+        content = content[:997] + "..."
+    
+    return f"{header}\n{content}"
+
+def format_memory_entry(
+    content: str,
+    memory_type: str,
+    timestamp: Optional[Union[float, str]] = None,
+    truncate: bool = True,
+    max_length: int = 200
+) -> str:
+    """
+    Format a memory entry with branded styling.
+    
+    Args:
+        content: Memory content
+        memory_type: Type of memory
+        timestamp: Timestamp of the memory
+        truncate: Whether to truncate long content
+        max_length: Maximum length before truncation
+        
+    Returns:
+        Formatted memory entry
+    """
+    if timestamp is None:
+        timestamp = datetime.datetime.now()
+        
+    if isinstance(timestamp, (int, float)):
+        timestamp = datetime.datetime.fromtimestamp(timestamp)
+        
+    if isinstance(timestamp, datetime.datetime):
+        timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        timestamp_str = str(timestamp)
+    
+    if truncate and len(content) > max_length:
+        content = content[:max_length-3] + "..."
+    
+    type_symbol = {
+        "observation": "👁️",
+        "thought": "💭",
+        "action": "🔄",
+        "tool_execution": "🔧",
+        "query": "❓",
+        "response": "💬",
+    }.get(memory_type, "📝")
+    
+    return f"{type_symbol} [{timestamp_str}] ({memory_type}): {content}"
+
+def format_status_table(statuses: List[Dict[str, Any]]) -> str:
+    """
+    Format a table of statuses with branded styling.
+    
+    Args:
+        statuses: List of status dictionaries with 'name', 'status', and 'message' keys
+        
+    Returns:
+        Formatted status table
+    """
+    if not statuses:
+        return "No status information available."
+    
+    # Find the maximum length of each column
+    name_width = max(len(status["name"]) for status in statuses)
+    status_width = max(len(status["status"]) for status in statuses)
+    
+    # Create header
+    header = f"{'Component':<{name_width+2}} | {'Status':<{status_width+2}} | Message"
+    separator = f"{'-' * (name_width+2)}-+-{'-' * (status_width+2)}-+{'-' * 30}"
+    
+    # Create rows
+    rows = []
+    for status in statuses:
+        symbol = STATUS_SYMBOLS.get(status["status"].lower(), "")
+        rows.append(
+            f"{status['name']:<{name_width+2}} | "
+            f"{symbol} {status['status']:<{status_width}} | "
+            f"{status['message']}"
+        )
+    
+    # Combine all parts
+    return f"{header}\n{separator}\n" + "\n".join(rows)
+
+def get_theme_colors() -> Dict[str, str]:
+    """
+    Get all theme colors for web interfaces.
+    
+    Returns:
+        Dictionary of color variables for CSS
+    """
+    return {
+        "--color-primary": BRAND_COLOR_PRIMARY,
+        "--color-secondary": BRAND_COLOR_SECONDARY,
+        "--color-accent": BRAND_COLOR_ACCENT,
+        "--color-success": STATUS_COLORS["success"],
+        "--color-error": STATUS_COLORS["error"],
+        "--color-warning": STATUS_COLORS["warning"],
+        "--color-info": STATUS_COLORS["info"],
+        "--color-debug": STATUS_COLORS["debug"],
+        "--color-background": "#F9FAFB",
+        "--color-surface": "#FFFFFF",
+        "--color-text": "#1F2937",
+        "--color-text-secondary": "#4B5563",
+        "--color-border": "#E5E7EB",
+    }
+
+def generate_css_theme() -> str:
+    """
+    Generate CSS variables for the VOTai theme.
+    
+    Returns:
+        CSS variables string
+    """
+    theme = get_theme_colors()
+    css = ":root {\n"
+    
+    for name, color in theme.items():
+        css += f"  {name}: {color};\n"
+    
+    css += "}"
+    return css

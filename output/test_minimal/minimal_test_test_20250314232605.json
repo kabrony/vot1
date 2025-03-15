@@ -1,0 +1,9 @@
+{
+  "timestamp": "2025-03-14T23:26:05.800474",
+  "session_id": "test_20250314232605",
+  "claude_test": {
+    "success": true,
+    "response": "Connection successful!",
+    "model": "claude-3-sonnet-20240229"
+  }
+}

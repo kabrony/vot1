@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VOT1 Dashboard</title>
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+</head>
+<body class="theme-cyberpunk">
+  <div id="app-container">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <img src="/static/img/vot1-logo.svg" alt="VOT1 Logo" class="logo">
+        <h1>VOT1</h1>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <ul>
+          <li><a href="#" class="nav-link active" data-panel="dashboard-panel"><i class="fa-solid fa-gauge"></i> Dashboard</a></li>
+          <li><a href="#" class="nav-link" data-panel="visualization-panel"><i class="fa-solid fa-project-diagram"></i> Visualization</a></li>
+          <li><a href="#" class="nav-link" data-panel="memory-panel"><i class="fa-solid fa-brain"></i> Memory</a></li>
+          <li><a href="#" class="nav-link" data-panel="mcp-panel"><i class="fa-solid fa-network-wired"></i> MCP</a></li>
+          <li><a href="#" class="nav-link" data-panel="settings-panel"><i class="fa-solid fa-gear"></i> Settings</a></li>
+        </ul>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <span class="version">VOT1 v1.0.0</span>
+      </div>
+    </aside>
+    
+    <!-- Main Content Area -->
+    <main id="main-content">
+      <!-- Top Bar -->
+      <header id="topbar">
+        <div class="search-container">
+          <input type="text" id="global-search" placeholder="Search..." class="search-input">
+          <i class="fa-solid fa-search search-icon"></i>
+        </div>
+        
+        <div class="user-actions">
+          <button class="btn btn-secondary" id="refresh-btn">
+            <i class="fa-solid fa-sync-alt"></i> Refresh
+          </button>
+          <div class="user-menu">
+            <img src="/static/img/user-avatar.svg" alt="User Avatar" class="avatar">
+            <span class="username">Admin</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </header>
+      
+      <!-- Dashboard Panel (Default View) -->
+      <div id="dashboard-panel" class="content-panel active">
+        <h2 class="panel-title">Dashboard</h2>
+        
+        <!-- Grid of Component Blocks -->
+        <div class="grid-container" id="dashboard-grid">
+          <!-- Component blocks will be dynamically inserted here -->
+        </div>
+      </div>
+      
+      <!-- Visualization Panel -->
+      <div id="visualization-panel" class="content-panel">
+        <h2 class="panel-title">File Structure Visualization</h2>
+        
+        <div class="panel-content">
+          <div class="control-bar">
+            <div class="control-group">
+              <label for="depth-selector">Depth:</label>
+              <select id="depth-selector" class="form-control">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label for="theme-selector">Theme:</label>
+              <select id="theme-selector" class="form-control">
+                <option value="cyberpunk" selected>Cyberpunk</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="refresh-vis-btn">
+              <i class="fa-solid fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+          
+          <div class="visualization-container">
+            <div id="visualization-3d" class="visualization-panel"></div>
+            <div id="visualization-info" class="info-panel">
+              <h3>Selected Node</h3>
+              <div id="node-details">
+                <p>Click on a node to view details</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Memory Panel -->
+      <div id="memory-panel" class="content-panel">
+        <h2 class="panel-title">TRILOGY BRAIN Memory System</h2>
+        
+        <div class="panel-content">
+          <div class="memory-stats">
+            <div class="stat-card">
+              <h3>Total Memories</h3>
+              <div class="stat-value" id="memory-count">-</div>
+            </div>
+            <div class="stat-card">
+              <h3>Memory Types</h3>
+              <div class="stat-value" id="memory-types">-</div>
+            </div>
+            <div class="stat-card">
+              <h3>Memory Usage</h3>
+              <div class="stat-value" id="memory-usage">-</div>
+            </div>
+          </div>
+          
+          <div class="memory-graph-container">
+            <h3>Memory Network</h3>
+            <div id="memory-graph" class="graph-container"></div>
+          </div>
+          
+          <div class="memory-recent">
+            <h3>Recent Memories</h3>
+            <div id="recent-memories" class="memory-list">
+              <p>Loading recent memories...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- MCP Panel -->
+      <div id="mcp-panel" class="content-panel">
+        <h2 class="panel-title">MCP Controller</h2>
+        
+        <div class="panel-content">
+          <div class="mcp-nodes">
+            <h3>Active Nodes</h3>
+            <div id="mcp-nodes-list" class="nodes-list">
+              <p>Loading nodes...</p>
+            </div>
+          </div>
+          
+          <div class="mcp-actions">
+            <button class="btn btn-primary" id="start-node-btn">
+              <i class="fa-solid fa-play"></i> Start Node
+            </button>
+            <button class="btn btn-secondary" id="stop-node-btn">
+              <i class="fa-solid fa-stop"></i> Stop Node
+            </button>
+            <button class="btn btn-secondary" id="sync-memory-btn">
+              <i class="fa-solid fa-sync-alt"></i> Sync Memory
+            </button>
+          </div>
+          
+          <div class="mcp-logs">
+            <h3>Node Logs</h3>
+            <div id="mcp-logs-container" class="logs-container">
+              <p>No logs available</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Settings Panel -->
+      <div id="settings-panel" class="content-panel">
+        <h2 class="panel-title">Settings</h2>
+        
+        <div class="panel-content">
+          <div class="settings-section">
+            <h3>Interface</h3>
+            <div class="form-group">
+              <label for="ui-theme">Dashboard Theme:</label>
+              <select id="ui-theme" class="form-control">
+                <option value="cyberpunk" selected>Cyberpunk</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="refresh-interval">Auto-refresh Interval (seconds):</label>
+              <input type="number" id="refresh-interval" class="form-control" value="30" min="5" max="300">
+            </div>
+          </div>
+          
+          <div class="settings-section">
+            <h3>Components</h3>
+            <div class="form-group checkbox">
+              <input type="checkbox" id="enable-visualization" checked>
+              <label for="enable-visualization">Enable Visualization</label>
+            </div>
+            <div class="form-group checkbox">
+              <input type="checkbox" id="enable-memory" checked>
+              <label for="enable-memory">Enable Memory Integration</label>
+            </div>
+            <div class="form-group checkbox">
+              <input type="checkbox" id="enable-mcp" checked>
+              <label for="enable-mcp">Enable MCP Integration</label>
+            </div>
+            <div class="form-group checkbox">
+              <input type="checkbox" id="enable-ai" checked>
+              <label for="enable-ai">Enable AI Assistant</label>
+            </div>
+          </div>
+          
+          <button class="btn btn-primary" id="save-settings-btn">
+            Save Settings
+          </button>
+        </div>
+      </div>
+    </main>
+    
+    <!-- AI Assistant Chat Panel -->
+    <aside id="chat-panel" class="collapsed">
+      <div class="chat-header">
+        <h3><i class="fa-solid fa-robot"></i> AI Assistant</h3>
+        <div class="chat-controls">
+          <button class="btn btn-icon" id="expand-chat-btn">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+          <button class="btn btn-icon" id="collapse-chat-btn">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="chat-body">
+        <div id="chat-messages" class="chat-messages">
+          <div class="message system">
+            <div class="message-content">
+              <p>Hello! I'm your AI assistant. How can I help you today?</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="chat-input-container">
+          <textarea id="chat-input" class="chat-input" placeholder="Type your message here..."></textarea>
+          <button class="btn btn-primary" id="send-message-btn">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="chat-thinking hidden">
+        <h4>Thinking Process</h4>
+        <div id="thinking-content" class="thinking-content">
+          <p>No thinking process available</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+  
+  <!-- Modals -->
+  <div id="component-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">Component Details</h3>
+        <button class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Component details will be inserted here -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- Toast Notifications -->
+  <div id="toast-container"></div>
+  
+  <!-- Templates for Dynamic Content -->
+  <template id="component-block-template">
+    <div class="component-block" data-component-id="">
+      <div class="component-header">
+        <h3 class="component-title"></h3>
+        <div class="component-controls">
+          <button class="btn btn-icon refresh-component-btn">
+            <i class="fa-solid fa-sync-alt"></i>
+          </button>
+          <button class="btn btn-icon expand-component-btn">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+        </div>
+      </div>
+      <div class="component-body">
+        <!-- Component content will be inserted here -->
+      </div>
+      <div class="component-footer">
+        <span class="component-status"></span>
+        <span class="component-timestamp"></span>
+      </div>
+    </div>
+  </template>
+  
+  <!-- Main Dashboard JavaScript -->
+  <script src="/static/js/dashboard.js"></script>
+  <script src="/static/js/visualizer.js"></script>
+  <script src="/static/js/memory-graph.js"></script>
+  <script src="/static/js/ai-assistant.js"></script>
+  <script>
+    // Initialize the dashboard
+    document.addEventListener('DOMContentLoaded', () => {
+      Dashboard.init();
+    });
+  </script>
+</body>
+</html> 

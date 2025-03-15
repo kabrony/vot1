@@ -1,0 +1,51 @@
+{
+  "max_memory_items": 1000,
+  "memory_types": [
+    "fact", 
+    "concept", 
+    "code", 
+    "conversation", 
+    "reflection"
+  ],
+  "default_memory_type": "fact",
+  "embedding_model": "claude-3-7-sonnet-20250219",
+  "memory_settings": {
+    "fact": {
+      "decay_rate": 0.05,
+      "importance_threshold": 0.7,
+      "retention_period": 30
+    },
+    "concept": {
+      "decay_rate": 0.02,
+      "importance_threshold": 0.8,
+      "retention_period": 60
+    },
+    "code": {
+      "decay_rate": 0.01,
+      "importance_threshold": 0.6,
+      "retention_period": 90
+    },
+    "conversation": {
+      "decay_rate": 0.1,
+      "importance_threshold": 0.5,
+      "retention_period": 15
+    },
+    "reflection": {
+      "decay_rate": 0.03,
+      "importance_threshold": 0.9,
+      "retention_period": 45
+    }
+  },
+  "graph_settings": {
+    "max_nodes_display": 100,
+    "min_link_strength": 0.4,
+    "cluster_threshold": 0.7,
+    "highlighting_depth": 2
+  },
+  "integration_settings": {
+    "enable_file_system_memory": true,
+    "enable_conversation_memory": true,
+    "enable_code_memory": true,
+    "memory_sync_interval": 300
+  }
+} 

@@ -1,0 +1,76 @@
+{
+  "tools": [
+    "github",
+    "perplexity",
+    "figma",
+    "firecrawl"
+  ],
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "API Node",
+      "status": "stopped",
+      "type": "api",
+      "description": "Handles API requests and connections to external services",
+      "capabilities": [
+        "REST API routing",
+        "WebSocket communication",
+        "Request validation"
+      ]
+    },
+    {
+      "id": "node-2",
+      "name": "Memory Node",
+      "status": "stopped",
+      "type": "memory",
+      "description": "Manages the TRILOGY BRAIN memory system",
+      "capabilities": [
+        "Memory storage",
+        "Knowledge graph maintenance",
+        "Semantic search"
+      ]
+    },
+    {
+      "id": "node-3",
+      "name": "Processing Node",
+      "status": "stopped",
+      "type": "processing",
+      "description": "Handles computational tasks and data processing",
+      "capabilities": [
+        "Task queue management",
+        "Parallel processing",
+        "Data transformation"
+      ]
+    },
+    {
+      "id": "node-4",
+      "name": "Visualization Node",
+      "status": "stopped",
+      "type": "visualization",
+      "description": "Manages data visualization tasks",
+      "capabilities": [
+        "THREE.js rendering",
+        "D3.js graph visualization",
+        "Real-time data updates"
+      ]
+    }
+  ],
+  "tool_requirements": {
+    "github": {
+      "required_params": ["api_key"],
+      "description": "GitHub integration for repository access and management"
+    },
+    "perplexity": {
+      "required_params": ["api_key"],
+      "description": "Perplexity AI search and question answering API"
+    },
+    "figma": {
+      "required_params": ["access_token"],
+      "description": "Figma design API for accessing design files and assets"
+    },
+    "firecrawl": {
+      "required_params": ["api_key"],
+      "description": "Firecrawl web scraping and data extraction service"
+    }
+  }
+} 

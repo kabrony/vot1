@@ -1,0 +1,111 @@
+{
+    "check_interval": 60,
+    "self_healing_enabled": true,
+    "alert_threshold": 3,
+    "max_memory_entries": 1000,
+    "memory_path": "memory/health",
+    "expected_agents": [
+        "enhanced_research_agent.py",
+        "test_claude_hybrid.py"
+    ],
+    "agent_commands": {
+        "enhanced_research_agent.py": "python3 enhanced_research_agent.py --self-analyze",
+        "test_claude_hybrid.py": "python3 test_claude_hybrid.py"
+    },
+    "log_dir": "logs",
+    "alert_log_file": "logs/alerts.log",
+    "alert_webhook": "",
+    "feedback_loop": {
+        "enabled": true,
+        "memory_consolidation_interval": 3600,
+        "system_reflection_interval": 86400,
+        "endpoints": [
+            {
+                "name": "TRILOGY BRAIN Status",
+                "url": "/api/memory/status",
+                "method": "GET",
+                "processor": "memory"
+            },
+            {
+                "name": "Memory Health Check",
+                "url": "/api/memory/health",
+                "method": "GET",
+                "processor": "alert",
+                "alertCondition": {
+                    "type": "status",
+                    "minStatus": 400
+                },
+                "alertConfig": {
+                    "message": "Memory health check failed with status {status_code}"
+                }
+            },
+            {
+                "name": "Composio MCP Status",
+                "url": "/api/mcp/status",
+                "method": "GET",
+                "processor": "alert",
+                "alertCondition": {
+                    "type": "content",
+                    "field": "connected",
+                    "value": false
+                },
+                "alertConfig": {
+                    "message": "Composio MCP connection is down"
+                }
+            }
+        ],
+        "notificationChannels": [
+            "logs",
+            "memory"
+        ]
+    },
+    "data_streams": [
+        {
+            "name": "system_metrics",
+            "enabled": true,
+            "interval": 60,
+            "metrics": [
+                "memory_usage",
+                "cpu_usage",
+                "disk_space"
+            ]
+        },
+        {
+            "name": "agent_health",
+            "enabled": true,
+            "interval": 60,
+            "metrics": [
+                "process_status",
+                "memory_usage",
+                "error_count"
+            ]
+        },
+        {
+            "name": "trilogy_brain",
+            "enabled": true,
+            "interval": 60,
+            "metrics": [
+                "memory_count",
+                "retrieval_success_rate",
+                "memory_growth_rate"
+            ]
+        }
+    ],
+    "recovery_actions": {
+        "agent_crash": {
+            "max_restart_attempts": 3,
+            "cooldown_period": 300,
+            "restart_command": "python3 {agent_file}"
+        },
+        "memory_corruption": {
+            "backup_enabled": true,
+            "backup_interval": 86400,
+            "backup_location": "backups/memory"
+        },
+        "high_memory_usage": {
+            "threshold": 90,
+            "action": "gc_collect",
+            "backup_processes": true
+        }
+    }
+} 

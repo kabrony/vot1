@@ -1,0 +1,148 @@
+{
+  "modules": {
+    "hybrid_reasoning": {
+      "path": "./hybrid_reasoning.py",
+      "imports": [
+        "os",
+        "sys",
+        "json",
+        "asyncio",
+        "logging",
+        "anthropic",
+        "asyncio",
+        "traceback"
+      ],
+      "from_imports": [
+        [
+          "typing",
+          "Dict"
+        ],
+        [
+          "typing",
+          "List"
+        ],
+        [
+          "typing",
+          "Any"
+        ],
+        [
+          "typing",
+          "Optional"
+        ],
+        [
+          "typing",
+          "Union"
+        ],
+        [
+          "datetime",
+          "datetime"
+        ],
+        [
+          "dotenv",
+          "load_dotenv"
+        ]
+      ],
+      "size_bytes": 12947,
+      "line_count": 28
+    },
+    "json_fixer": {
+      "path": "./json_fixer.py",
+      "imports": [
+        "os",
+        "sys",
+        "json",
+        "re",
+        "asyncio",
+        "logging",
+        "anthropic",
+        "asyncio",
+        "traceback",
+        "traceback",
+        "traceback",
+        "traceback"
+      ],
+      "from_imports": [
+        [
+          "typing",
+          "Dict"
+        ],
+        [
+          "typing",
+          "List"
+        ],
+        [
+          "typing",
+          "Any"
+        ],
+        [
+          "typing",
+          "Optional"
+        ],
+        [
+          "typing",
+          "Union"
+        ],
+        [
+          "datetime",
+          "datetime"
+        ],
+        [
+          "pathlib",
+          "Path"
+        ],
+        [
+          "dotenv",
+          "load_dotenv"
+        ]
+      ],
+      "size_bytes": 19497,
+      "line_count": 24
+    },
+    "memory_troubleshooter": {
+      "path": "./memory_troubleshooter.py",
+      "imports": [
+        "os",
+        "sys",
+        "re",
+        "inspect",
+        "asyncio",
+        "logging",
+        "importlib",
+        "json",
+        "asyncio"
+      ],
+      "from_imports": [
+        [
+          "typing",
+          "Dict"
+        ],
+        [
+          "typing",
+          "List"
+        ],
+        [
+          "typing",
+          "Any"
+        ],
+        [
+          "typing",
+          "Optional"
+        ],
+        [
+          "typing",
+          "Union"
+        ],
+        [
+          "datetime",
+          "datetime"
+        ],
+        [
+          "pathlib",
+          "Path"
+        ]
+      ],
+      "size_bytes": 27230,
+      "line_count": 115
+    }
+  }
+}

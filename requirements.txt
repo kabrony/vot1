@@ -3,6 +3,7 @@
 aiohttp==3.9.1
 anthropic==0.9.0
 async-timeout==4.0.3
+composio>=1.0.0
 fastapi==0.104.1
 numpy==1.26.2
 pandas==2.1.3
@@ -131,4 +132,38 @@ langchain>=0.0.312
 
 # Storage & Database
 sqlalchemy>=2.0.20
-alembic>=1.12.0 
+alembic>=1.12.0
+
+# Enhanced Research Agent Requirements
+# Core dependencies
+anthropic>=0.49.0
+perplexipy>=1.2.0
+python-dotenv>=1.0.0
+requests>=2.32.0
+composio>=1.0.0
+
+# Optional dependencies
+openai>=1.66.0  # Used by perplexipy
+pyyaml>=6.0.0   # For configuration files
+prompt-toolkit>=3.0.0  # For interactive CLI
+appdirs>=1.4.4  # For managing application directories
+
+Flask==2.3.3
+Flask-SocketIO==5.3.6
+python-socketio==5.10.0
+python-engineio==4.8.0
+Werkzeug==2.3.7
+Jinja2==3.1.3
+MarkupSafe==2.1.3
+itsdangerous==2.1.2
+urllib3==2.0.7
+idna==3.4
+certifi==2023.7.22
+charset-normalizer==3.2.0
+eventlet==0.33.3
+dnspython==2.4.2
+gevent==23.9.1
+gevent-websocket==0.10.1
+greenlet==2.0.2
+zope.event==5.0
+zope.interface==6.0 
