@@ -3,14 +3,17 @@
 [![CI](https://github.com/villageofthousands/vot1/actions/workflows/ci.yml/badge.svg)](https://github.com/villageofthousands/vot1/actions/workflows/ci.yml)
 [![Self-Improvement](https://github.com/villageofthousands/vot1/actions/workflows/self-improvement.yml/badge.svg)](https://github.com/villageofthousands/vot1/actions/workflows/self-improvement.yml)
 
-VOT1 is an advanced self-improving system focused on memory management with OWL reasoning and visualization. It implements a robust vector-based memory system combined with semantic reasoning capabilities and automates self-improvement through AI-powered workflows.
+VOT1 is an advanced self-improving system focused on memory management with Claude 3.7 integration, OWL reasoning, and interactive visualization. It implements a hybrid vector-based and symbolic memory system combined with semantic reasoning capabilities and automates self-improvement through AI-powered workflows.
 
 ## Key Features
 
-- **Vector-based Memory Management**: Store and retrieve memories using vector embeddings for semantic similarity search
+- **Claude 3.7 Memory Integration**: Enhanced memory system with hybrid retrieval and extended context management
+- **Vector-based & Symbolic Memory Management**: Store and retrieve memories using advanced embedding techniques
 - **OWL Reasoning Engine**: Apply ontology-based reasoning to memories and system components
 - **Self-Improvement Workflows**: Automated workflows for enhancing system components
 - **THREE.js Dashboard**: Interactive 3D visualization of memory connections with cyberpunk aesthetic
+- **Development Assistant**: AI-powered tooling for code analysis and improvement
+- **MCP Integration**: Connect to external services via Machine Capability Protocol
 
 ## Getting Started
 
@@ -69,10 +72,13 @@ Options:
 
 VOT1 consists of several key components:
 
-- **Memory Manager**: Core system for storing and retrieving vector-based memories
+- **Memory Manager**: Core system for storing and retrieving hybrid vector-based and symbolic memories
+- **Claude 3.7 Integration**: Advanced capabilities leveraging Claude 3.7's memory features
 - **OWL Reasoning Engine**: Provides semantic reasoning based on ontology
 - **Self-Improvement Framework**: Automates the enhancement of system components
 - **Dashboard**: Visualization and interaction layer with THREE.js rendering
+- **Development Assistant**: Repository analysis and automated improvement tools
+- **MCP Bridge**: Integration with external services and data sources
 
 ## Contributing
 
@@ -94,6 +100,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
+- [Claude 3.7](https://www.anthropic.com/) for advanced AI capabilities
 - [THREE.js](https://threejs.org/) for 3D visualization
 - [OWLready2](https://owlready2.readthedocs.io/) for OWL reasoning
-- [Sentence Transformers](https://www.sbert.net/) for vector embeddings 
+- [Sentence Transformers](https://www.sbert.net/) for vector embeddings
+- [Perplexity AI](https://www.perplexity.ai/) for research capabilities
+- [Village of Thousands](https://villageofthousands.io/) for inspiration and support
